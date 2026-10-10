@@ -8,6 +8,20 @@ out/
 *.local
 *.tsbuildinfo
 reference/
-docs/
+# docs/: only the developer-handover set is tracked. Everything else (env_stuff.md with
+# credentials, reports/, archive/, PLAN_HISTORY.md, scratch notes) stays local.
+docs/*
+!docs/HANDOVER.md
+!docs/ARCHITECTURE.md
+!docs/CONTRIBUTING.md
+!docs/ENV.md
+!docs/API.md
+!docs/DATA_MODELS.md
+!docs/ROLES.md
+!docs/LISTINGS.md
+!docs/DESIGN_SYSTEM.md
+!docs/PLAN.md
+!docs/codebase/
+!docs/plan/
 Weekly_Report_*.md
 .claude
