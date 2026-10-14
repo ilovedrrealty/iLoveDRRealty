@@ -62,7 +62,7 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
 
 function leadToApprovalItem(l: Lead, t: TFn): ApprovalItem {
   const typeLabel = LEAD_TYPE_LABEL[l.type] ?? l.type
-  const sub = [l.email, l.property_title].filter(Boolean).join(' · ')
+  const sub = [l.email || l.phone || t('lead_panel.not_provided'), l.property_title].filter(Boolean).join(' · ')
   return {
     id: l.id,
     type: 'Lead',
