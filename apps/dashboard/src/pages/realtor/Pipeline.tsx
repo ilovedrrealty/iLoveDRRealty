@@ -28,6 +28,7 @@ const TYPE_COLOR: Record<string, string> = {
   booking:          '#0d9488',
   buyer_interest:   '#e10f1f',
   seller_interest:  '#f0a800',
+  rental_interest:  '#006BFF',
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -35,6 +36,7 @@ const TYPE_LABEL: Record<string, string> = {
   booking:          'Booking',
   buyer_interest:   'Buyer',
   seller_interest:  'Seller',
+  rental_interest:  'Renter',
 }
 
 function fmtRelative(iso: string): string {
