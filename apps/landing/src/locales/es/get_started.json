@@ -1,0 +1,47 @@
+{
+  "form_label": "Formulario de consulta de iLoveDR Realty",
+  "headlines": {
+    "buy": "¿Quieres comprar en República Dominicana?",
+    "sell": "¿Quieres vender tu propiedad en RD?",
+    "rent": "¿Buscas alquilar en República Dominicana?"
+  },
+  "intro": "Habla con nuestro equipo sobre tu próximo paso inmobiliario.",
+  "intent_label": "Me interesa",
+  "intents": {
+    "buy": "Comprar",
+    "sell": "Vender",
+    "rent": "Alquilar"
+  },
+  "name": "Tu nombre",
+  "phone": "Teléfono / WhatsApp",
+  "preferred": "Preferido",
+  "email": "Correo electrónico",
+  "contact_help": "Comparte ambos si puedes. Basta con tu teléfono o correo electrónico.",
+  "comments": "Comentarios / descripción (opcional)",
+  "comments_placeholder": "Ubicación, presupuesto, plazo o detalles de tu propiedad…",
+  "consent": "Acepto que iLoveDR Realty me contacte sobre esta solicitud.",
+  "privacy": "Política de privacidad",
+  "submit": "Contáctenme",
+  "sending": "Enviando…",
+  "errors": {
+    "name": "Introduce tu nombre.",
+    "contact": "Añade un teléfono o correo electrónico para que podamos contactarte.",
+    "phone": "Introduce un teléfono completo o déjalo vacío y usa el correo electrónico.",
+    "consent": "Acepta que te contactemos sobre tu solicitud.",
+    "send": "No se pudo enviar la solicitud. Inténtalo de nuevo. Tus respuestas se conservan."
+  },
+  "success": {
+    "heading": "Recibimos tu solicitud.",
+    "phone": "Nuestro equipo te contactará al teléfono que proporcionaste.",
+    "email": "Nuestro equipo te contactará al correo electrónico que proporcionaste.",
+    "browse": "Explorar propiedades",
+    "selling": "Ver nuestros servicios de venta"
+  },
+  "about": {
+    "heading": "Tu próximo paso inmobiliario empieza aquí.",
+    "description": "Cuéntanos tus planes y nuestro equipo te ayudará con el próximo paso en República Dominicana.",
+    "local": "Habla con el equipo de iLoveDR Realty.",
+    "languages": "Atención en inglés y español.",
+    "simple": "Un formulario breve. No necesitas una cuenta."
+  }
+}
