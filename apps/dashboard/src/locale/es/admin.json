@@ -167,6 +167,7 @@
     "type_booking":       "Reserva",
     "type_buyer":         "Comprador",
     "type_seller":        "Vendedor",
+    "type_renter": "Inquilino",
     "type_owner_access":  "Acceso propietario",
     "status_new":       "Nuevo",
     "status_assigned":  "Asignado",
