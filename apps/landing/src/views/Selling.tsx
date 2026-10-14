@@ -38,13 +38,13 @@ export default function Selling() {
               {t('hero.sub')}
             </p>
             <div className="flex gap-3 flex-wrap">
-              <button onClick={() => go('contact', undefined, { type: 'sell' })}
+              <button onClick={() => go('get-started', undefined, { intent: 'sell' })}
                 className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-coral text-white border border-coral">
                 {t('hero.list')} <ArrowRight size={16} />
               </button>
-              <button onClick={() => go('contact', undefined, { type: 'sell' })}
+              <button onClick={() => go('get-started', undefined, { intent: 'sell' })}
                 className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-white/8 text-white border border-white/25">
-                {t('hero.talk')}
+                {t('contact_agent')}
               </button>
             </div>
           </div>
@@ -190,11 +190,11 @@ export default function Selling() {
             </p>
           </div>
           <div className="flex gap-2.5 flex-wrap shrink-0">
-            <button onClick={() => go('contact', undefined, { type: 'sell' })}
+            <button onClick={() => go('get-started', undefined, { intent: 'sell' })}
               className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-white text-brand border border-white">
               {t('cta.valuation')}
             </button>
-            <button onClick={() => go('contact', undefined, { type: 'sell' })}
+            <button onClick={() => go('get-started', undefined, { intent: 'sell' })}
               className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-transparent text-white border border-white/40">
               {t('cta.talk')}
             </button>

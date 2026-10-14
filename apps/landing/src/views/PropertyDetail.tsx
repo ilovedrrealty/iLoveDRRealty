@@ -286,6 +286,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
 
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [inquiryForm, setInquiryForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [inquiryPhoneDialCode, setInquiryPhoneDialCode] = useState('1');
   const [inquirySending, setInquirySending] = useState(false);
   const [inquirySent, setInquirySent] = useState(false);
 
@@ -364,7 +365,9 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
     e.preventDefault()
     setInquirySending(true)
     try {
-      await submitInquiry({ listing_id: id, name: inquiryForm.name, email: inquiryForm.email, phone: inquiryForm.phone || undefined, message: inquiryForm.message })
+      const phoneDigits = inquiryForm.phone.replace(/\D/g, '')
+      const phone = !phoneDigits || phoneDigits === inquiryPhoneDialCode ? undefined : inquiryForm.phone
+      await submitInquiry({ listing_id: id, name: inquiryForm.name, email: inquiryForm.email, phone, message: inquiryForm.message })
       setInquirySent(true)
     } catch { /* keep form open */ }
     finally { setInquirySending(false) }
@@ -1448,7 +1451,10 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
                     defaultCountry="us"
                     placeholder={t('inquiry.phone')}
                     value={inquiryForm.phone}
-                    onChange={phone => setInquiryForm(f => ({ ...f, phone }))}
+                    onChange={(phone, metadata) => {
+                      setInquiryPhoneDialCode(metadata.country.dialCode)
+                      setInquiryForm(f => ({ ...f, phone }))
+                    }}
                     inputStyle={{ flex: 1, width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #e4ddcf', borderLeft: 'none', borderRadius: '0 0.5rem 0.5rem 0', backgroundColor: '#ffffff', fontFamily: 'inherit', fontSize: '0.8125rem', color: '#00102e', outline: 'none' }}
                     countrySelectorStyleProps={{ buttonStyle: { border: '1px solid #e4ddcf', borderRight: 'none', borderRadius: '0.5rem 0 0 0.5rem', backgroundColor: '#f3f1ea', padding: '0 0.5rem', cursor: 'pointer', height: '100%' } }}
                   />
