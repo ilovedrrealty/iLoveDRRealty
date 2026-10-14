@@ -13,6 +13,7 @@ const TYPE_LABEL: Record<string, string> = {
   booking: 'Booking',
   buyer_interest: 'Buyer',
   seller_interest: 'Seller',
+  rental_interest: 'Renter',
   owner_access: 'Owner Access',
 }
 
@@ -21,6 +22,7 @@ const TYPE_COLOR: Record<string, string> = {
   booking: '#0d9488',
   buyer_interest: '#e10f1f',
   seller_interest: '#f0a800',
+  rental_interest: '#006BFF',
   owner_access: '#7c3aed',
 }
 
@@ -43,7 +45,7 @@ const STATUS_COLOR: Record<string, string> = {
   closed: '#94a3b8',
 }
 
-const TYPE_PILLS  = ['All', 'Inquiry', 'Booking', 'Buyer', 'Seller', 'Owner Access'] as const
+const TYPE_PILLS  = ['All', 'Inquiry', 'Booking', 'Buyer', 'Seller', 'Renter', 'Owner Access'] as const
 const STATUS_PILLS = ['All', 'New', 'Assigned', 'Contacted', 'Closed'] as const
 
 const TYPE_PILL_MAP: Record<string, string> = {
@@ -51,6 +53,7 @@ const TYPE_PILL_MAP: Record<string, string> = {
   Booking:       'booking',
   Buyer:         'buyer_interest',
   Seller:        'seller_interest',
+  Renter:        'rental_interest',
   'Owner Access': 'owner_access',
 }
 const STATUS_PILL_MAP: Record<string, string> = {

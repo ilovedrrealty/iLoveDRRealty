@@ -1,8 +1,9 @@
 'use client'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, Home, TrendingUp, CheckCircle2 } from 'lucide-react'
+import { X, Home, TrendingUp, KeyRound, CheckCircle2 } from 'lucide-react'
 import { PhoneInput } from 'react-international-phone'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 import 'react-international-phone/style.css'
 import client from '../api/axios'
 
@@ -11,14 +12,18 @@ const STORAGE_KEY = 'lead_modal_dismissed'
 interface LeadCaptureModalProps {
   open: boolean
   onClose: () => void
+  initialTab?: 'buyer' | 'seller' | 'renter'
 }
 
-export default function LeadCaptureModal({ open, onClose }: LeadCaptureModalProps) {
+export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }: LeadCaptureModalProps) {
   const { t } = useTranslation('lead_capture')
-  const [tab, setTab] = useState<'buyer' | 'seller'>('buyer')
+  const [tab, setTab] = useState<'buyer' | 'seller' | 'renter'>('buyer')
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
+  const [dialCode, setDialCode] = useState('1')
+  useEffect(() => { if (open) setTab(initialTab) }, [open, initialTab])
 
   function handleClose() {
     setSent(false)
@@ -27,20 +32,26 @@ export default function LeadCaptureModal({ open, onClose }: LeadCaptureModalProp
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (sending) return
+    setError('')
+    if (!form.name.trim()) { setError(t('error_name')); return }
+    const digits = form.phone.replace(/\D/g, '')
+    const phone = digits && digits !== dialCode ? form.phone : undefined
+    if (phone && !isValidPhoneNumber(phone)) { setError(t('error_phone')); return }
     setSending(true)
     try {
       await client.post('/leads', {
-        type: tab === 'buyer' ? 'buyer_interest' : 'seller_interest',
-        name: form.name,
-        email: form.email,
-        phone: form.phone || undefined,
+        type: tab === 'buyer' ? 'buyer_interest' : tab === 'renter' ? 'rental_interest' : 'seller_interest',
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone,
         message: form.message || undefined,
       })
       setSent(true)
       setForm({ name: '', email: '', phone: '', message: '' })
       sessionStorage.setItem(STORAGE_KEY, '1')
     } catch {
-      // keep form open on error
+      setError(t('error_submit'))
     } finally {
       setSending(false)
     }
@@ -64,6 +75,7 @@ export default function LeadCaptureModal({ open, onClose }: LeadCaptureModalProp
         {/* Close */}
         <button
           onClick={handleClose}
+          aria-label={t('close')}
           className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center border-0 cursor-pointer transition-colors z-10"
           style={{ background: '#f1f5f9', color: '#64748b' }}
         >
@@ -83,19 +95,20 @@ export default function LeadCaptureModal({ open, onClose }: LeadCaptureModalProp
           </p>
 
           {/* Tabs */}
-          <div className="flex gap-2 mt-4">
-            {(['buyer', 'seller'] as const).map(tab_key => (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {(['buyer', 'seller', 'renter'] as const).map(tab_key => (
               <button
                 key={tab_key}
                 onClick={() => setTab(tab_key)}
+                aria-pressed={tab === tab_key}
                 className="flex items-center gap-1.5 px-3.5 py-1.75 rounded-full text-[12.5px] font-bold border-0 cursor-pointer transition-all"
                 style={{
                   background: tab === tab_key ? '#e10f1f' : 'rgba(255,255,255,.1)',
                   color: tab === tab_key ? 'white' : 'rgba(255,255,255,.6)',
                 }}
               >
-                {tab_key === 'buyer' ? <Home size={13} /> : <TrendingUp size={13} />}
-                {tab_key === 'buyer' ? t('tab_buying') : t('tab_selling')}
+                {tab_key === 'buyer' ? <Home size={13} /> : tab_key === 'renter' ? <KeyRound size={13} /> : <TrendingUp size={13} />}
+                {tab_key === 'buyer' ? t('tab_buying') : tab_key === 'renter' ? t('tab_renting') : t('tab_selling')}
               </button>
             ))}
           </div>
@@ -147,17 +160,18 @@ export default function LeadCaptureModal({ open, onClose }: LeadCaptureModalProp
                 defaultCountry="us"
                 placeholder={t('ph_phone')}
                 value={form.phone}
-                onChange={phone => setForm(f => ({ ...f, phone }))}
+                onChange={(phone, meta) => { setDialCode(meta.country.dialCode); setForm(f => ({ ...f, phone })) }}
                 inputStyle={{ flex: 1, width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #e4ddcf', borderLeft: 'none', borderRadius: '0 0.75rem 0.75rem 0', backgroundColor: '#ffffff', fontFamily: 'inherit', fontSize: '0.8125rem', color: '#00102e', outline: 'none' }}
                 countrySelectorStyleProps={{ buttonStyle: { border: '1px solid #e4ddcf', borderRight: 'none', borderRadius: '0.75rem 0 0 0.75rem', backgroundColor: '#f8f8f8', padding: '0 0.5rem', cursor: 'pointer', height: '100%' } }}
               />
               <textarea
                 rows={3}
-                placeholder={tab === 'buyer' ? t('ph_buyer_msg') : t('ph_seller_msg')}
+                placeholder={tab === 'buyer' ? t('ph_buyer_msg') : tab === 'renter' ? t('ph_renter_msg') : t('ph_seller_msg')}
                 value={form.message}
                 onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
                 className="w-full text-[13px] border border-line rounded-xl px-3 py-2.5 font-sans outline-none resize-none"
               />
+              {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
               <button
                 type="submit"
                 disabled={sending}

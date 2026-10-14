@@ -167,6 +167,7 @@
     "type_booking":       "Booking",
     "type_buyer":         "Buyer",
     "type_seller":        "Seller",
+    "type_renter": "Renter",
     "type_owner_access":  "Owner Access",
     "status_new":       "New",
     "status_assigned":  "Assigned",

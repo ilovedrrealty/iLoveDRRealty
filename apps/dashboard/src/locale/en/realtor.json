@@ -53,7 +53,8 @@
     "type_inquiry":    "Inquiry",
     "type_booking":    "Booking",
     "type_buyer":      "Buyer",
-    "type_seller":     "Seller"
+    "type_seller":     "Seller",
+    "type_renter": "Renter"
   },
   "listings_page": {
     "title":                "My Listings",
@@ -129,6 +130,7 @@
     "filter_type_booking": "Booking",
     "filter_type_buyer":   "Buyer",
     "filter_type_seller":  "Seller",
+    "filter_type_renter": "Renter",
     "filter_status_new":       "New",
     "filter_status_assigned":  "Assigned",
     "filter_status_schedule":  "Schedule",

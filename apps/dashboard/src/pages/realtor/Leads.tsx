@@ -14,6 +14,7 @@ const TYPE_LABEL: Record<string, string> = {
   booking:          'Booking',
   buyer_interest:   'Buyer',
   seller_interest:  'Seller',
+  rental_interest:  'Renter',
 }
 
 const TYPE_COLOR: Record<string, string> = {
@@ -21,6 +22,7 @@ const TYPE_COLOR: Record<string, string> = {
   booking:          '#0d9488',
   buyer_interest:   '#e10f1f',
   seller_interest:  '#f0a800',
+  rental_interest:  '#006BFF',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -39,7 +41,7 @@ const STATUS_COLOR: Record<string, string> = {
   closed:    '#94a3b8',
 }
 
-const TYPE_PILLS   = ['All', 'Inquiry', 'Booking', 'Buyer', 'Seller'] as const
+const TYPE_PILLS   = ['All', 'Inquiry', 'Booking', 'Buyer', 'Seller', 'Renter'] as const
 const STATUS_PILLS = ['All', 'New', 'Assigned', 'Schedule', 'Contacted', 'Closed'] as const
 
 const TYPE_PILL_MAP: Record<string, string> = {
@@ -47,6 +49,7 @@ const TYPE_PILL_MAP: Record<string, string> = {
   Booking: 'booking',
   Buyer:   'buyer_interest',
   Seller:  'seller_interest',
+  Renter:  'rental_interest',
 }
 const STATUS_PILL_MAP: Record<string, string> = {
   New: 'new', Assigned: 'assigned', Schedule: 'schedule', Contacted: 'contacted', Closed: 'closed',
@@ -85,6 +88,7 @@ const TYPE_KEY: Record<string, string> = {
   booking:          'booking',
   buyer_interest:   'buyer',
   seller_interest:  'seller',
+  rental_interest:  'renter',
 }
 
 function fmtRelative(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
@@ -247,7 +251,7 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
             <div className="flex items-center gap-3 ml-auto flex-wrap">
               <FilterPills
                 options={[...TYPE_PILLS]}
-                labels={[t('leads_page.filter_all'), t('leads_page.filter_type_inquiry'), t('leads_page.filter_type_booking'), t('leads_page.filter_type_buyer'), t('leads_page.filter_type_seller')]}
+                labels={[t('leads_page.filter_all'), t('leads_page.filter_type_inquiry'), t('leads_page.filter_type_booking'), t('leads_page.filter_type_buyer'), t('leads_page.filter_type_seller'), t('leads_page.filter_type_renter')]}
                 value={typeFilter}
                 onChange={setTypeFilter}
               />

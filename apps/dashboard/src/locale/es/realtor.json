@@ -53,7 +53,8 @@
     "type_inquiry": "Consulta",
     "type_booking": "Reserva",
     "type_buyer":   "Comprador",
-    "type_seller":  "Vendedor"
+    "type_seller":  "Vendedor",
+    "type_renter": "Inquilino"
   },
   "listings_page": {
     "title":                "Mis propiedades",
@@ -129,6 +130,7 @@
     "filter_type_booking": "Reserva",
     "filter_type_buyer":   "Comprador",
     "filter_type_seller":  "Vendedor",
+    "filter_type_renter": "Inquilino",
     "filter_status_new":       "Nuevo",
     "filter_status_assigned":  "Asignado",
     "filter_status_schedule":  "Agendar",
