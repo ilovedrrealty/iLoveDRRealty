@@ -31,6 +31,8 @@ import enPropertyDetail from './locales/en/property_detail.json'
 import esPropertyDetail from './locales/es/property_detail.json'
 import enLeadCapture from './locales/en/lead_capture.json'
 import esLeadCapture from './locales/es/lead_capture.json'
+import enGetStarted from './locales/en/get_started.json'
+import esGetStarted from './locales/es/get_started.json'
 import enRentals from './locales/en/rentals.json'
 import esRentals from './locales/es/rentals.json'
 
@@ -53,6 +55,7 @@ i18n.use(initReactI18next).init({
       property_detail: enPropertyDetail,
       lead_capture: enLeadCapture,
       rentals: enRentals,
+      get_started: enGetStarted,
     },
     es: {
       common: esCommon,
@@ -71,11 +74,12 @@ i18n.use(initReactI18next).init({
       property_detail: esPropertyDetail,
       lead_capture: esLeadCapture,
       rentals: esRentals,
+      get_started: esGetStarted,
     },
   },
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'landing', 'auth', 'footer', 'search', 'buying', 'selling', 'contact', 'blog', 'team', 'calculator', 'not_found', 'verify', 'property_detail', 'lead_capture', 'rentals'],
+  ns: ['common', 'landing', 'auth', 'footer', 'search', 'buying', 'selling', 'contact', 'blog', 'team', 'calculator', 'not_found', 'verify', 'property_detail', 'lead_capture', 'rentals', 'get_started'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })
