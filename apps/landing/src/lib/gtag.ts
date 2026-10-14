@@ -15,9 +15,9 @@ declare global {
 
 // Fire only once the website/server has actually accepted a submitted lead —
 // never on a mere click of the submit button.
-export function trackFormConversion(): void {
+export function trackFormConversion(leadId?: string): void {
   if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-    window.gtag('event', 'conversion', { send_to: FORM_CONVERSION_SEND_TO })
+    window.gtag('event', 'conversion', { send_to: FORM_CONVERSION_SEND_TO, ...(leadId ? { transaction_id: leadId } : {}) })
   }
 }
 
