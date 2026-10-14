@@ -2,9 +2,9 @@ import client from './axios'
 
 export interface Lead {
   id: string
-  type: 'property_inquiry' | 'booking' | 'buyer_interest' | 'seller_interest'
+  type: 'property_inquiry' | 'booking' | 'buyer_interest' | 'seller_interest' | 'rental_interest'
   name: string
-  email: string
+  email: string | null
   phone: string | null
   message: string | null
   property_id: string | null
