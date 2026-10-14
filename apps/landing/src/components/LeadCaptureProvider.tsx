@@ -16,8 +16,20 @@ const normalizePath = (p: string) => (p.length > 1 && p.endsWith('/') ? p.slice(
 
 export default function LeadCaptureProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
+  const [initialTab, setInitialTab] = useState<'buyer' | 'seller' | 'renter'>('buyer')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pathname = usePathname()
+  useEffect(() => {
+    const show = (event: Event) => {
+      const intent = (event as CustomEvent<{ intent?: string }>).detail?.intent
+      if (intent !== 'buyer' && intent !== 'seller' && intent !== 'renter') return
+      if (timerRef.current) clearTimeout(timerRef.current)
+      setInitialTab(intent)
+      setOpen(true)
+    }
+    window.addEventListener('ildr:open-lead-capture', show)
+    return () => window.removeEventListener('ildr:open-lead-capture', show)
+  }, [])
 
   useEffect(() => {
     if (EXCLUDED_PATHS.has(normalizePath(pathname))) { setOpen(false); return }
@@ -34,7 +46,7 @@ export default function LeadCaptureProvider({ children }: { children: React.Reac
   return (
     <>
       {children}
-      <LeadCaptureModal open={open} onClose={handleClose} />
+      <LeadCaptureModal open={open} onClose={handleClose} initialTab={initialTab} />
 
     </>
   )
