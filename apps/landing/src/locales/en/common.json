@@ -6,7 +6,8 @@
     "blog": "Resources",
     "team": "Our Team",
     "contact": "Contact",
-    "calculator": "ROI Calculator"
+    "calculator": "ROI Calculator",
+    "rentals": "Rentals"
   },
   "auth": {
     "login": "Log in",
