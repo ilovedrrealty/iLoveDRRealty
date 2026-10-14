@@ -78,7 +78,8 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
   const color = TYPE_COLOR[lead.type] ?? '#64748b'
 
   function copyEmail() {
-    navigator.clipboard.writeText(lead!.email).then(() => {
+    if (!lead?.email) return
+    navigator.clipboard.writeText(lead.email).then(() => {
       setCopiedEmail(true)
       setTimeout(() => setCopiedEmail(false), 2000)
     })
@@ -231,15 +232,16 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
                   <div className="min-w-0 flex-1">
                     <div className="text-[10.5px] text-dim font-semibold uppercase tracking-wide">{t('lead_panel.label_email')}</div>
                     <div className="flex items-center gap-1.5">
-                      <div className="text-[13px] text-ink truncate">{lead.email}</div>
-                      <button
+                      <div className="text-[13px] text-ink truncate">{lead.email || t('lead_panel.not_provided')}</div>
+                      {lead.email && <button
                         onClick={copyEmail}
+                        aria-label={t('lead_panel.copy_email')}
                         className="shrink-0 p-1 rounded-md border-0 bg-transparent cursor-pointer hover:bg-line-soft transition-colors"
                       >
                         {copiedEmail
                           ? <CheckCheck size={13} style={{ color: TONE }} />
                           : <Copy size={13} className="text-dim" />}
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 </div>
