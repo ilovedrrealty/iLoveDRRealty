@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { getRealtorLeads, updateRealtorLeadStatus, type Lead } from '../../api/leads'
 import { LeadDetailPanel } from '../../components/admin/LeadDetailPanel'
 import type { UserInfo } from '../../lib/auth'
+import { parsePhone } from '../../utils/phone'
 
 type PipelineStatus = 'assigned' | 'schedule' | 'contacted' | 'closed'
 
@@ -52,6 +54,7 @@ function fmtRelative(iso: string): string {
 }
 
 export function Pipeline({ user }: { user?: UserInfo }) {
+  const { t } = useTranslation('admin')
   const [leads,       setLeads]       = useState<Lead[]>([])
   const [loading,     setLoading]     = useState(true)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
@@ -152,7 +155,7 @@ export function Pipeline({ user }: { user?: UserInfo }) {
                         </div>
 
                         <div className="text-[13px] font-semibold text-ink truncate">{lead.name}</div>
-                        <div className="text-[11px] text-dim truncate mb-1">{lead.email}</div>
+                        <div className="text-[11px] text-dim truncate mb-1">{lead.email || (lead.phone ? parsePhone(lead.phone).formatted : t('lead_panel.not_provided'))}</div>
                         {lead.property_title && (
                           <div className="text-[11px] text-ink2 truncate mb-1">{lead.property_title}</div>
                         )}
