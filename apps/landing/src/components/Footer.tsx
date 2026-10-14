@@ -13,7 +13,7 @@ const NAV_GROUPS = [
   },
   {
     groupKey: 'company',
-    links: ['team', 'blog', 'contact'] as const,
+    links: ['team', 'blog', 'contact', 'get-started'] as const,
   },
 ]
 
