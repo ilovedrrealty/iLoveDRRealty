@@ -32,5 +32,6 @@ export const NAV_ITEMS: [string, string][] = [
   ['blog',       'Resources'],
   ['team',       'Our Team'],
   ['contact',    'Contact'],
+  ['get-started', 'Get Started'],
   ['calculator', 'ROI Calculator'],
 ]

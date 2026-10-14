@@ -7,7 +7,10 @@
     "team": "Our Team",
     "contact": "Contact",
     "calculator": "ROI Calculator",
-    "rentals": "Rentals"
+    "rentals": "Rentals",
+    "get-started": "Get Started",
+    "open_menu": "Open menu",
+    "close_menu": "Close menu"
   },
   "auth": {
     "login": "Log in",

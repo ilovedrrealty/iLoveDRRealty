@@ -42,9 +42,9 @@ export default function Buying() {
                 className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-coral text-white border border-coral">
                 {t('hero.browse')} <ArrowRight size={16} />
               </button>
-              <button onClick={() => go('contact')}
+              <button onClick={() => go('get-started', undefined, { intent: 'buy' })}
                 className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-white/8 text-white border border-white/25">
-                {t('hero.book')}
+                {t('contact_agent')}
               </button>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function Buying() {
               className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-white text-coral-deep border border-white">
               {t('cta.browse')}
             </button>
-            <button onClick={() => go('contact')}
+            <button onClick={() => go('get-started', undefined, { intent: 'buy' })}
               className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-transparent text-white border border-white/40">
               {t('cta.talk')}
             </button>

@@ -7,7 +7,10 @@
     "team": "Nuestro Equipo",
     "contact": "Contacto",
     "calculator": "Calculadora ROI",
-    "rentals": "Alquileres"
+    "rentals": "Alquileres",
+    "get-started": "Comenzar",
+    "open_menu": "Abrir menú",
+    "close_menu": "Cerrar menú"
   },
   "auth": {
     "login": "Ingresar",

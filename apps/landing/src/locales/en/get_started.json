@@ -1,0 +1,47 @@
+{
+  "form_label": "iLoveDR Realty short inquiry form",
+  "headlines": {
+    "buy": "Buying in the Dominican Republic?",
+    "sell": "Selling your property in the DR?",
+    "rent": "Looking to rent in the Dominican Republic?"
+  },
+  "intro": "Connect with our team about your next property move.",
+  "intent_label": "I’m interested in",
+  "intents": {
+    "buy": "Buying",
+    "sell": "Selling",
+    "rent": "Renting"
+  },
+  "name": "Your name",
+  "phone": "Phone / WhatsApp",
+  "preferred": "Preferred",
+  "email": "Email",
+  "contact_help": "Provide both if you can. Either phone or email is enough.",
+  "comments": "Comments / description (optional)",
+  "comments_placeholder": "Location, budget, timeline, or details about your property…",
+  "consent": "I agree that iLoveDR Realty may contact me about this request.",
+  "privacy": "Privacy Policy",
+  "submit": "Contact me",
+  "sending": "Sending…",
+  "errors": {
+    "name": "Please enter your name.",
+    "contact": "Add a phone number or email address so we can contact you.",
+    "phone": "Enter a complete phone number, or leave it blank and use email.",
+    "consent": "Please agree to be contacted about your request.",
+    "send": "Your request could not be sent. Please try again. Your answers are still here."
+  },
+  "success": {
+    "heading": "We’ve received your request.",
+    "phone": "Our team will follow up using the phone number you provided.",
+    "email": "Our team will follow up using the email address you provided.",
+    "browse": "Explore properties",
+    "selling": "Explore our selling services"
+  },
+  "about": {
+    "heading": "Your next property move starts here.",
+    "description": "Tell us what you have in mind, and our team will help you take the next step in the Dominican Republic.",
+    "local": "Speak with the iLoveDR Realty team.",
+    "languages": "Support in English and Spanish.",
+    "simple": "A short form. No account required."
+  }
+}

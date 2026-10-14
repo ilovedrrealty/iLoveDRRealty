@@ -158,7 +158,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop nav */}
-        <nav className="hidden min-[1080px]:flex flex-none gap-1 items-center">
+        <nav className="hidden min-[1280px]:flex flex-none gap-1 items-center">
           {NAV_ITEMS.map(([key]) => {
             const active = current === key
             return (
@@ -178,7 +178,7 @@ export default function Navbar() {
         </nav>
 
         {/* Desktop CTAs */}
-        <div className="hidden min-[1080px]:flex flex-1 gap-2 items-center justify-end">
+        <div className="hidden min-[1280px]:flex flex-1 gap-2 items-center justify-end">
           <LanguageToggle />
           {me ? (
             <div className="relative" ref={dropdownRef}>
@@ -214,7 +214,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile: avatar/name or Sign up + hamburger */}
-        <div className="flex min-[1080px]:hidden items-center gap-2">
+        <div className="flex min-[1280px]:hidden items-center gap-2">
           {me ? (
             <div className="flex items-center gap-1.5">
               <Avatar me={me} size={28} />
@@ -232,6 +232,9 @@ export default function Navbar() {
           )}
           <button
             onClick={() => setOpen(v => !v)}
+            aria-label={t(open ? 'nav.close_menu' : 'nav.open_menu')}
+            aria-expanded={open}
+            aria-controls="main-mobile-navigation"
             className="cursor-pointer bg-transparent border-none p-1.5 text-ink flex items-center"
           >
             {open ? <X size={22} /> : <Menu size={22} />}
@@ -241,7 +244,7 @@ export default function Navbar() {
 
       {/* Mobile drawer */}
       {open && (
-        <div className="min-[1080px]:hidden bg-white border-t border-line px-4 py-3 flex flex-col">
+        <div id="main-mobile-navigation" className="min-[1280px]:hidden bg-white border-t border-line px-4 py-3 flex flex-col">
           {NAV_ITEMS.map(([key]) => {
             const active = current === key
             return (

@@ -23,18 +23,19 @@ export async function submitInquiry(data: LeadCreate): Promise<void> {
 export async function submitContactLead(data: {
   tab: 'buyer' | 'seller' | 'renter'
   name: string
-  email: string
+  email?: string
   phone?: string
   interest: string
   message?: string
-}): Promise<void> {
+}): Promise<{ id: string; status: string }> {
   const type = data.tab === 'seller' ? 'seller_interest' : data.tab === 'renter' ? 'rental_interest' : 'buyer_interest'
   const parts = [`Interest: ${data.interest}`, data.message].filter(Boolean)
-  await client.post('/leads', {
+  const response = await client.post<{ id: string; status: string }>('/leads', {
     type,
     name: data.name,
     email: data.email,
     phone: data.phone || undefined,
     message: parts.join('\n\n').slice(0, 2000),
   })
+  return response.data
 }

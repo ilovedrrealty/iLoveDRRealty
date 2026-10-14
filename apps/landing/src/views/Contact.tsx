@@ -49,6 +49,7 @@ export default function Contact() {
   const interestOptions = tab === 'seller' ? sellerInterestOptions : buyerInterestOptions
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', interest: BUYER_INTEREST_VALUES[0], message: '' })
+  const [phoneDialCode, setPhoneDialCode] = useState('1')
   const [agreed, setAgreed] = useState(false)
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -67,11 +68,13 @@ export default function Contact() {
     try {
       const trackingLine = getTrackingReferenceLine()
       const message = [form.message || undefined, trackingLine].filter(Boolean).join('\n\n')
+      const phoneDigits = form.phone.replace(/\D/g, '')
+      const phone = !phoneDigits || phoneDigits === phoneDialCode ? undefined : form.phone
       await submitContactLead({
         tab,
         name: form.name,
         email: form.email,
-        phone: form.phone || undefined,
+        phone,
         interest: form.interest,
         message: message || undefined,
       })
@@ -232,7 +235,10 @@ export default function Contact() {
                     <PhoneInput
                       defaultCountry="do"
                       value={form.phone}
-                      onChange={phone => setForm(f => ({ ...f, phone }))}
+                      onChange={(phone, metadata) => {
+                        setPhoneDialCode(metadata.country.dialCode)
+                        setForm(f => ({ ...f, phone }))
+                      }}
                       inputStyle={phoneInputStyle}
                       countrySelectorStyleProps={{ buttonStyle: phoneSelectorStyle }}
                       style={{ width: '100%', display: 'flex' }}

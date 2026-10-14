@@ -22,7 +22,7 @@ export default function Rentals() {
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/80">{t('copy_9')}</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href={browse} className={button}>{t('copy_10')}<ArrowRight size={17} /></Link>
-          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('ildr:open-lead-capture', { detail: { intent: 'renter' } }))} className="inline-flex items-center rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white">{t('copy_11')}</button>
+          <Link href="/get-started/?intent=rent" className="inline-flex items-center rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white">{t('contact_agent')}</Link>
         </div>
       </div>
     </section>
