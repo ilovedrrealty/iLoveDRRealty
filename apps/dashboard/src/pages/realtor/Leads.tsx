@@ -152,7 +152,7 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
       const q = query.toLowerCase()
       return (
         l.name.toLowerCase().includes(q) ||
-        l.email.toLowerCase().includes(q) ||
+        (l.email?.toLowerCase().includes(q) ?? false) ||
         (l.phone?.toLowerCase().includes(q) ?? false) ||
         (l.property_title?.toLowerCase().includes(q) ?? false) ||
         (l.message?.toLowerCase().includes(q) ?? false)
@@ -353,7 +353,8 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
                       {lead.from_user_code && (
                         <div className="text-[10.5px] font-mono font-semibold" style={{ color: TONE }}>{fmtUserCode(lead.from_user_code)}</div>
                       )}
-                      <div className="text-[11px] text-dim truncate">{lead.email}</div>
+                      {lead.email && <div className="text-[11px] text-dim truncate">{lead.email}</div>}
+                      {!lead.email && !lead.phone && <div className="text-[11px] text-dim truncate">{t('lead_panel.not_provided', { ns: 'admin' })}</div>}
                       {lead.phone && (() => { const ph = parsePhone(lead.phone); return <div className="flex items-center gap-1 text-[11px] text-dim">{ph.country && <img src={`https://flagcdn.com/w20/${ph.country.toLowerCase()}.png`} alt={ph.country} className="w-3.5 h-auto shrink-0 rounded-xs" />}<span className="truncate">{ph.formatted}</span></div> })()}
                     </div>
                   </div>
@@ -388,7 +389,7 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
                       {lead.from_user_code && (
                         <div className="text-[10.5px] font-mono font-semibold" style={{ color: TONE }}>{fmtUserCode(lead.from_user_code)}</div>
                       )}
-                      <div className="text-[11.5px] text-dim truncate">{lead.email}</div>
+                      <div className="text-[11.5px] text-dim truncate">{lead.email || (lead.phone ? parsePhone(lead.phone).formatted : t('lead_panel.not_provided', { ns: 'admin' }))}</div>
                     </div>
                   </div>
                   {lead.property_title && (
