@@ -26,6 +26,7 @@ export const fontSans  = '"Mona Sans", "Inter", -apple-system, system-ui, sans-s
 // [routeKey, label]
 export const NAV_ITEMS: [string, string][] = [
   ['search',     'Search'],
+  ['rentals',    'Rentals'],
   ['buying',     'Buying'],
   ['selling',    'Selling'],
   ['blog',       'Resources'],
