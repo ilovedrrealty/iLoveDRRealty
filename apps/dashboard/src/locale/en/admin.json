@@ -144,6 +144,7 @@
     "label_account":        "Account",
     "label_email":          "Email",
     "label_phone":          "Phone",
+    "copy_email":           "Copy email",
     "label_submitted":      "Submitted",
     "label_property_agent": "Property Agent",
     "not_provided":         "Not provided",

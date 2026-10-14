@@ -144,6 +144,7 @@
     "label_account":        "Cuenta",
     "label_email":          "Correo",
     "label_phone":          "Teléfono",
+    "copy_email":           "Copiar correo",
     "label_submitted":      "Enviado",
     "label_property_agent": "Agente de la propiedad",
     "not_provided":         "No proporcionado",
