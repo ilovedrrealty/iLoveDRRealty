@@ -15,6 +15,7 @@ const TYPE_COLOR: Record<string, string> = {
   booking:          '#0d9488',
   buyer_interest:   '#e10f1f',
   seller_interest:  '#f0a800',
+  rental_interest:  '#006BFF',
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -55,6 +56,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
     booking:          t('lead_panel.type_booking'),
     buyer_interest:   t('lead_panel.type_buyer'),
     seller_interest:  t('lead_panel.type_seller'),
+    rental_interest:  t('lead_panel.type_renter'),
   }
 
   const STATUS_LABEL: Record<string, string> = {
