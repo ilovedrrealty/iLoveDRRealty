@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { verify, resendCode } from '../api/auth'
+import { dashboardAfterAuth, professionalAuthParams, rememberProfessionalJoin } from '../lib/professionalJoin'
 
 const _dashRaw = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'https://app.ilovedrrealty.com'
 const DASHBOARD_URL = _dashRaw.startsWith('http') ? _dashRaw : `https://${_dashRaw}`
@@ -29,6 +30,7 @@ export default function Verify() {
   const { t } = useTranslation('verify')
 
   useEffect(() => {
+    rememberProfessionalJoin()
     if (codeFromQuery.length === 6 && params.get('email')) {
       // Auto-submit when arriving from the email link
       handleVerify(codeFromQuery)
@@ -100,7 +102,7 @@ export default function Verify() {
     try {
       const res = await verify({ email, code })
       toast.success(t('toast_success'))
-      setTimeout(() => { window.location.href = DASHBOARD_URL }, 1500)
+      setTimeout(() => { window.location.href = dashboardAfterAuth(DASHBOARD_URL) }, 1500)
     } catch (e: unknown) {
       setVerifyError(e instanceof Error ? e.message : 'Verification failed')
       setDigits(['', '', '', '', '', ''])
@@ -216,7 +218,7 @@ export default function Verify() {
                 </button>
               ) : (
                 <button
-                  onClick={() => go('signup')}
+                  onClick={() => go('signup', undefined, professionalAuthParams())}
                   className="bg-transparent border-0 cursor-pointer text-sea font-semibold font-sans text-xs p-0"
                 >
                   {t('back_signup')}

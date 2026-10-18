@@ -25,9 +25,9 @@ function DashboardPage() {
 
   useEffect(() => {
     if (!loading && (error || !user)) {
-      window.location.href = `${LANDING_URL}/login`
+      window.location.href = `${LANDING_URL.replace(/\/$/, '')}/login${view === 'professional-profile' ? '?join=professional' : ''}`
     }
-  }, [loading, user, error])
+  }, [loading, user, error, view])
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-paper">

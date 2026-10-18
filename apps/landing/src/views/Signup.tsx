@@ -1,21 +1,25 @@
 'use client'
 import { useNav } from '../hooks/useNav'
 import { useRouter } from 'next/navigation'
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { PhoneInput } from 'react-international-phone'
 import 'react-international-phone/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import * as Yup from 'yup'
 import toast from 'react-hot-toast'
-import { register, googleAuth } from '../api/auth'
-import { useGoogleLogin } from '@react-oauth/google'
+import { register } from '../api/auth'
+import GoogleAuthSection from '../components/GoogleAuthSection'
 import { useTranslation } from 'react-i18next'
 import { usePlatformStats } from '../hooks/usePlatformStats'
+import { professionalAuthParams, rememberProfessionalJoin } from '../lib/professionalJoin'
 
 type Fields = { name: string; phone: string; email: string; password: string; confirmPassword: string; agreed: boolean }
 type FieldErrors = Partial<Record<keyof Fields, string>>
 
 export default function Signup() {
+  const [professionalJoin, setProfessionalJoin] = useState(false)
+  const { t: tProfessional } = useTranslation('professionals')
+  useEffect(() => { setProfessionalJoin(rememberProfessionalJoin()) }, [])
   const go = useNav()
   const router = useRouter()
   const { t } = useTranslation('auth')
@@ -47,27 +51,6 @@ export default function Signup() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [loading, setLoading] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
-
-  const _dashRaw = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'https://app.ilovedrrealty.com'
-  const DASHBOARD_URL = _dashRaw.startsWith('http') ? _dashRaw : `https://${_dashRaw}`
-
-  const handleGoogleSignup = useGoogleLogin({
-    prompt: 'select_account',
-    onSuccess: async tokenResponse => {
-      setGoogleLoading(true)
-      try {
-        await googleAuth(tokenResponse.access_token)
-        toast.success(t('signup.toast.success'))
-        setTimeout(() => { window.location.href = DASHBOARD_URL }, 1500)
-      } catch (e: unknown) {
-        toast.error(e instanceof Error ? e.message : t('signup.toast.google_error'))
-      } finally {
-        setGoogleLoading(false)
-      }
-    },
-    onError: () => toast.error(t('signup.toast.google_error')),
-  })
 
   function clearField(field: keyof FieldErrors) {
     setFieldErrors(prev => ({ ...prev, [field]: undefined }))
@@ -89,7 +72,8 @@ export default function Signup() {
     try {
       await register({ display_name: name, email, password, phone: phone || undefined })
       toast.success(t('signup.toast.email_sent'))
-      setTimeout(() => router.push(`/verify?email=${encodeURIComponent(email)}`), 1500)
+      const verifyParams = new URLSearchParams({ email, ...professionalAuthParams() })
+      setTimeout(() => router.push(`/verify?${verifyParams}`), 1500)
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : t('signup.toast.signup_error'))
     } finally {
@@ -135,12 +119,13 @@ export default function Signup() {
           <h2 className="font-sans text-7 font-bold text-ink mb-1.5 tracking-[-.02em]">{t('signup.form.heading')}</h2>
           <p className="text-[14.5px] text-ink2 mb-7">
             {t('signup.form.has_account')}{' '}
-            <button onClick={() => go('login')}
+            <button onClick={() => go('login', undefined, professionalAuthParams())}
               className="bg-transparent border-0 cursor-pointer text-coral font-bold text-[14.5px] font-sans p-0">
               {t('signup.form.login_cta')}
             </button>
           </p>
 
+          {professionalJoin && <p className="mb-4 rounded-xl border border-line bg-white p-4 text-sm text-ink2">{tProfessional('join_auth')}</p>}
           <div className="bg-paper border border-line rounded-2xl p-5 sm:p-7">
 
             {/* Name */}
@@ -275,30 +260,7 @@ export default function Signup() {
               {loading ? t('signup.form.submitting') : t('signup.form.submit')}
             </button>
 
-            <div className="flex items-center gap-3 mt-4.5 mb-3.5">
-              <div className="flex-1 h-px bg-line" />
-              <span className="text-xs text-dim font-medium">{t('signup.form.or')}</span>
-              <div className="flex-1 h-px bg-line" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handleGoogleSignup()}
-              disabled={googleLoading}
-              className="w-full py-2.75 rounded-full font-sans text-sm font-semibold cursor-pointer bg-white border border-[#dadce0] text-[#3c4043] flex items-center justify-center gap-3 hover:bg-[#f8f9fa] transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {googleLoading ? (
-                <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" strokeOpacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/></svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-                  <path d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
-                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                </svg>
-              )}
-              {googleLoading ? t('signup.form.google_loading') : t('signup.form.google')}
-            </button>
+            <GoogleAuthSection mode="signup" />
           </div>
 
         </div>

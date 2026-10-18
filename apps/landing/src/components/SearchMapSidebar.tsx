@@ -238,13 +238,18 @@ export function SearchMapSidebar({
   onCurrencyChange, onSelect, go,
 }: MapSidebarProps) {
   const { t } = useTranslation('search')
+  const rentalPeriod = results[0]?.pricePeriod
+  const rentalUnit = rentalPeriod && results.every(listing => listing.purpose === 'rent' && listing.pricePeriod === rentalPeriod)
+    ? t(rentalPeriod === 'day' ? 'per_day' : 'per_month') : ''
   const fmtMedian = (v: number) => {
     if (currency === 'DOP') {
+      if (rentalUnit) return `RD$${Math.round(v * dopRate).toLocaleString()}${rentalUnit}`
       return fmtDOP(Math.round(v * dopRate))
     }
+    if (rentalUnit) return `$${v.toLocaleString()} USD${rentalUnit}`
     return v >= 1_000_000_000_000 ? `$${(v / 1_000_000_000_000).toFixed(2)}T USD` :
       v >= 1_000_000_000 ? `$${(v / 1_000_000_000).toFixed(2)}B USD` :
-      v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(2)}M USD` : `$${Math.round(v / 1_000)}K USD`
+      v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(2)}M USD` : v >= 1_000 ? `$${Math.round(v / 1_000)}K USD` : `$${v.toLocaleString()} USD`
   }
 
   return (

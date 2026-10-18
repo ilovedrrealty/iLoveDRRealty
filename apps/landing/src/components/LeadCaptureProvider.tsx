@@ -5,7 +5,7 @@ import LeadCaptureModal from './LeadCaptureModal'
 
 const STORAGE_KEY = 'lead_modal_dismissed'
 const AUTO_DELAY_MS = 8000
-const EXCLUDED_PATHS = new Set(['/login', '/signup', '/forgot-password', '/reset-password', '/get-started'])
+const EXCLUDED_PATHS = new Set(['/login', '/signup', '/verify', '/forgot-password', '/reset-password', '/get-started', '/professionals'])
 
 /**
  * next.config sets `trailingSlash: true`, so usePathname() yields "/login/" —

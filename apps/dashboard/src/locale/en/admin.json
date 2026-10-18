@@ -12,6 +12,8 @@
     "assign": "Assign"
   },
   "pages": {
+    "professionals": { "title": "Professionals review", "sub": "Review applications and manage the public DR Professionals directory" },
+    "professional-profile": { "title": "My professional profile", "sub": "Manage your own business services profile" },
     "home":      { "title": "Platform overview",  "sub": "Listings, users, and platform activity"              },
     "users":     { "title": "User management",    "sub": "Manage users, roles, and upgrade requests"           },
     "listings":  { "title": "Listings",           "sub": "Manage listings requests"                            },

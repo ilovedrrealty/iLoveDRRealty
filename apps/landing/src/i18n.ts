@@ -37,6 +37,8 @@ import enGetStarted from './locales/en/get_started.json'
 import esGetStarted from './locales/es/get_started.json'
 import enRentals from './locales/en/rentals.json'
 import esRentals from './locales/es/rentals.json'
+import enProfessionals from './locales/en/professionals.json'
+import esProfessionals from './locales/es/professionals.json'
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -59,6 +61,7 @@ i18n.use(initReactI18next).init({
       lead_capture: enLeadCapture,
       rentals: enRentals,
       get_started: enGetStarted,
+      professionals: enProfessionals,
     },
     es: {
       common: esCommon,
@@ -79,11 +82,12 @@ i18n.use(initReactI18next).init({
       lead_capture: esLeadCapture,
       rentals: esRentals,
       get_started: esGetStarted,
+      professionals: esProfessionals,
     },
   },
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'landing', 'home_showcase', 'auth', 'footer', 'search', 'buying', 'selling', 'contact', 'blog', 'team', 'calculator', 'not_found', 'verify', 'property_detail', 'lead_capture', 'rentals', 'get_started'],
+  ns: ['common', 'landing', 'home_showcase', 'auth', 'footer', 'search', 'buying', 'selling', 'contact', 'blog', 'team', 'calculator', 'not_found', 'verify', 'property_detail', 'lead_capture', 'rentals', 'get_started', 'professionals'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })

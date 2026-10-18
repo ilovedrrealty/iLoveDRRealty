@@ -1,5 +1,6 @@
 'use client'
 import WebsiteResources from '../components/WebsiteResources'
+import ProfessionalResourceCard from '../components/ProfessionalResourceCard'
 import { useWebsiteImage } from '../components/WebsiteSettingsProvider'
 import { useNav } from '../hooks/useNav'
 import { useState } from 'react'
@@ -66,6 +67,7 @@ export default function Blog() {
         </div>
       </div>
 
+      <ProfessionalResourceCard />
       <WebsiteResources />
 
       {/* ── Featured article ── */}
