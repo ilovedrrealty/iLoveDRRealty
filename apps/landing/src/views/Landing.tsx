@@ -330,7 +330,7 @@ export default function Landing() {
                 <Trans t={t} i18nKey="founder.heading" components={{ em: <span className="text-coral italic" /> }} />
               </h2>
               <div className="font-sans text-[15.5px] text-ink2 leading-[1.7] mb-4.5">
-                {t('founder.para1')}
+                <Trans t={t} i18nKey="founder.para1" components={{ hotel: <a href="https://www.kaobahotel.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline underline-offset-4 hover:text-coral" /> }} />
               </div>
               <div className="font-sans text-[15.5px] text-ink2 leading-[1.7] mb-4.5">
                 <Trans t={t} i18nKey="founder.para2" components={{ strong: <strong className="text-ink" /> }} />
