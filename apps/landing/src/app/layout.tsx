@@ -7,6 +7,7 @@ import { Toaster } from 'react-hot-toast'
 import GoogleAuthProvider from '../components/GoogleAuthProvider'
 import LeadCaptureProvider from '../components/LeadCaptureProvider'
 import I18nProvider from '../components/I18nProvider'
+import WebsiteSettingsProvider from '../components/WebsiteSettingsProvider'
 import TrackingCapture from '../components/TrackingCapture'
 import { GTAG_ID } from '../lib/gtag'
 
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Script>
         <TrackingCapture />
         <I18nProvider>
+        <WebsiteSettingsProvider>
         <GoogleAuthProvider>
           <LeadCaptureProvider>
           <Navbar />
@@ -65,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           />
           </LeadCaptureProvider>
         </GoogleAuthProvider>
+        </WebsiteSettingsProvider>
         </I18nProvider>
         <Script src="//code.tidio.co/31bscsjpyxzsm0q0fxc65bs1aba5dsf1.js" strategy="lazyOnload" />
       </body>

@@ -8,11 +8,13 @@ import { AdminBookings } from './admin/Bookings'
 import { Analytics } from './admin/Analytics'
 import { AdminSettings } from './admin/Settings'
 import { BulkImportListings } from './admin/BulkImportListings'
+import { ResearchTools } from './shared/ResearchTools'
+import { WebsiteEditor } from './admin/WebsiteEditor'
 
 export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { go: (v: string, openId?: string) => void; view?: string; user: UserInfo; onUserUpdate: (updates: Partial<UserInfo>) => void }) {
   const { t } = useTranslation('admin')
 
-  const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import'].includes(view) ? view : 'home'
+  const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor'].includes(view) ? view : 'home'
   const title = t(`pages.${pageKey}.title`)
   const sub   = t(`pages.${pageKey}.sub`)
 
@@ -25,6 +27,8 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
       case 'analytics': return <Analytics />
       case 'settings': return <AdminSettings user={user} onUserUpdate={onUserUpdate} />
       case 'bulk-import': return <BulkImportListings />
+      case 'research': return <ResearchTools user={user} />
+      case 'website-editor': return <WebsiteEditor userId={user.id} />
       default:         return <AdminHome go={go} />
     }
   }

@@ -1,4 +1,6 @@
 'use client'
+import { useWebsiteSettings } from './WebsiteSettingsProvider'
+import { localizedValue } from '../../../../packages/website-settings/src'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useNav } from '../hooks/useNav'
@@ -116,7 +118,8 @@ function UserDropdown({ me, onClose }: { me: Me; onClose: () => void }) {
   )
 }
 
-function ResourcesNavigation({ active, mobile = false, onNavigate }: {
+function ResourcesNavigation({ active, mobile = false, onNavigate, label }: {
+  label?: string
   active: boolean
   mobile?: boolean
   onNavigate?: () => void
@@ -167,7 +170,7 @@ function ResourcesNavigation({ active, mobile = false, onNavigate }: {
           ? `w-full flex items-center justify-between gap-1 font-sans text-sm cursor-pointer border-none py-3 px-3 rounded-xl text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral ${active ? 'font-bold text-ink bg-paper2' : 'font-medium text-ink2 bg-transparent'}`
           : `flex items-center gap-1 font-sans text-3.25 cursor-pointer bg-transparent border-x-0 border-t-0 px-2.25 py-2 whitespace-nowrap transition-colors border-b-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral ${active ? 'font-bold text-ink border-coral' : 'font-medium text-ink2 border-transparent'}`}
       >
-        {t('nav.blog')}
+        {label || t('nav.blog')}
         <ChevronDown size={14} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
@@ -196,7 +199,11 @@ function ResourcesNavigation({ active, mobile = false, onNavigate }: {
 export default function Navbar() {
   const pathname = usePathname()
   const go = useNav()
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
+  const settings = useWebsiteSettings()
+  const navigation: [string, string][] = settings.navigation.length
+    ? settings.navigation.filter(item => item.enabled).map(item => [item.route, localizedValue(item.label, i18n.language)])
+    : NAV_ITEMS.map(([route]) => [route, t(`nav.${route}`)])
   const current = !pathname || pathname === '/' ? 'landing' : pathname.replace(/^\/|\/$/g, '')
   const [open, setOpen] = useState(false)
   const [me, setMe] = useState<Me | null>(null)
@@ -236,9 +243,9 @@ export default function Navbar() {
 
         {/* Desktop nav */}
         <nav aria-label={t('nav.main_navigation')} className="hidden min-[1280px]:flex flex-none gap-1 items-center">
-          {NAV_ITEMS.map(([key]) => {
+          {navigation.map(([key, label]) => {
             const active = current === key
-            if (key === 'blog') return <ResourcesNavigation key={key} active={active || current === 'calculator'} />
+            if (key === 'blog') return <ResourcesNavigation key={key} active={active || current === 'calculator'} label={label} />
             return (
               <Link
                 key={key}
@@ -250,7 +257,7 @@ export default function Navbar() {
                     : 'font-medium text-ink2 border-transparent'
                 }`}
               >
-                {t(`nav.${key}`)}
+                {label}
               </Link>
             )
           })}
@@ -324,9 +331,9 @@ export default function Navbar() {
       {/* Mobile drawer */}
       {open && (
         <nav id="main-mobile-navigation" aria-label={t('nav.main_navigation')} className="min-[1280px]:hidden bg-white border-t border-line px-4 py-3 flex flex-col max-h-[calc(100dvh-6rem)] overflow-y-auto">
-          {NAV_ITEMS.map(([key]) => {
+          {navigation.map(([key, label]) => {
             const active = current === key
-            if (key === 'blog') return <ResourcesNavigation key={key} active={active || current === 'calculator'} mobile onNavigate={() => setOpen(false)} />
+            if (key === 'blog') return <ResourcesNavigation key={key} active={active || current === 'calculator'} mobile label={label} onNavigate={() => setOpen(false)} />
             return (
               <Link
                 key={key}
@@ -337,7 +344,7 @@ export default function Navbar() {
                   active ? 'font-bold text-ink bg-paper2' : 'font-medium text-ink2'
                 }`}
               >
-                {t(`nav.${key}`)}
+                {label}
               </Link>
             )
           })}

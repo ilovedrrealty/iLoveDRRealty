@@ -1,5 +1,16 @@
 {
   "eyebrow": "Admin",
+  "agent_choices": {
+    "role_admin": "Admin",
+    "role_realtor": "Realtor",
+    "assigned_agent": "Assigned agent",
+    "unavailable_current": "Current assignee is unavailable for new assignments",
+    "assigned": "{{name}} assigned",
+    "unassigned": "Agent unassigned",
+    "assign_error": "Failed to assign agent",
+    "none": "— No agent assigned —",
+    "assign": "Assign"
+  },
   "pages": {
     "home":      { "title": "Platform overview",  "sub": "Listings, users, and platform activity"              },
     "users":     { "title": "User management",    "sub": "Manage users, roles, and upgrade requests"           },
@@ -8,7 +19,9 @@
     "bookings":  { "title": "Bookings",            "sub": "All guest bookings across every listing"             },
     "analytics": { "title": "Analytics",          "sub": "Platform metrics · May 2026"                         },
     "settings":  { "title": "Settings",           "sub": "Platform configuration"                              },
-    "bulk-import": { "title": "Bulk Import",      "sub": "Create listings in bulk from a partner CSV file"     }
+    "bulk-import": { "title": "Bulk Import",      "sub": "Create listings in bulk from a partner CSV file"     },
+    "research": { "title": "Realtor research tools", "sub": "Official services, property research and practical worksheets" },
+    "website-editor": { "title": "Website editor", "sub": "Manage website content, images, resources and gallery choices" }
   },
   "home_page": {
     "approval_queue":        "Approval queue",
@@ -125,7 +138,7 @@
     "header_contact":         "Contact",
     "header_property":        "Property",
     "header_message":         "Message",
-    "header_assign_realtor":  "Assign Realtor",
+    "header_assign_realtor":  "Assign agent",
     "header_status":          "Status",
     "no_results_title":  "No results for \"{{query}}\"",
     "no_results_sub":    "Try a different name, email, or property.",
@@ -139,7 +152,7 @@
     "section_timeline":     "Timeline",
     "section_property":     "Property",
     "section_message":      "Message",
-    "section_assign":       "Assign Realtor",
+    "section_assign":       "Assign agent",
     "section_status":       "Status",
     "label_account":        "Account",
     "label_email":          "Email",
@@ -149,9 +162,9 @@
     "label_property_agent": "Property Agent",
     "not_provided":         "Not provided",
     "saving":               "Saving…",
-    "search_realtors_ph":   "Search realtors…",
+    "search_realtors_ph":   "Search agents or admins…",
     "unassigned":           "Unassigned",
-    "no_realtors":          "No realtors found",
+    "no_realtors":          "No eligible agents found",
     "quick_assign":         "Quick assign",
     "open_ghl":             "Open in GHL",
     "close":                "Close",

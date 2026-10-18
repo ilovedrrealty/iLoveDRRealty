@@ -1,4 +1,6 @@
 'use client'
+import WebsiteResources from '../components/WebsiteResources'
+import { useWebsiteImage } from '../components/WebsiteSettingsProvider'
 import { useNav } from '../hooks/useNav'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +12,7 @@ import {
 import { CARDS_ES } from '../data/blogData.es'
 
 export default function Blog() {
+  const resourcesHero = useWebsiteImage('resources_hero', 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80&auto=format&fit=crop')
   const go = useNav()
   const { t, i18n } = useTranslation('blog')
   const isEs = i18n.language.startsWith('es')
@@ -32,7 +35,7 @@ export default function Blog() {
 
       {/* ── Hero ── */}
       <div className="relative overflow-hidden bg-ink"
-        style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        style={{ backgroundImage: `url(${resourcesHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0"
           style={{ background: 'linear-gradient(90deg, rgba(0,16,46,.95) 0%, rgba(0,16,46,.75) 55%, rgba(0,16,46,.5) 100%)' }} />
         <div className="relative max-w-310 mx-auto pt-14 sm:pt-17.5 px-4 sm:px-7 pb-12 sm:pb-15">
@@ -62,6 +65,8 @@ export default function Blog() {
           </div>
         </div>
       </div>
+
+      <WebsiteResources />
 
       {/* ── Featured article ── */}
       <div className="bg-paper pt-12 sm:pt-15 px-4 sm:px-7 pb-7.5">

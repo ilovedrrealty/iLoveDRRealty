@@ -1,0 +1,64 @@
+{
+  "eyebrow": "Realtor workspace",
+  "title": "Property research tools",
+  "intro": "Research a location, open the official parcel and title services, and keep your review organized. Use the area converter and checklist here without leaving the dashboard.",
+  "access": {
+    "title": "Realtor or Admin access required",
+    "description": "These tools are available to signed-in Realtors and Admins. If your session has expired, sign in again with your authorized account."
+  },
+  "site_tools": {
+    "title": "Your website tools",
+    "description": "Find listings on the property map or open the ROI calculator with your own assumptions.",
+    "city": "City or area",
+    "all_locations": "All locations",
+    "search": "Open property search and map",
+    "roi": "Open ROI calculator"
+  },
+  "area": {
+    "title": "Area converter",
+    "intro": "Convert between square metres, square feet and hectares.",
+    "amount": "Area",
+    "from": "Input unit",
+    "invalid": "Enter a finite area of zero or more.",
+    "formula": "Exact conversion factors: 1 ft² = 0.09290304 m²; 1 hectare = 10,000 m². Displayed results are rounded.",
+    "units": { "m2": "Square metres (m²)", "sqft": "Square feet (ft²)", "hectares": "Hectares (ha)" }
+  },
+  "directory": {
+    "title": "Official services and research links",
+    "distinction": "A parcel map helps locate cadastral geometry. Document verification checks an issued document. Current legal status requires the official certificate and appropriate professional review; a map or completed checklist does not establish clear title.",
+    "external_note": "Official services open in a new tab. Complete any sign-in, security check, document request or payment on the official service. Availability and requirements are set by each institution.",
+    "search": "Find a resource",
+    "search_placeholder": "Parcel, title, map…",
+    "category": "Category",
+    "all_categories": "All categories",
+    "loading": "Loading your configured tools…",
+    "unavailable": "Your configured tools could not be loaded. Only the built-in public official links are shown; retry by reopening this page.",
+    "count_one": "{{count}} resource",
+    "count_other": "{{count}} resources",
+    "configured_note": "Review this service's access conditions and current requirements on its website.",
+    "checked": "Source checked {{date}}",
+    "open": "Open service",
+    "source": "Official source",
+    "empty": "No matching resources. Try a different word or category."
+  },
+  "checklist": {
+    "title": "Property review checklist",
+    "intro": "Use this as a working reminder while reviewing a property. Mark the tasks you completed and add short follow-up notes.",
+    "temporary": "Checks and notes stay on this page only. They are not saved to your account or cloud and clear when you leave or refresh. Print a copy if you want to keep them. Avoid entering personal IDs or sensitive client details.",
+    "print": "Print summary",
+    "progress": "{{done}} of {{total}} tasks checked",
+    "note_label": "Optional notes — {{item}}",
+    "note_placeholder": "Next step or document to follow up…",
+    "limit": "Checking a task records your progress only; it does not verify a document or certify legal status.",
+    "items": {
+      "reference": "Confirm the property reference and map location",
+      "certificate": "Request a current legal-status certificate through the Registry",
+      "review": "Have the ownership and recorded entries reviewed by the appropriate professional",
+      "survey": "Compare the survey, cadastral description and boundaries",
+      "permits": "Check the intended use and applicable permits with the responsible authority",
+      "balances": "Review available tax, association and utility balance information",
+      "rules": "Review association rules, rental conditions and the proposed contract",
+      "followup": "Record the professional review and remaining follow-up tasks"
+    }
+  }
+}

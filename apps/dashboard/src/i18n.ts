@@ -16,6 +16,11 @@ import esRealtor  from './locale/es/realtor.json'
 import enSettings from './locale/en/settings.json'
 import esSettings from './locale/es/settings.json'
 
+import enWebsiteEditor from './locale/en/website_editor.json'
+import esWebsiteEditor from './locale/es/website_editor.json'
+import enResearchTools from './locale/en/research_tools.json'
+import esResearchTools from './locale/es/research_tools.json'
+
 const savedLang = (localStorage.getItem('ildr_lang') as 'en' | 'es') ?? 'en'
 
 i18n.use(initReactI18next).init({
@@ -28,6 +33,8 @@ i18n.use(initReactI18next).init({
       owner:    enOwner,
       realtor:  enRealtor,
       settings: enSettings,
+      website_editor: enWebsiteEditor,
+      research_tools: enResearchTools,
     },
     es: {
       nav:      esNav,
@@ -37,11 +44,13 @@ i18n.use(initReactI18next).init({
       owner:    esOwner,
       realtor:  esRealtor,
       settings: esSettings,
+      website_editor: esWebsiteEditor,
+      research_tools: esResearchTools,
     },
   },
   lng: savedLang,
   fallbackLng: 'en',
-  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings'],
+  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'research_tools'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })

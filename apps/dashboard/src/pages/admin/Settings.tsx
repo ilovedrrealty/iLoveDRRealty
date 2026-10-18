@@ -174,7 +174,8 @@ export function AdminSettings({ user, onUserUpdate }: { user: UserInfo; onUserUp
     if (phone && !isValidPhoneNumber(phone)) { toast.error('Enter a valid phone number'); return }
     setProfileSaving(true)
     try {
-      await updateProfile({ display_name: displayName.trim(), phone: phone || undefined })
+      await updateProfile({ display_name: displayName.trim(), phone: phone || undefined, calendly_url: user.calendly_url || undefined, paypal_email: user.paypal_email || undefined })
+      onUserUpdate({ display_name: displayName.trim(), phone: phone || undefined })
       toast.success('Profile saved')
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to save profile')

@@ -1,17 +1,20 @@
 'use client'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, ChevronDown } from 'lucide-react'
-import { POPULAR_AREAS, OTHER_PROVINCES, PRICE_MAX } from '../data/searchData'
+import { PRICE_MAX } from '../data/searchData'
+import { groupLocations, normalizeLocation, type SearchLocationOption } from '../data/searchLocations'
+import { useWebsiteSettings } from './WebsiteSettingsProvider'
+import { localizedValue } from '../../../../packages/website-settings/src'
 
 const TYPES = ['All', 'Villa', 'Apartment', 'Condo', 'Land', 'Commercial']
 
 function FilterGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="mb-5.5">
-      <div className="text-2.75 font-bold tracking-widest uppercase text-dim mb-2.5">{label}</div>
+    <fieldset className="min-w-0 border-0 p-0 mb-5.5">
+      <legend className="text-2.75 font-bold tracking-widest uppercase text-dim mb-2.5">{label}</legend>
       {children}
-    </div>
+    </fieldset>
   )
 }
 
@@ -22,8 +25,8 @@ function Chip({ active, onClick, children, tone }: {
   tone?: 'coral' | 'brand'
 }) {
   return (
-    <button onClick={onClick}
-      className={`font-sans text-[12.5px] cursor-pointer py-1.5 px-3 rounded-full mr-1.25 mb-1.25 border transition-all duration-150 ${
+    <button type="button" aria-pressed={active} onClick={onClick}
+      className={`font-sans text-[12.5px] cursor-pointer min-h-10 py-1.5 px-3 rounded-full mr-1.25 mb-1.25 border transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral ${
         active
           ? tone === 'coral' ? 'bg-coral text-paper border-coral font-bold'
           : tone === 'brand' ? 'bg-brand text-paper border-brand font-bold'
@@ -33,25 +36,43 @@ function Chip({ active, onClick, children, tone }: {
   )
 }
 
+function AreaCheckbox({ checked, partial, onChange, children }: {
+  checked: boolean
+  partial: boolean
+  onChange: () => void
+  children: ReactNode
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => { if (inputRef.current) inputRef.current.indeterminate = partial }, [partial])
+  return (
+    <label className="flex items-center gap-2 min-h-10 cursor-pointer text-xs text-ink2">
+      <input ref={inputRef} type="checkbox" checked={checked} onChange={onChange}
+        aria-checked={partial ? 'mixed' : checked} className="w-4 h-4 shrink-0 accent-coral" />
+      <span>{children}</span>
+    </label>
+  )
+}
+
 export interface FilterSidebarProps {
-  type: string
+  types: string[]
   purpose: 'sale' | 'rent' | 'investment'
+  rentalPeriod: 'month' | 'day'
   minPrice: number
   maxPrice: number
   beds: string
-  region: string | null
+  locations: string[]
+  locationOptions: SearchLocationOption[]
   minROI: number
   amenities: Set<string>
-  invFlags: Set<string>
-  setType: (v: string) => void
+  setTypes: (v: string[]) => void
   setPurpose: (v: 'sale' | 'rent' | 'investment') => void
+  setRentalPeriod: (v: 'month' | 'day') => void
   setMinPrice: (v: number) => void
   setMaxPrice: (v: number) => void
   setBeds: (v: string) => void
-  setRegion: (v: string | null) => void
+  setLocations: (v: string[]) => void
   setMinROI: (v: number) => void
   setAmenities: (v: Set<string>) => void
-  setInvFlags: (v: Set<string>) => void
   allAmenities: string[]
   chips: { label: string; clear: () => void }[]
   resultsCount: number
@@ -61,95 +82,211 @@ export interface FilterSidebarProps {
 }
 
 export function SearchFilterSidebar(props: FilterSidebarProps) {
-  const { t } = useTranslation('search')
+  const { t, i18n } = useTranslation('search')
+  const { searchAreas } = useWebsiteSettings()
   const {
-    type, purpose, minPrice, maxPrice, beds, region, minROI, amenities, invFlags,
-    setType, setPurpose, setMinPrice, setMaxPrice, setBeds, setRegion, setMinROI, setAmenities, setInvFlags,
-    allAmenities, chips, resultsCount, clearAll, mobile = false, onClose,
+    types, purpose, minPrice, maxPrice, beds, locations, locationOptions, minROI, amenities, rentalPeriod,
+    setTypes, setPurpose, setMinPrice, setMaxPrice, setBeds, setLocations, setMinROI, setAmenities,
+    allAmenities, chips, resultsCount, clearAll, setRentalPeriod, mobile = false, onClose,
   } = props
+  const id = useId()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+  const [locationSearch, setLocationSearch] = useState('')
+  const locationGroups = groupLocations([...locationOptions, ...locations.map(value => ({ value, count: 0 }))], searchAreas)
+  const groupLabel = (group: typeof locationGroups[number]) => group.label
+    ? localizedValue(group.label, i18n.language) : t(`locations.areas.${group.key}`)
+  const selected = new Set(locations.map(normalizeLocation))
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set([
+    'north_coast', 'east',
+    ...locationGroups.filter(group => group.options.some(option => selected.has(normalizeLocation(option.value)))).map(group => group.key),
+  ]))
+  const query = normalizeLocation(locationSearch)
+  const visibleGroups = locationGroups.map(group => ({
+    ...group,
+    visible: !query || normalizeLocation(groupLabel(group)).includes(query)
+      ? group.options : group.options.filter(option => normalizeLocation(option.value).includes(query)),
+  })).filter(group => group.visible.length > 0)
 
-  // Start expanded when the active region is one of the less common provinces,
-  // so a shared/bookmarked URL doesn't hide the chip that is currently applied.
-  const [showAllRegions, setShowAllRegions] = useState(() => !!region && OTHER_PROVINCES.includes(region))
+  useEffect(() => {
+    if (!mobile) return
+    const desktop = window.matchMedia('(min-width: 1024px)')
+    if (desktop.matches) { onCloseRef.current?.(); return }
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    closeRef.current?.focus()
+    const focusable = () => Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+    ) ?? []).filter(element => element.getClientRects().length > 0)
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onCloseRef.current?.()
+      } else if (event.key === 'Tab') {
+        const elements = focusable()
+        const first = elements[0]
+        const last = elements[elements.length - 1]
+        if (!first) { event.preventDefault(); return }
+        if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault(); last.focus()
+        } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault(); first.focus()
+        }
+      }
+    }
+    const onFocusIn = (event: FocusEvent) => {
+      if (event.target instanceof Node && !dialogRef.current?.contains(event.target)) closeRef.current?.focus()
+    }
+    const onViewportChange = (event: MediaQueryListEvent) => { if (event.matches) onCloseRef.current?.() }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
+    desktop.addEventListener('change', onViewportChange)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('focusin', onFocusIn)
+      desktop.removeEventListener('change', onViewportChange)
+      if (previouslyFocused?.isConnected) previouslyFocused.focus()
+    }
+  }, [mobile])
 
+  const toggleLocation = (value: string) => {
+    const key = normalizeLocation(value)
+    setLocations(selected.has(key)
+      ? locations.filter(location => normalizeLocation(location) !== key)
+      : [...locations, value])
+  }
+
+  const clearFilters = () => { setLocationSearch(''); clearAll() }
   const filterContent = (
     <>
       <FilterGroup label={t('sidebar.property_type')}>
-        {TYPES.map(tp => (
-          <Chip key={tp} active={type === tp} onClick={() => setType(tp)}>
-            {t(`sidebar.type_${tp.toLowerCase()}`)}
+        <p className="text-xs text-dim mt-0 mb-2">{t('sidebar.type_help')}</p>
+        {TYPES.map(type => (
+          <Chip key={type} active={type === 'All' ? types.length === 0 : types.includes(type)}
+            onClick={() => setTypes(type === 'All' ? [] : types.includes(type) ? types.filter(value => value !== type) : [...types, type])}>
+            {t(`sidebar.type_${type.toLowerCase()}`)}
           </Chip>
         ))}
       </FilterGroup>
 
       <FilterGroup label={t('sidebar.purpose')}>
-        {(['sale', 'rent', 'investment'] as const).map(k => (
-          <Chip key={k} active={purpose === k} onClick={() => setPurpose(k)} tone="coral">
-            {k === 'sale' ? t('sidebar.for_sale') : k === 'rent' ? t('sidebar.for_rent') : t('sidebar.investment')}
+        {(['sale', 'rent', 'investment'] as const).map(value => (
+          <Chip key={value} active={purpose === value} onClick={() => setPurpose(value)} tone="coral">
+            {value === 'sale' ? t('sidebar.for_sale') : value === 'rent' ? t('sidebar.for_rent') : t('sidebar.investment')}
           </Chip>
         ))}
       </FilterGroup>
 
+      {purpose === 'rent' && (
+        <FilterGroup label={t('sidebar.rental_period')}>
+          {(['month', 'day'] as const).map(period => (
+            <Chip key={period} active={rentalPeriod === period} onClick={() => setRentalPeriod(period)} tone="coral">
+              {t(`sidebar.rental_${period}`)}
+            </Chip>
+          ))}
+        </FilterGroup>
+      )}
+
       <FilterGroup label={t('sidebar.price_range')}>
-        <div className="flex items-center gap-2">
-          <input type="text" value={minPrice ? minPrice.toLocaleString() : ''} placeholder="Min"
-            onChange={e => setMinPrice(+e.target.value.replace(/[^0-9]/g, '') || 0)}
-            className="flex-1 min-w-0 py-2 px-2.5 rounded-md border border-line text-3.25 font-sans text-ink outline-none" />
-          <span className="text-dim text-xs">—</span>
-          <input type="text" value={maxPrice < PRICE_MAX ? maxPrice.toLocaleString() : ''} placeholder="Max"
-            onChange={e => setMaxPrice(+e.target.value.replace(/[^0-9]/g, '') || PRICE_MAX)}
-            className="flex-1 min-w-0 py-2 px-2.5 rounded-md border border-line text-3.25 font-sans text-ink outline-none" />
+        <p className="text-xs text-dim mb-2">{t(purpose === 'rent' ? `sidebar.budget_${rentalPeriod}` : 'sidebar.budget_sale')}</p>
+        <div className="flex items-end gap-2">
+          <label className="flex-1 min-w-0 text-xs text-dim">
+            <span className="block mb-1">{t('sidebar.min_price')}</span>
+            <input type="text" inputMode="numeric" value={minPrice ? minPrice.toLocaleString() : ''} placeholder={t('sidebar.min_price')}
+              onChange={event => setMinPrice(+event.target.value.replace(/[^0-9]/g, '') || 0)}
+              className="w-full min-w-0 py-2 px-2.5 rounded-md border border-line text-3.25 font-sans text-ink focus-visible:outline-coral" />
+          </label>
+          <label className="flex-1 min-w-0 text-xs text-dim">
+            <span className="block mb-1">{t('sidebar.max_price')}</span>
+            <input type="text" inputMode="numeric" value={maxPrice > 0 ? maxPrice.toLocaleString() : ''} placeholder={t('sidebar.max_price')}
+              onChange={event => setMaxPrice(+event.target.value.replace(/[^0-9]/g, '') || 0)}
+              className="w-full min-w-0 py-2 px-2.5 rounded-md border border-line text-3.25 font-sans text-ink focus-visible:outline-coral" />
+          </label>
         </div>
-        <input type="range" min={0} max={PRICE_MAX} step={50_000} value={maxPrice}
-          onChange={e => setMaxPrice(+e.target.value)}
-          className="w-full mt-2 accent-coral" />
+        <input type="range" aria-label={t('sidebar.max_price')} min={0} max={PRICE_MAX} step={50_000} value={Math.min(maxPrice || PRICE_MAX, PRICE_MAX)}
+          onChange={event => setMaxPrice(+event.target.value === PRICE_MAX ? 0 : +event.target.value)} className="w-full mt-2 accent-coral" />
+        <p className="text-[11px] text-dim leading-relaxed my-2">{t('sidebar.exchange_note')}</p>
         <div className="flex justify-between text-[10.5px] text-dim">
-          <span>$0</span><span>$3M+</span>
+          <span>{t('sidebar.price_zero')}</span><span>{t('sidebar.price_top')}</span>
         </div>
       </FilterGroup>
 
       <FilterGroup label={t('sidebar.bedrooms')}>
-        {['any', '1', '2', '3', '4', '5'].map(v => (
-          <Chip key={v} active={beds === v} onClick={() => setBeds(v)}>
-            {v === 'any' ? t('sidebar.any') : `${v}+`}
+        {['any', '1', '2', '3', '4', '5'].map(value => (
+          <Chip key={value} active={beds === value} onClick={() => setBeds(value)}>
+            {value === 'any' ? t('sidebar.any') : t('sidebar.bedroom_min', { count: Number(value) })}
           </Chip>
         ))}
       </FilterGroup>
 
-      <FilterGroup label={t('sidebar.region')}>
-        {POPULAR_AREAS.map(r => {
-          const key = r === 'Samaná' ? 'Las Terrenas' : r
-          return (
-            <Chip key={r} active={region === key} onClick={() => setRegion(region === key ? null : key)} tone="coral">
-              {r}
-            </Chip>
-          )
-        })}
-        {showAllRegions &&
-          OTHER_PROVINCES.map(r => (
-            <Chip key={r} active={region === r} onClick={() => setRegion(region === r ? null : r)} tone="coral">
-              {r}
-            </Chip>
-          ))}
-        <button onClick={() => setShowAllRegions(v => !v)}
-          className="flex items-center gap-1 mt-1 bg-transparent border-none p-0 cursor-pointer font-sans text-[12.5px] font-semibold text-dim hover:text-ink transition-colors">
-          {showAllRegions ? t('sidebar.fewer_regions') : t('sidebar.more_regions')}
-          <ChevronDown size={13} className={`transition-transform ${showAllRegions ? 'rotate-180' : ''}`} />
-        </button>
+      <FilterGroup label={t('locations.heading')}>
+        <p id={`${id}-location-help`} className="text-xs text-dim mt-0 mb-2 leading-relaxed">{t('locations.help')}</p>
+        <label htmlFor={`${id}-location-search`} className="block text-xs font-semibold text-ink2 mb-1">{t('locations.search_label')}</label>
+        <input id={`${id}-location-search`} type="search" value={locationSearch} autoComplete="off"
+          aria-describedby={`${id}-location-help`} placeholder={t('locations.search_placeholder')}
+          onChange={event => setLocationSearch(event.target.value)}
+          className="w-full min-w-0 rounded-md border border-line py-2.5 px-2.5 text-3.25 text-ink font-sans focus-visible:outline-coral" />
+        {locations.length > 0 && (
+          <div className="flex justify-between items-center gap-2 text-xs my-2">
+            <span className="text-dim">{t('locations.selected', { count: locations.length })}</span>
+            <button type="button" onClick={() => setLocations([])} className="min-h-10 bg-transparent border-0 text-coral font-semibold cursor-pointer">{t('locations.clear')}</button>
+          </div>
+        )}
+        <div className="mt-2 space-y-2">
+          {visibleGroups.map(group => {
+            const selectedCount = group.options.filter(option => selected.has(normalizeLocation(option.value))).length
+            const checked = selectedCount === group.options.length
+            const isExpanded = !!query || expanded.has(group.key)
+            return (
+              <div key={group.key} className="min-w-0 border border-line-soft rounded-lg px-2.5">
+                <button type="button" aria-expanded={isExpanded} aria-controls={`${id}-area-${group.key}`}
+                  onClick={() => setExpanded(previous => {
+                    const next = new Set(previous)
+                    next.has(group.key) ? next.delete(group.key) : next.add(group.key)
+                    return next
+                  })}
+                  className="flex items-center justify-between gap-2 min-h-11 w-full text-left font-semibold text-3.25 text-ink bg-transparent border-0 p-0 cursor-pointer">
+                  <span>{groupLabel(group)}</span>
+                  <ChevronDown size={15} aria-hidden="true" className={`shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+                <AreaCheckbox checked={checked} partial={selectedCount > 0 && !checked} onChange={() => {
+                  const groupKeys = new Set(group.options.map(option => normalizeLocation(option.value)))
+                  setLocations(checked ? locations.filter(value => !groupKeys.has(normalizeLocation(value)))
+                    : [...locations.filter(value => !groupKeys.has(normalizeLocation(value))), ...group.options.map(option => option.value)])
+                  setExpanded(previous => new Set(previous).add(group.key))
+                }}>
+                      {t('locations.select_area', { area: groupLabel(group) })}
+                </AreaCheckbox>
+                <div id={`${id}-area-${group.key}`} hidden={!isExpanded} className="pb-2 border-t border-line-soft">
+                  {group.visible.map(option => (
+                    <label key={option.value} className="flex items-center gap-2 min-h-10 py-1 text-[12.5px] text-ink2 cursor-pointer">
+                      <input type="checkbox" checked={selected.has(normalizeLocation(option.value))} onChange={() => toggleLocation(option.value)}
+                        className="w-4 h-4 shrink-0 accent-coral" />
+                      <span className="break-words min-w-0">{option.value}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+          {visibleGroups.length === 0 && <p role="status" className="text-xs text-dim">{t('locations.no_matches')}</p>}
+        </div>
       </FilterGroup>
 
       <FilterGroup label={t('sidebar.amenities')}>
+        <p className="text-xs text-dim mt-0 mb-2">{t('sidebar.amenities_help')}</p>
         <div className="grid grid-cols-2 gap-x-2.5 gap-y-1.5">
-          {allAmenities.map(a => {
-            const checked = amenities.has(a)
+          {allAmenities.map(amenity => {
+            const checked = amenities.has(amenity)
             return (
-              <label key={a} className="flex items-center gap-1.75 text-[12.5px] text-ink2 cursor-pointer py-0.75">
+              <label key={amenity} className="flex items-center gap-1.75 min-h-10 text-[12.5px] text-ink2 cursor-pointer py-0.75">
                 <input type="checkbox" checked={checked} onChange={() => {
-                  const n = new Set(amenities)
-                  checked ? n.delete(a) : n.add(a)
-                  setAmenities(n)
+                  const next = new Set(amenities)
+                  checked ? next.delete(amenity) : next.add(amenity)
+                  setAmenities(next)
                 }} className="accent-coral w-3.5 h-3.5 shrink-0" />
-                <span>{a}</span>
+                <span>{t(`amenities.${amenity}`, { defaultValue: amenity })}</span>
               </label>
             )
           })}
@@ -157,13 +294,10 @@ export function SearchFilterSidebar(props: FilterSidebarProps) {
       </FilterGroup>
 
       <FilterGroup label={t('sidebar.investment_filters')}>
-        {([
-          ['roi6', 'ROI 6%+',  () => setMinROI(minROI === 6 ? 0 : 6),  minROI === 6],
-          ['roi8', 'ROI 8%+',  () => setMinROI(minROI === 8 ? 0 : 8),  minROI === 8],
-          ['conf', 'CONFOTUR', () => { const n = new Set(invFlags); n.has('CONFOTUR') ? n.delete('CONFOTUR') : n.add('CONFOTUR'); setInvFlags(n) }, invFlags.has('CONFOTUR')],
-          ['mgd',  t('sidebar.managed'), () => { const n = new Set(invFlags); n.has('Managed') ? n.delete('Managed') : n.add('Managed'); setInvFlags(n) }, invFlags.has('Managed')],
-        ] as [string, string, () => void, boolean][]).map(([k, label, onClick, active]) => (
-          <Chip key={k} active={active} onClick={onClick} tone="brand">{label}</Chip>
+        {[6, 8].map(value => (
+          <Chip key={value} active={minROI === value} onClick={() => setMinROI(minROI === value ? 0 : value)} tone="brand">
+            {t('chip_roi', { roi: value })}
+          </Chip>
         ))}
       </FilterGroup>
     </>
@@ -171,29 +305,26 @@ export function SearchFilterSidebar(props: FilterSidebarProps) {
 
   if (mobile) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-paper lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-line-soft shrink-0">
-          <div className="font-sans text-4.5 font-bold text-ink">{t('filters')}</div>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`}
+        className="fixed inset-0 z-50 flex flex-col bg-paper lg:hidden h-dvh">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-line-soft shrink-0">
+          <h2 id={`${id}-title`} className="font-sans text-4.5 font-bold text-ink m-0">{t('filters')}</h2>
           <div className="flex items-center gap-2">
-            {chips.length > 0 && (
-              <span className="text-2.5 font-bold py-0.75 px-2 rounded-full bg-coral text-white">{chips.length}</span>
-            )}
-            <button onClick={onClose}
-              className="p-1.5 bg-transparent border-none cursor-pointer text-ink flex items-center">
-              <X size={20} />
+            {chips.length > 0 && <span className="text-2.5 font-bold py-0.75 px-2 rounded-full bg-coral text-white">{chips.length}</span>}
+            <button ref={closeRef} type="button" onClick={onClose} aria-label={t('sidebar.close')}
+              className="min-w-11 min-h-11 p-1.5 bg-transparent border-none cursor-pointer text-ink flex items-center justify-center">
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
-          {filterContent}
-        </div>
-        <div className="shrink-0 px-4 py-4 border-t border-line-soft flex flex-col gap-2.5">
-          <button onClick={clearAll}
-            className="w-full py-2.5 px-3.5 rounded-lg bg-transparent text-dim border border-line font-sans text-3.25 font-semibold cursor-pointer">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-4 pb-4">{filterContent}</div>
+        <div className="shrink-0 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-line-soft flex flex-col gap-2.5">
+          <button type="button" onClick={clearFilters}
+            className="w-full min-h-11 py-2.5 px-3.5 rounded-lg bg-transparent text-dim border border-line font-sans text-3.25 font-semibold cursor-pointer">
             {t('sidebar.clear_all_filters')}
           </button>
-          <button onClick={onClose}
-            className="w-full py-2.5 px-3.5 rounded-lg bg-coral text-white border-none font-sans text-3.25 font-semibold cursor-pointer">
+          <button type="button" onClick={onClose}
+            className="w-full min-h-11 py-2.5 px-3.5 rounded-lg bg-coral text-white border-none font-sans text-3.25 font-semibold cursor-pointer">
             {t('sidebar.show_results', { count: resultsCount })}
           </button>
         </div>
@@ -202,25 +333,17 @@ export function SearchFilterSidebar(props: FilterSidebarProps) {
   }
 
   return (
-    <aside className="hidden lg:block self-start sticky top-22.5 max-h-[calc(100vh-110px)] overflow-y-auto bg-paper border border-line-soft rounded-2xl p-4.5">
+    <aside aria-labelledby={`${id}-title`} className="hidden lg:block self-start sticky top-22.5 max-h-[calc(100vh-110px)] overflow-y-auto bg-paper border border-line-soft rounded-2xl p-4.5">
       <div className="flex items-center justify-between mb-4.5 pb-3 border-b border-line-soft">
-        <div className="font-sans text-4.5 font-bold text-ink">{t('filters')}</div>
-        {chips.length > 0 &&
-          <span className="text-2.5 font-bold py-0.75 px-2 rounded-full bg-coral text-white">
-            {chips.length}
-          </span>}
+        <h2 id={`${id}-title`} className="font-sans text-4.5 font-bold text-ink m-0">{t('filters')}</h2>
+        {chips.length > 0 && <span className="text-2.5 font-bold py-0.75 px-2 rounded-full bg-coral text-white">{chips.length}</span>}
       </div>
       {filterContent}
-      <div className="flex flex-col gap-2 mt-4.5 pt-3.5 border-t border-line-soft">
-        <button onClick={clearAll}
-          className="w-full py-2.5 px-3.5 rounded-lg bg-transparent text-dim border border-line font-sans text-3.25 font-semibold cursor-pointer">
-          {t('sidebar.clear_all_filters')}
-        </button>
-        <button
-          className="w-full py-2.5 px-3.5 rounded-lg bg-coral text-white border-none font-sans text-3.25 font-semibold cursor-pointer">
-          {t('sidebar.apply', { count: resultsCount })}
-        </button>
-      </div>
+      <p className="text-xs text-dim">{t('sidebar.updates_automatically')}</p>
+      <button type="button" onClick={clearFilters}
+        className="w-full min-h-11 mt-2 py-2.5 px-3.5 rounded-lg bg-transparent text-dim border border-line font-sans text-3.25 font-semibold cursor-pointer">
+        {t('sidebar.clear_all_filters')}
+      </button>
     </aside>
   )
 }

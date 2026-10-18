@@ -4,6 +4,7 @@ import { ArrowLeft, ImagePlus, X, Star, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { submitListing, updateListing, uploadListingImages, type Listing } from '../../api/listings'
 import { RichTextEditor } from '../../components/RichTextEditor'
+import { adminListingAction } from '../../lib/listingPublication'
 
 const REGIONS = [
   'Cap Cana', 'Cabarete', 'Jarabacoa', 'Las Terrenas', 'Punta Cana',
@@ -101,8 +102,9 @@ function listingToForm(l: Listing): typeof EMPTY_FORM {
   }
 }
 
-export function OwnerSubmitListing({ go, tone, listing, onBack }: { go: (v: string) => void; tone: string; listing?: Listing; onBack?: () => void }) {
+export function OwnerSubmitListing({ go, tone, listing, onBack, isAdmin = false }: { go: (v: string) => void; tone: string; listing?: Listing; onBack?: () => void; isAdmin?: boolean }) {
   const isEdit = Boolean(listing)
+  const adminAction = adminListingAction(isEdit, listing?.status)
   const { t } = useTranslation('owner')
   const [form, setForm] = useState(listing ? listingToForm(listing) : EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
@@ -236,11 +238,11 @@ export function OwnerSubmitListing({ go, tone, listing, onBack }: { go: (v: stri
       }
       if (isEdit && listing) {
         await updateListing(listing.id, payload)
-        toast.success(t('submit_listing_page.toast_edit_success'))
+        toast.success(t(isAdmin ? adminAction.toast : 'submit_listing_page.toast_edit_success'))
         goBack()
       } else {
         await submitListing(payload)
-        toast.success(t('submit_listing_page.toast_success'))
+        toast.success(t(isAdmin ? adminAction.toast : 'submit_listing_page.toast_success'))
         setForm(EMPTY_FORM); setUploadedUrls([]); setThumbnail(null)
         go('listings')
       }
@@ -275,7 +277,7 @@ export function OwnerSubmitListing({ go, tone, listing, onBack }: { go: (v: stri
           <circle cx="7.5" cy="7.5" r="7" stroke={tone} strokeWidth="1.3" />
           <path d="M7.5 5v3.5M7.5 10.5v.5" stroke={tone} strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <span>{t('submit_listing_page.notice_pending')}</span>
+        <span>{t(isAdmin ? adminAction.note : 'submit_listing_page.notice_pending')}</span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -647,7 +649,7 @@ export function OwnerSubmitListing({ go, tone, listing, onBack }: { go: (v: stri
             style={{ background: tone }}>
             {submitting
               ? (isEdit ? t('submit_listing_page.saving') : t('submit_listing_page.submitting'))
-              : (isEdit ? t('submit_listing_page.save_btn') : t('submit_listing_page.submit_btn'))}
+              : t(isAdmin ? adminAction.button : isEdit ? 'submit_listing_page.save_btn' : 'submit_listing_page.submit_btn')}
           </button>
         </div>
       </form>

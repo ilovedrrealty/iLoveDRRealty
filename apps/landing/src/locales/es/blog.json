@@ -45,12 +45,30 @@
     "sub": "Desde la búsqueda hasta las llaves en mano — una guía clara y honesta para comprar propiedad en la RD como extranjero.",
     "step_label": "PASO",
     "steps": [
-      { "title": "Buscar y descubrir", "desc": "Define tus objetivos, presupuesto y regiones." },
-      { "title": "Hacer una oferta", "desc": "Carta de intención, negociación, términos acordados." },
-      { "title": "Debida diligencia", "desc": "Búsqueda de título, peritajes, ~30 días." },
-      { "title": "Promesa de venta", "desc": "Promesa de venta, 10–30% en custodia." },
-      { "title": "Financiamiento", "desc": "Banco local, internacional o todo en efectivo." },
-      { "title": "Cierre y transferencia", "desc": "Notario, 3% impuesto de transferencia, título registrado." }
+      {
+        "title": "Buscar y descubrir",
+        "desc": "Define tus objetivos, presupuesto y regiones."
+      },
+      {
+        "title": "Hacer una oferta",
+        "desc": "Carta de intención, negociación, términos acordados."
+      },
+      {
+        "title": "Debida diligencia",
+        "desc": "Búsqueda de título, peritajes, ~30 días."
+      },
+      {
+        "title": "Promesa de venta",
+        "desc": "Promesa de venta, 10–30% en custodia."
+      },
+      {
+        "title": "Financiamiento",
+        "desc": "Banco local, internacional o todo en efectivo."
+      },
+      {
+        "title": "Cierre y transferencia",
+        "desc": "Notario, 3% impuesto de transferencia, título registrado."
+      }
     ]
   },
   "faq": {
@@ -58,12 +76,30 @@
     "heading": "Tus preguntas, respondidas",
     "sub": "Las seis preguntas que más nos hacen los compradores, con respuestas honestas de nuestro equipo.",
     "items": [
-      { "q": "¿Pueden los extranjeros poseer propiedades en la República Dominicana?", "a": "Sí. Los extranjeros tienen los mismos derechos de propiedad que los ciudadanos dominicanos y pueden ser dueños de tierras e inmuebles a su nombre — sin necesidad de residencia." },
-      { "q": "¿Qué impuestos pago al comprar una propiedad?", "a": "Un impuesto único de transferencia del 3% (Impuesto de Transferencia) al cierre, más un impuesto anual del 1% sobre el patrimonio inmobiliario (IPI) sobre el valor superior al umbral de exención. Los proyectos aprobados por CONFOTUR pueden eliminarlos." },
-      { "q": "¿Cuánto tiempo lleva el proceso de compra?", "a": "Generalmente de 30 a 60 días desde la oferta aceptada hasta la transferencia de título, siendo la debida diligencia la fase más larga con aproximadamente 30 días." },
-      { "q": "¿Necesito un abogado dominicano?", "a": "Muy recomendable. Un abogado inmobiliario local gestiona las búsquedas de título, la debida diligencia y el cierre — protegiéndote de disputas limítrofes y defectos de título." },
-      { "q": "¿Qué es la residencia y la necesito para comprar una propiedad?", "a": "NO necesitas residencia para comprar. La residencia (incluida la vía de inversor/jubilado de la Ley 171-07) ofrece beneficios fiscales y el derecho a vivir en la RD a largo plazo, pero la propiedad está abierta a todos los extranjeros." },
-      { "q": "¿Puedo alquilar mi propiedad cuando no la uso?", "a": "Sí. Los alquileres a corto y largo plazo son comunes, y las herramientas de reserva de I♥DR Realty permiten a los propietarios gestionar disponibilidad y pagos directamente." }
+      {
+        "q": "¿Pueden los extranjeros poseer propiedades en la República Dominicana?",
+        "a": "Sí. Los extranjeros tienen los mismos derechos de propiedad que los ciudadanos dominicanos y pueden ser dueños de tierras e inmuebles a su nombre — sin necesidad de residencia."
+      },
+      {
+        "q": "¿Qué impuestos pago al comprar una propiedad?",
+        "a": "Un impuesto único de transferencia del 3% (Impuesto de Transferencia) al cierre, más un impuesto anual del 1% sobre el patrimonio inmobiliario (IPI) sobre el valor superior al umbral de exención. Los proyectos aprobados por CONFOTUR pueden eliminarlos."
+      },
+      {
+        "q": "¿Cuánto tiempo lleva el proceso de compra?",
+        "a": "Generalmente de 30 a 60 días desde la oferta aceptada hasta la transferencia de título, siendo la debida diligencia la fase más larga con aproximadamente 30 días."
+      },
+      {
+        "q": "¿Necesito un abogado dominicano?",
+        "a": "Muy recomendable. Un abogado inmobiliario local gestiona las búsquedas de título, la debida diligencia y el cierre — protegiéndote de disputas limítrofes y defectos de título."
+      },
+      {
+        "q": "¿Qué es la residencia y la necesito para comprar una propiedad?",
+        "a": "NO necesitas residencia para comprar. La residencia (incluida la vía de inversor/jubilado de la Ley 171-07) ofrece beneficios fiscales y el derecho a vivir en la RD a largo plazo, pero la propiedad está abierta a todos los extranjeros."
+      },
+      {
+        "q": "¿Puedo alquilar mi propiedad cuando no la uso?",
+        "a": "Sí. Los alquileres a corto y largo plazo son comunes, y las herramientas de reserva de I♥DR Realty permiten a los propietarios gestionar disponibilidad y pagos directamente."
+      }
     ]
   },
   "newsletter": {
@@ -88,5 +124,7 @@
     "cta_title": "¿Listo para dar el paso?",
     "cta_body": "Nuestro equipo bilingüe ayuda a compradores e inversores a navegar el mercado de la RD.",
     "cta_button": "Contáctanos →"
-  }
+  },
+  "custom_resources": "Recursos y servicios inmobiliarios",
+  "open_resource": "Abrir recurso"
 }

@@ -5,7 +5,17 @@
     "explore": "Explore",
     "explore_label": "Explore {{title}}",
     "image_note": "Images may include project renderings or community imagery; see each original listing. Category photos are illustrative. Listings and prices are subject to change.",
-    "items": { "new": "Just Listed", "rent": "Rentals", "villa": "Villas", "apartment": "Apartments", "condo": "Condos & Townhouses", "land": "Land", "commercial": "Commercial", "punta-cana": "Punta Cana", "sosua": "Sosúa" }
+    "items": {
+      "new": "Just Listed",
+      "rent": "Rentals",
+      "villa": "Villas",
+      "apartment": "Apartments",
+      "condo": "Condos & Townhouses",
+      "land": "Land",
+      "commercial": "Commercial",
+      "punta-cana": "Punta Cana",
+      "sosua": "Sosúa"
+    }
   },
   "gallery": {
     "eyebrow": "A closer look",
@@ -44,6 +54,10 @@
     "beds": "{{count}} beds",
     "baths": "{{count}} baths",
     "area": "{{area}} sq ft",
-    "disclaimer": "Listings and prices are subject to change. Confirm current availability and terms with our team."
+    "disclaimer": "Listings and prices are subject to change. Confirm current availability and terms with our team.",
+    "native_currency": "{{currency}} · asking price",
+    "native_month": "{{currency}} · per month",
+    "native_day": "{{currency}} · per night",
+    "both": "For sale & rent"
   }
 }

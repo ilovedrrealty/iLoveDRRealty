@@ -170,6 +170,18 @@
     "toast_error":          "Something went wrong. Please try again."
   },
   "submit_listing_page": {
+    "admin_publish_note": "You are signed in as an Admin. Publishing makes this listing active and visible on the website immediately.",
+    "admin_live_edit_note": "You are signed in as an Admin. Saved changes update this live listing immediately, without a review queue.",
+    "admin_edit_note": "You are signed in as an Admin. Changes save directly and the listing keeps its current status.",
+    "admin_rejected_edit_note": "You are signed in as an Admin. Saving this rejected listing returns it to Pending Approval. Use Admin Listings to approve it when ready.",
+    "admin_resubmit_btn": "Save and return to review",
+    "admin_toast_resubmitted": "Changes saved. Listing returned to Pending Approval.",
+    "admin_publish_btn": "Publish listing now",
+    "admin_save_live_btn": "Save live changes",
+    "admin_save_btn": "Save changes directly",
+    "admin_toast_published": "Listing published and active.",
+    "admin_toast_live_saved": "Live listing updated.",
+    "admin_toast_saved": "Changes saved. Listing status unchanged.",
     "back":                 "Back to listings",
     "notice_pending":       "Your listing will be reviewed by our team before going live. You'll be notified once it's approved.",
     "sec_basic_info":       "Property Info",

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { logout } from './api/auth'
 import DashLayout from './layouts/DashLayout'
@@ -19,6 +19,7 @@ const ROLE_MAP: Record<string, Role> = {
 
 function DashboardPage() {
   const { view = 'home' } = useParams<{ view?: string }>()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { data: user, loading, error, updateUser } = useCurrentUser()
 
@@ -35,22 +36,36 @@ function DashboardPage() {
   )
   if (!user) return null
 
-  const role: Role = ROLE_MAP[user.role] ?? 'Buyer'
+  const accountRole: Role = ROLE_MAP[user.role] ?? 'Buyer'
+  const workspaceParam = searchParams.get('workspace') ?? ''
+  const requestedWorkspace = ['admin', 'buyer', 'owner', 'realtor'].includes(workspaceParam) ? ROLE_MAP[workspaceParam] : undefined
+  // A workspace selects screens, never the user's identity or server permissions.
+  const role: Role = accountRole === 'Admin' ? requestedWorkspace ?? 'Admin' : accountRole
   const go = (v: string, openId?: string) => {
+    if (!window.dispatchEvent(new Event('ildr:before-dashboard-navigation', { cancelable: true }))) return
     const path = v === 'home' ? '/' : `/${v}`
-    navigate(openId ? `${path}?openId=${encodeURIComponent(openId)}` : path)
+    const params = new URLSearchParams()
+    if (accountRole === 'Admin') params.set('workspace', role.toLowerCase())
+    if (openId) params.set('openId', openId)
+    navigate(`${path}${params.size ? `?${params}` : ''}`)
+  }
+  const changeWorkspace = (next: Role) => {
+    if (accountRole !== 'Admin' || !['Admin', 'Buyer', 'Owner', 'Realtor'].includes(next)) return
+    if (!window.dispatchEvent(new Event('ildr:before-dashboard-navigation', { cancelable: true }))) return
+    navigate(`/?workspace=${next.toLowerCase()}`)
   }
 
   const handleLogout = async () => {
+    if (!window.dispatchEvent(new Event('ildr:before-dashboard-navigation', { cancelable: true }))) return
     await logout()
     window.location.href = `${LANDING_URL}/login`
   }
 
   return (
-    <DashLayout role={role} view={view} go={go} onLogout={handleLogout} user={user}>
+    <DashLayout role={role} view={view} go={go} onLogout={handleLogout} user={user} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined}>
       {role === 'Admin'
         ? <AdminDash go={go} view={view} user={user} onUserUpdate={updateUser} />
-        : <Dashboard go={go} view={view} role={role} user={user} onUserUpdate={updateUser} />
+        : <Dashboard key={role} go={go} view={view} role={role} user={user} onUserUpdate={updateUser} />
       }
     </DashLayout>
   )

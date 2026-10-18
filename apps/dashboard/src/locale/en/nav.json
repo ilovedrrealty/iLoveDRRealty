@@ -21,6 +21,17 @@
   "realtor-bookings": "Guest Bookings",
   "portal_eyebrow": "{{role}} Portal · {{name}}",
   "lang_toggle": "Language",
+  "workspace_label": "Open workspace",
+  "workspace_identity": "You stay signed in as yourself with Admin access. Personal views show your own activity.",
+  "return_admin": "Return to Admin tools",
+  "research": "Realtor tools",
+  "website-editor": "Website editor",
+  "workspace_options": {
+    "Admin": "Admin tools",
+    "Buyer": "Buyer tools",
+    "Owner": "Seller / owner tools",
+    "Realtor": "Realtor tools"
+  },
   "roles": {
     "Buyer": "Buyer",
     "Owner": "Owner",

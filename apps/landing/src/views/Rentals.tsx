@@ -1,10 +1,12 @@
 'use client'
+import { useWebsiteImage } from '../components/WebsiteSettingsProvider'
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { ArrowRight, MapPin, KeyRound, MessageCircle, Check } from 'lucide-react'
 import { HERO_BG } from '../data/buyingData'
 
 export default function Rentals() {
+  const rentalHero = useWebsiteImage('rentals_hero', HERO_BG)
   const { t } = useTranslation('rentals')
   const browse = '/search/?purpose=rent'
   const button = 'inline-flex items-center justify-center gap-2 rounded-full bg-coral px-6 py-3 text-sm font-semibold text-white'
@@ -14,7 +16,7 @@ export default function Rentals() {
     { Icon: KeyRound, title: t('copy_5'), text: t('copy_6') },
   ]
   return <main className="bg-paper">
-    <section className="relative overflow-hidden bg-ink" style={{ backgroundImage: `url(${HERO_BG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <section className="relative overflow-hidden bg-ink" style={{ backgroundImage: `url(${rentalHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(0,16,46,.95), rgba(0,16,46,.65))' }} />
       <div className="relative mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
         <p className="text-xs font-bold uppercase tracking-[.2em] text-gold">{t('copy_7')}</p>

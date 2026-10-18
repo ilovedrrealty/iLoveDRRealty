@@ -1,4 +1,5 @@
 'use client'
+import { useWebsiteImage } from '../components/WebsiteSettingsProvider'
 import { useNav } from '../hooks/useNav'
 import { useTranslation } from 'react-i18next'
 import { ArrowRight, Check } from 'lucide-react'
@@ -14,6 +15,8 @@ function Icon({ d, size = 22 }: { d: string | string[]; size?: number }) {
 }
 
 export default function Buying() {
+  const buyingHero = useWebsiteImage('buying_hero', HERO_BG)
+  const buyingStory = useWebsiteImage('buying_story', 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80&auto=format&fit=crop')
   const go = useNav()
   const { t } = useTranslation('buying')
   const pillarsText = t('pillars.items', { returnObjects: true }) as Array<{ title: string; desc: string }>
@@ -25,7 +28,7 @@ export default function Buying() {
 
       {/* ── Hero ── */}
       <div className="relative overflow-hidden bg-ink"
-        style={{ backgroundImage: `url(${HERO_BG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        style={{ backgroundImage: `url(${buyingHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0"
           style={{ background: 'linear-gradient(90deg, rgba(0,16,46,.95) 0%, rgba(0,16,46,.7) 50%, rgba(0,16,46,.4) 100%)' }} />
         <div className="relative z-10 max-w-310 w-full mx-auto px-4 sm:px-7 py-16 sm:py-20 lg:py-0 lg:min-h-115 lg:flex lg:items-center">
@@ -144,7 +147,7 @@ export default function Buying() {
       <div className="bg-paper2 py-14 sm:py-17.5 px-4 sm:px-7">
         <div className="max-w-275 mx-auto grid grid-cols-1 lg:grid-cols-[.9fr_1.1fr] gap-10 lg:gap-14 items-center">
           <div className="rounded-2xl overflow-hidden h-64 sm:h-80 lg:h-90 shadow-[rgba(0,16,46,.3)_0px_30px_60px_-30px]"
-            style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            style={{ backgroundImage: `url(${buyingStory})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
           <div>
             <div className="font-sans text-2.75 font-bold tracking-[.22em] uppercase text-brand">{t('trust.eyebrow')}</div>
             <h2 className="font-sans text-8 font-semibold text-ink mt-2.5 tracking-[-.01em] mb-5">

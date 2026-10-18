@@ -11,9 +11,9 @@ import {
   getAdminListingEdits, approveListingEdit, rejectListingEdit,
   getAdminDealRequests, approveDealRequest, rejectDealRequest,
   clearListingDeal, setListingDeal, assignAdminListing,
-  getAdminActivityLog, getAdminUsers, getAdminStats,
+  getAdminActivityLog, getAdminAgents, getAdminStats,
 } from '../../api/admin'
-import type { AdminListing, AdminListingEdit, ActivityEntry, DealRequest, AdminUser, AdminStats } from '../../api/admin'
+import type { AdminListing, AdminListingEdit, ActivityEntry, DealRequest, AdminAgent, AdminStats } from '../../api/admin'
 import { AdminEditListing, AdminSubmitListing } from './SubmitListing'
 import { TONE, FilterPills } from './shared'
 import { ListingDetailPanel } from '../../components/admin/ListingDetailPanel'
@@ -267,7 +267,7 @@ export function AdminListings() {
   const [page,         setPage]         = useState(1)
   const [edits,        setEdits]        = useState<AdminListingEdit[]>([])
   const [dealRequests, setDealRequests] = useState<DealRequest[]>([])
-  const [realtors,     setRealtors]     = useState<AdminUser[]>([])
+  const [realtors,     setRealtors]     = useState<AdminAgent[]>([])
   const [filter,       setFilter]       = useState<string>('All')
   const [coFilter,     setCoFilter]     = useState<string>('All')
   const [query,        setQuery]        = useState('')
@@ -308,14 +308,13 @@ export function AdminListings() {
   async function load() {
     setLoading(true)
     setActLoading(true)
-    const [pendingRes, dealRes, editData, dealData, act, realtorUsers, adminUsers, statsRes] = await Promise.all([
+    const [pendingRes, dealRes, editData, dealData, act, agentChoices, statsRes] = await Promise.all([
       getAdminListings({ status: 'pending_approval', pageSize: 200 }),
       getAdminListings({ isDeal: true, pageSize: 50 }),
       getAdminListingEdits(),
       getAdminDealRequests('pending'),
       getAdminActivityLog(25),
-      getAdminUsers('realtor'),
-      getAdminUsers('admin'),
+      getAdminAgents(),
       getAdminStats(),
     ])
     setPendingItems(pendingRes.items)
@@ -323,7 +322,7 @@ export function AdminListings() {
     setEdits(editData)
     setDealRequests(dealData)
     setActivity(act)
-    setRealtors([...realtorUsers, ...adminUsers])
+    setRealtors(agentChoices)
     setStats(statsRes)
     setLoading(false)
     setActLoading(false)

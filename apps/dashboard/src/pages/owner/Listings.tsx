@@ -441,6 +441,7 @@ export function OwnerListings({ tone, go, user }: { tone: string; go: (v: string
         go={go}
         tone={tone}
         listing={editTarget}
+        isAdmin={user.role === 'admin'}
         onBack={() => { setEditTarget(null); load() }}
       />
     )

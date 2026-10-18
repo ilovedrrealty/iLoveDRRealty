@@ -71,6 +71,7 @@ type SettingsTab = 'profile' | 'security' | 'notifications' | 'connections'
 
 export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { user: UserInfo; role: Role; tone: string; onUserUpdate: (updates: Partial<UserInfo>) => void; initialTab?: SettingsTab }) {
   const { t } = useTranslation('settings')
+  const accountRoleLabel = user.role === 'admin' ? t('profile.admin_role') : role
 
   const [tab, setTab] = useState<SettingsTab>(initialTab ?? 'profile')
 
@@ -426,7 +427,7 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
             </div>
             <div>
               <div className="font-sans text-[17px] font-bold text-ink">{displayName || user.display_name}</div>
-              <div className="text-[12.5px] text-dim mt-0.5">{role} · {user.email}</div>
+              <div className="text-[12.5px] text-dim mt-0.5">{accountRoleLabel} · {user.email}</div>
               {user.user_code != null && (
                 <div className="font-mono text-[11px] text-dim/60 mt-0.5 tracking-widest">
                   #{String(user.user_code).padStart(7, '0')}
@@ -477,7 +478,7 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-dim uppercase tracking-wide mb-1.5">{t('profile.role')}</label>
-                <input className={inp} value={role} disabled />
+                <input className={inp} value={accountRoleLabel} disabled />
               </div>
             </div>
             <div className="flex justify-end pt-1">

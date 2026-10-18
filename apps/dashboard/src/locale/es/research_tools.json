@@ -1,0 +1,64 @@
+{
+  "eyebrow": "Espacio del agente",
+  "title": "Herramientas de investigación inmobiliaria",
+  "intro": "Investiga una ubicación, abre los servicios oficiales de parcelas y títulos y organiza tu revisión. Usa el conversor de áreas y la lista de tareas sin salir del panel.",
+  "access": {
+    "title": "Se requiere acceso de Agente o Admin",
+    "description": "Estas herramientas están disponibles para agentes y administradores con sesión iniciada. Si tu sesión venció, vuelve a entrar con tu cuenta autorizada."
+  },
+  "site_tools": {
+    "title": "Herramientas de tu sitio web",
+    "description": "Encuentra propiedades en el mapa o abre la calculadora ROI con tus propios supuestos.",
+    "city": "Ciudad o zona",
+    "all_locations": "Todas las ubicaciones",
+    "search": "Abrir búsqueda y mapa de propiedades",
+    "roi": "Abrir calculadora ROI"
+  },
+  "area": {
+    "title": "Conversor de áreas",
+    "intro": "Convierte entre metros cuadrados, pies cuadrados y hectáreas.",
+    "amount": "Área",
+    "from": "Unidad de entrada",
+    "invalid": "Introduce un área finita igual o mayor que cero.",
+    "formula": "Factores exactos: 1 pie² = 0.09290304 m²; 1 hectárea = 10,000 m². Los resultados mostrados están redondeados.",
+    "units": { "m2": "Metros cuadrados (m²)", "sqft": "Pies cuadrados (pies²)", "hectares": "Hectáreas (ha)" }
+  },
+  "directory": {
+    "title": "Servicios oficiales y enlaces de investigación",
+    "distinction": "El mapa ayuda a localizar geometría catastral. La verificación comprueba un documento emitido. El estado jurídico actual requiere certificación oficial y revisión profesional pertinente; ni el mapa ni una lista completada acreditan un título libre de cargas.",
+    "external_note": "Los servicios oficiales se abren en otra pestaña. Completa el acceso, la verificación de seguridad, las solicitudes y los pagos en el servicio oficial. Cada institución establece su disponibilidad y requisitos.",
+    "search": "Buscar recurso",
+    "search_placeholder": "Parcela, título, mapa…",
+    "category": "Categoría",
+    "all_categories": "Todas las categorías",
+    "loading": "Cargando tus herramientas configuradas…",
+    "unavailable": "No se pudo cargar tu configuración. Solo se muestran los enlaces públicos oficiales incluidos; vuelve a abrir esta página para reintentar.",
+    "count_one": "{{count}} recurso",
+    "count_other": "{{count}} recursos",
+    "configured_note": "Consulta las condiciones de acceso y los requisitos vigentes en el sitio de este servicio.",
+    "checked": "Fuente revisada el {{date}}",
+    "open": "Abrir servicio",
+    "source": "Fuente oficial",
+    "empty": "No hay recursos que coincidan. Prueba otra palabra o categoría."
+  },
+  "checklist": {
+    "title": "Lista de revisión del inmueble",
+    "intro": "Úsala como recordatorio de trabajo al revisar una propiedad. Marca las tareas completadas y añade notas breves de seguimiento.",
+    "temporary": "Las marcas y notas permanecen solo en esta página. No se guardan en tu cuenta ni en la nube y se borran al salir o actualizar. Imprime una copia si deseas conservarlas. Evita introducir identificaciones personales o datos sensibles de clientes.",
+    "print": "Imprimir resumen",
+    "progress": "{{done}} de {{total}} tareas marcadas",
+    "note_label": "Notas opcionales — {{item}}",
+    "note_placeholder": "Próximo paso o documento pendiente…",
+    "limit": "Marcar una tarea solo registra tu progreso; no verifica documentos ni certifica el estado jurídico.",
+    "items": {
+      "reference": "Confirmar la referencia del inmueble y su ubicación en el mapa",
+      "certificate": "Solicitar una certificación vigente del estado jurídico en el Registro",
+      "review": "Solicitar al profesional pertinente la revisión de titularidad y asientos registrales",
+      "survey": "Comparar el plano de mensura, la descripción catastral y los linderos",
+      "permits": "Consultar el uso previsto y los permisos aplicables con la autoridad responsable",
+      "balances": "Revisar la información disponible de balances fiscales, de asociación y servicios",
+      "rules": "Revisar las normas de la asociación, condiciones de alquiler y contrato propuesto",
+      "followup": "Registrar la revisión profesional y las tareas de seguimiento pendientes"
+    }
+  }
+}

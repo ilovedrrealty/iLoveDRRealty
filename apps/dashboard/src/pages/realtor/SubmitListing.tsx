@@ -9,6 +9,7 @@ import { submitListing, updateListing, uploadListingImages, uploadAgreementPdf, 
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { REGION_GROUPS } from '../../data/regions'
 import { PAYPAL_ENABLED } from '../../lib/features'
+import { adminListingAction } from '../../lib/listingPublication'
 
 const TYPES    = ['villa', 'apartment', 'condo', 'land', 'commercial']
 const FEATURES = [
@@ -1129,7 +1130,8 @@ const EMPTY_FORM = {
   co_listing_agreement_url: '',
 }
 
-export function SubmitListing({ go, tone }: { go: (v: string) => void; tone: string }) {
+export function SubmitListing({ go, tone, isAdmin = false }: { go: (v: string) => void; tone: string; isAdmin?: boolean }) {
+  const adminAction = adminListingAction(false)
   const { t } = useTranslation('realtor')
   const [form, setForm] = useState(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
@@ -1284,7 +1286,7 @@ export function SubmitListing({ go, tone }: { go: (v: string) => void; tone: str
         co_listing_agreement_accepted: form.co_listing_enabled && form.co_listing_agreement_accepted ? form.co_listing_agreement_accepted : false,
         co_listing_agreement_url: form.co_listing_enabled && form.co_listing_agreement_url ? form.co_listing_agreement_url : undefined,
       })
-      toast.success(t('submit_listing_page.toast_success'))
+      toast.success(t(isAdmin ? adminAction.toast : 'submit_listing_page.toast_success'))
       setForm(EMPTY_FORM); setUploadedUrls([]); setThumbnail(null)
       go('listings')
     } catch {
@@ -1304,6 +1306,7 @@ export function SubmitListing({ go, tone }: { go: (v: string) => void; tone: str
         <ArrowLeft size={14} /> {t('submit_listing_page.back_to_listings')}
       </button>
 
+      {isAdmin && <p className="rounded-xl border border-line px-4 py-3 mb-5 text-[13px] text-ink2 leading-relaxed">{t(adminAction.note)}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormSections
           form={form} set={set} toggleFeature={toggleFeature} tone={tone}
@@ -1337,7 +1340,7 @@ export function SubmitListing({ go, tone }: { go: (v: string) => void; tone: str
             className="px-8 py-3 rounded-full text-white text-[13.5px] font-bold border-0 cursor-pointer disabled:opacity-50 transition-opacity"
             style={{ background: tone }}
           >
-            {submitting ? t('submit_listing_page.submitting') : t('submit_listing_page.submit_btn')}
+            {submitting ? t('submit_listing_page.submitting') : t(isAdmin ? adminAction.button : 'submit_listing_page.submit_btn')}
           </button>
         </div>
       </form>
@@ -1347,13 +1350,15 @@ export function SubmitListing({ go, tone }: { go: (v: string) => void; tone: str
 
 // ── Edit listing ──────────────────────────────────────────────────────────────
 
-export function EditListing({ listing, tone, onBack, onSaved }: {
+export function EditListing({ listing, tone, onBack, onSaved, isAdmin = false }: {
   listing: Listing
   tone: string
   onBack: () => void
   onSaved: (updated: Listing) => void
+  isAdmin?: boolean
 }) {
   const { t } = useTranslation('realtor')
+  const adminAction = adminListingAction(true, listing.status)
   const [form, setFormState] = useState({
     title:               listing.title,
     type:                listing.type,
@@ -1555,7 +1560,7 @@ export function EditListing({ listing, tone, onBack, onSaved }: {
         co_listing_agreement_accepted: form.co_listing_enabled ? form.co_listing_agreement_accepted : false,
         co_listing_agreement_url: form.co_listing_enabled && form.co_listing_agreement_url ? form.co_listing_agreement_url : undefined,
       })
-      const msg = listing.status === 'rejected'
+      const msg = isAdmin ? t(adminAction.toast) : listing.status === 'rejected'
         ? t('submit_listing_page.toast_edit_rejected')
         : listing.status === 'active'
           ? t('submit_listing_page.toast_edit_active')
@@ -1583,14 +1588,14 @@ export function EditListing({ listing, tone, onBack, onSaved }: {
 
       <h2 className="text-[20px] font-bold text-ink mb-4">{t('submit_listing_page.edit_title')}</h2>
 
-      {isActive && (
+      {(isAdmin || isActive) && (
         <div className="mb-5 flex items-start gap-3 px-4 py-3.5 rounded-xl border text-[13px]"
           style={{ background: `${tone}0a`, borderColor: `${tone}40`, color: tone }}>
           <svg className="shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 15 15" fill="none">
             <circle cx="7.5" cy="7.5" r="7" stroke="currentColor" strokeWidth="1.3" />
             <path d="M7.5 5v3.5M7.5 10.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          <span>{t('submit_listing_page.live_warning')}</span>
+          <span>{t(isAdmin ? adminAction.note : 'submit_listing_page.live_warning')}</span>
         </div>
       )}
 
@@ -1627,7 +1632,7 @@ export function EditListing({ listing, tone, onBack, onSaved }: {
           >
             {submitting
               ? t('submit_listing_page.submitting')
-              : isActive
+              : isAdmin ? t(adminAction.button) : isActive
                 ? t('submit_listing_page.submit_changes_btn')
                 : listing.status === 'rejected'
                   ? t('submit_listing_page.save_resubmit_btn')

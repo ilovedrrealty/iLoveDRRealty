@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { AdminListing, AdminUser } from '../../api/admin'
+import type { AdminListing, AdminAgent } from '../../api/admin'
 import { assignAdminListing } from '../../api/admin'
 import { TONE } from '../../pages/admin/shared'
 import { ConfirmModal } from '../shared/ConfirmModal'
@@ -54,7 +54,7 @@ const STATUS_CHIP: Record<string, { bg: string; color: string; label: string }> 
 
 interface Props {
   listing: AdminListing
-  realtors: AdminUser[]
+  realtors: AdminAgent[]
   onClose: () => void
   onEdit: () => void
   onApprove: () => void
@@ -327,6 +327,7 @@ export function ListingDetailPanel({
               <RealtorCombobox
                 realtors={realtors}
                 currentId={listing.assigned_realtor_id}
+                currentLabel={listing.assigned_realtor_name}
                 onSelect={handleAssign}
                 saving={assignSaving}
               />

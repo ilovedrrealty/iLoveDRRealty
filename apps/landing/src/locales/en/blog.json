@@ -45,12 +45,30 @@
     "sub": "From browsing to keys in hand — a clear, honest guide to buying property in the DR as a foreigner.",
     "step_label": "STEP",
     "steps": [
-      { "title": "Search & discover", "desc": "Define your goals, budget, and regions." },
-      { "title": "Make an offer", "desc": "Letter of Intent, negotiation, agreed terms." },
-      { "title": "Due diligence", "desc": "Title search, surveys, ~30 days." },
-      { "title": "Promise of sale", "desc": "Promesa de venta, 10–30% in escrow." },
-      { "title": "Financing", "desc": "Local bank, international, or all-cash." },
-      { "title": "Closing & transfer", "desc": "Notary, 3% transfer tax, registered title." }
+      {
+        "title": "Search & discover",
+        "desc": "Define your goals, budget, and regions."
+      },
+      {
+        "title": "Make an offer",
+        "desc": "Letter of Intent, negotiation, agreed terms."
+      },
+      {
+        "title": "Due diligence",
+        "desc": "Title search, surveys, ~30 days."
+      },
+      {
+        "title": "Promise of sale",
+        "desc": "Promesa de venta, 10–30% in escrow."
+      },
+      {
+        "title": "Financing",
+        "desc": "Local bank, international, or all-cash."
+      },
+      {
+        "title": "Closing & transfer",
+        "desc": "Notary, 3% transfer tax, registered title."
+      }
     ]
   },
   "faq": {
@@ -58,12 +76,30 @@
     "heading": "Your questions, answered",
     "sub": "The six questions buyers ask us most, with honest answers from our team.",
     "items": [
-      { "q": "Can foreigners own property in the Dominican Republic?", "a": "Yes. Foreigners have the same property rights as Dominican citizens and can own land and real estate outright in their own name — no residency required." },
-      { "q": "What taxes do I pay when buying property?", "a": "A one-time 3% transfer tax (Impuesto de Transferencia) at closing, plus an annual 1% property tax (IPI) on value above the exemption threshold. CONFOTUR-approved projects can waive these." },
-      { "q": "How long does the buying process take?", "a": "Typically 30–60 days from accepted offer to title transfer, with due diligence being the longest phase at roughly 30 days." },
-      { "q": "Do I need a Dominican attorney?", "a": "Strongly recommended. A local real estate attorney handles title searches, due diligence, and the closing — protecting you from boundary disputes and title defects." },
-      { "q": "What is residency and do I need it to buy property?", "a": "You do NOT need residency to buy. Residency (including the Law 171-07 investor/retiree route) offers tax benefits and the right to live in the DR long-term, but ownership is open to all foreigners." },
-      { "q": "Can I rent out my property when I'm not using it?", "a": "Yes. Short- and long-term rentals are common, and I♥DR Realty's booking tools let owners manage availability and payments directly." }
+      {
+        "q": "Can foreigners own property in the Dominican Republic?",
+        "a": "Yes. Foreigners have the same property rights as Dominican citizens and can own land and real estate outright in their own name — no residency required."
+      },
+      {
+        "q": "What taxes do I pay when buying property?",
+        "a": "A one-time 3% transfer tax (Impuesto de Transferencia) at closing, plus an annual 1% property tax (IPI) on value above the exemption threshold. CONFOTUR-approved projects can waive these."
+      },
+      {
+        "q": "How long does the buying process take?",
+        "a": "Typically 30–60 days from accepted offer to title transfer, with due diligence being the longest phase at roughly 30 days."
+      },
+      {
+        "q": "Do I need a Dominican attorney?",
+        "a": "Strongly recommended. A local real estate attorney handles title searches, due diligence, and the closing — protecting you from boundary disputes and title defects."
+      },
+      {
+        "q": "What is residency and do I need it to buy property?",
+        "a": "You do NOT need residency to buy. Residency (including the Law 171-07 investor/retiree route) offers tax benefits and the right to live in the DR long-term, but ownership is open to all foreigners."
+      },
+      {
+        "q": "Can I rent out my property when I'm not using it?",
+        "a": "Yes. Short- and long-term rentals are common, and I♥DR Realty's booking tools let owners manage availability and payments directly."
+      }
     ]
   },
   "newsletter": {
@@ -88,5 +124,7 @@
     "cta_title": "Ready to make your move?",
     "cta_body": "Our bilingual team helps buyers and investors navigate the DR market.",
     "cta_button": "Get in touch →"
-  }
+  },
+  "custom_resources": "Property resources & services",
+  "open_resource": "Open resource"
 }

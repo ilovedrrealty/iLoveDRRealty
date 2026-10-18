@@ -1,4 +1,5 @@
 'use client'
+import { useWebsiteImage } from '../components/WebsiteSettingsProvider'
 import { useNav } from '../hooks/useNav'
 import { useState, useEffect } from 'react'
 import { Search, Check, ArrowRight, MapPin } from 'lucide-react'
@@ -127,6 +128,9 @@ function PropertyCard({ prop, go, currency, dopRate }: { prop: Listing; go: GoFn
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Landing() {
+  const homeHero = useWebsiteImage('home_hero', 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1920&q=80&auto=format&fit=crop')
+  const foundersPhoto = useWebsiteImage('founders', 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80&auto=format&fit=crop')
+  const foundersSecondary = useWebsiteImage('founders_secondary', 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80&auto=format&fit=crop')
   const go = useNav()
   const { t } = useTranslation('landing')
   const [hLoc,    setHLoc]    = useState('')
@@ -170,7 +174,7 @@ export default function Landing() {
 
       {/* ─────────────────────── Hero ─────────────────────── */}
       <div className="relative overflow-hidden bg-ink"
-        style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1920&q=80&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        style={{ backgroundImage: `url(${homeHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0 bg-ink/80" />
         <div className="relative z-10 max-w-335 w-full mx-auto px-4 sm:px-7 py-16 sm:py-20 lg:py-0 lg:min-h-145 lg:flex lg:items-center">
           <div className="w-full grid gap-10 items-center grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
@@ -305,14 +309,14 @@ export default function Landing() {
             {/* Left — photo collage */}
             <div className="relative">
               <div className="relative rounded-2xl overflow-hidden shadow-[0_30px_70px_-30px_rgba(0,16,46,.4)]">
-                <div className="h-64 sm:h-80 lg:h-95 bg-ink" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                <div className="h-64 sm:h-80 lg:h-95 bg-ink" style={{ backgroundImage: `url(${foundersPhoto})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
                 <div className="absolute inset-0 bg-ink/40" />
                 <div className="absolute bottom-4 left-4.5 text-paper text-2.75 tracking-[.12em] uppercase font-bold font-sans">
                   {t('founder.photo_caption')}
                 </div>
               </div>
               <div className="hidden lg:block absolute -bottom-5 -right-5 w-50 h-37.5 rounded-xl overflow-hidden border-4 border-paper shadow-[0_20px_40px_-20px_rgba(0,16,46,.4)]">
-                <div className="h-37.5 bg-ink" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                <div className="h-37.5 bg-ink" style={{ backgroundImage: `url(${foundersSecondary})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
               </div>
               <div className="absolute top-4 left-4 lg:-left-5 bg-coral text-white px-4 py-2.5 rounded-full text-3 font-bold shadow-[0_12px_30px_-12px_rgba(225,15,31,.5)] flex items-center gap-2 font-sans">
                 <span className="text-3.5">🇺🇸 → 🇩🇴</span> {t('founder.badge')}
@@ -326,7 +330,7 @@ export default function Landing() {
                 <Trans t={t} i18nKey="founder.heading" components={{ em: <span className="text-coral italic" /> }} />
               </h2>
               <div className="font-sans text-[15.5px] text-ink2 leading-[1.7] mb-4.5">
-                {t('founder.para1')}
+                <Trans t={t} i18nKey="founder.para1" components={{ hotel: <a href="https://www.kaobahotel.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline underline-offset-4 hover:text-coral" /> }} />
               </div>
               <div className="font-sans text-[15.5px] text-ink2 leading-[1.7] mb-4.5">
                 <Trans t={t} i18nKey="founder.para2" components={{ strong: <strong className="text-ink" /> }} />
