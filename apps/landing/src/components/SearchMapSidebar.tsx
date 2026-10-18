@@ -47,17 +47,17 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   maxZoom: 14,
 }
 
-function fmtPill(l: { price: number; purpose: string }, currency: 'USD' | 'DOP', dopRate: number): string {
+function fmtPill(l: { price: number; purpose: string }, currency: 'USD' | 'DOP', dopRate: number, unit: string): string {
   if (currency === 'DOP') {
     const dp = Math.round(l.price * dopRate)
-    return l.purpose === 'rent' ? `RD$${dp.toLocaleString()}/mo` : fmtDOP(dp)
+    return l.purpose === 'rent' ? `RD$${dp.toLocaleString()}${unit}` : fmtDOP(dp)
   }
   const p = l.price
   const short =
     p >= 1_000_000_000_000 ? `$${(p / 1_000_000_000_000).toFixed(2)}T USD` :
     p >= 1_000_000_000 ? `$${(p / 1_000_000_000).toFixed(2)}B USD` :
     p >= 1_000_000 ? `$${(p / 1_000_000).toFixed(1)}M USD` : `$${Math.round(p / 1_000)}K USD`
-  return l.purpose === 'rent' ? `$${Math.round(p).toLocaleString()} USD/mo` : short
+  return l.purpose === 'rent' ? `$${Math.round(p).toLocaleString()} USD${unit}` : short
 }
 
 function Insight({ label, value, tone }: { label: string; value: string | number; tone?: 'brand' }) {
@@ -69,7 +69,7 @@ function Insight({ label, value, tone }: { label: string; value: string | number
   )
 }
 
-function LiveMap({ apiKey, hovered, listings, onSelect, currency, dopRate, region }: {
+function LiveMap({ apiKey, hovered, listings, onSelect, currency, dopRate, region, locations }: {
   apiKey: string
   hovered: Listing | null
   listings: Listing[]
@@ -77,25 +77,29 @@ function LiveMap({ apiKey, hovered, listings, onSelect, currency, dopRate, regio
   currency: 'USD' | 'DOP'
   dopRate: number
   region: string | null
+  locations: string[]
 }) {
   const { t } = useTranslation('search')
   const { isLoaded } = useJsApiLoader({ id: 'google-map-script', googleMapsApiKey: apiKey })
   const mapRef = useRef<google.maps.Map | null>(null)
 
-  useEffect(() => {
-    if (!mapRef.current) return
-    if (region) {
-      const match = coordsForRegion(region)
-      if (match) {
-        mapRef.current.panTo(match)
-        // Provinces cover far more ground than a resort town, so sit back a bit.
-        mapRef.current.setZoom(isLocality(region) ? 12 : 10)
-      }
+  const selectedLocations = JSON.stringify(locations)
+  function positionMap(map: google.maps.Map) {
+    const points = locations.map(coordsForRegion).filter((point): point is { lat: number; lng: number } => point !== null)
+    if (points.length > 1) {
+      const bounds = new google.maps.LatLngBounds()
+      points.forEach(point => bounds.extend(point))
+      map.fitBounds(bounds, 24)
+    } else if (points.length === 1) {
+      map.panTo(points[0])
+      map.setZoom(isLocality(locations[0]) ? 12 : 10)
     } else {
-      mapRef.current.panTo(MAP_CENTER)
-      mapRef.current.setZoom(8)
+      map.panTo(MAP_CENTER)
+      map.setZoom(8)
     }
-  }, [region])
+  }
+  useEffect(() => { if (mapRef.current) positionMap(mapRef.current) }, [selectedLocations])
+
 
   if (!isLoaded) {
     return (
@@ -111,7 +115,7 @@ function LiveMap({ apiKey, hovered, listings, onSelect, currency, dopRate, regio
       center={MAP_CENTER}
       zoom={8}
       options={MAP_OPTIONS}
-      onLoad={map => { mapRef.current = map }}
+      onLoad={map => { mapRef.current = map; positionMap(map) }}
     >
       {listings.map(l => {
         const pos   = coordsForListing(l)
@@ -147,7 +151,7 @@ function LiveMap({ apiKey, hovered, listings, onSelect, currency, dopRate, regio
                   transition: 'all 0.15s ease',
                 }}
               >
-                {fmtPill(l, currency, dopRate)}
+                {l.price > 0 ? fmtPill(l, currency, dopRate, t(l.pricePeriod === 'day' ? 'per_day' : 'per_month')) : t('request_price')}
               </div>
             </div>
           </OverlayView>
@@ -157,7 +161,7 @@ function LiveMap({ apiKey, hovered, listings, onSelect, currency, dopRate, regio
   )
 }
 
-function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChange, region }: {
+function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChange, region, locations }: {
   hovered: Listing | null
   listings: Listing[]
   onSelect: (l: Listing) => void
@@ -165,6 +169,7 @@ function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChang
   dopRate: number
   onCurrencyChange: (c: 'USD' | 'DOP') => void
   region: string | null
+  locations: string[]
 }) {
   const { t } = useTranslation('search')
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
@@ -201,10 +206,11 @@ function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChang
             currency={currency}
             dopRate={dopRate}
             region={region}
+            locations={locations}
           />
         ) : (
           <div style={{ width: '100%', height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#00102e', color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
-            Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env
+            {t('map.unavailable')}
           </div>
         )}
       </div>
@@ -220,13 +226,15 @@ export interface MapSidebarProps {
   currency: 'USD' | 'DOP'
   dopRate: number
   region: string | null
+  locations: string[]
+  locationLabel: string | null
   onCurrencyChange: (c: 'USD' | 'DOP') => void
   onSelect: (l: Listing) => void
   go: (path: string) => void
 }
 
 export function SearchMapSidebar({
-  hovered, results, alsoLike, insights, currency, dopRate, region,
+  hovered, results, alsoLike, insights, currency, dopRate, region, locations, locationLabel,
   onCurrencyChange, onSelect, go,
 }: MapSidebarProps) {
   const { t } = useTranslation('search')
@@ -250,13 +258,14 @@ export function SearchMapSidebar({
         dopRate={dopRate}
         onCurrencyChange={onCurrencyChange}
         region={region}
+        locations={locations}
       />
 
       {insights && (
         <div className="bg-paper border border-line-soft rounded-2xl py-4 px-4.5">
           <div className="text-2.75 font-bold tracking-[.12em] uppercase text-dim mb-1">{t('map.snapshot')}</div>
           <div className="text-[11.5px] text-dim mb-2.5 leading-[1.45]">
-            {region ? t('map.snapshot_in', { region }) : t('map.snapshot_across')}
+            {locationLabel ? t('map.snapshot_in', { region: locationLabel }) : t('map.snapshot_across')}
           </div>
           <Insight label={t('map.insight_count')} value={insights.count} />
           {insights.median   > 0 && <Insight label={t('map.insight_median')} value={fmtMedian(insights.median)} />}
@@ -277,9 +286,11 @@ export function SearchMapSidebar({
                 <div className="text-xs font-semibold text-ink truncate">{titleCase(l.title)}</div>
                 <div className="text-[10.5px] text-dim mt-px truncate">{l.region}</div>
                 <div className="text-[11.5px] font-bold text-coral mt-0.5">
-                  {currency === 'DOP'
-                    ? fmtDOP(Math.round(l.price * dopRate))
-                    : `${fmt(l.price)} USD`}
+                  {l.price > 0 ? l.purpose === 'rent'
+                    ? `${currency === 'DOP' ? 'RD$' : '$'}${(currency === 'DOP' ? Math.round(l.price * dopRate) : l.price).toLocaleString()} ${currency}`
+                    : currency === 'DOP' ? fmtDOP(Math.round(l.price * dopRate))
+                    : `${fmt(l.price)} USD` : t('request_price')}
+                  {l.price > 0 && l.purpose === 'rent' && t(l.pricePeriod === 'day' ? 'per_day' : 'per_month')}
                 </div>
               </div>
             </button>

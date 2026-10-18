@@ -229,6 +229,18 @@ export async function getAdminUsers(role?: string, status?: string): Promise<Adm
   return res.data
 }
 
+export interface AdminAgent {
+  id: string
+  display_name: string | null
+  email: string
+  role: 'admin' | 'realtor'
+}
+
+/** Assignment choices only. User management keeps its strict role filters. */
+export async function getAdminAgents(): Promise<AdminAgent[]> {
+  return (await client.get<AdminAgent[]>('/admin/agents')).data
+}
+
 export async function suspendUser(id: string): Promise<void> {
   await client.put(`/admin/users/${id}/suspend`)
 }

@@ -350,6 +350,7 @@ export function RealtorListings({ tone, go, user }: { tone: string; go: (v: stri
       <EditListing
         listing={selected}
         tone={tone}
+        isAdmin={user?.role === 'admin'}
         onBack={() => setEditing(false)}
         onSaved={updated => {
           setMainItems(prev => prev.map(l => l.id === updated.id ? updated : l))

@@ -178,6 +178,18 @@
     "embed_sub":        "Powered by {{provider}}"
   },
   "submit_listing_page": {
+    "admin_publish_note": "Has iniciado sesión como Admin. Al publicar, esta propiedad se activa y aparece de inmediato en el sitio web.",
+    "admin_live_edit_note": "Has iniciado sesión como Admin. Los cambios guardados actualizan esta propiedad en vivo de inmediato, sin pasar por revisión.",
+    "admin_edit_note": "Has iniciado sesión como Admin. Los cambios se guardan directamente y la propiedad conserva su estado actual.",
+    "admin_rejected_edit_note": "Has iniciado sesión como Admin. Al guardar esta propiedad rechazada, vuelve a Pendiente de aprobación. Usa Propiedades de Admin para aprobarla cuando esté lista.",
+    "admin_resubmit_btn": "Guardar y devolver a revisión",
+    "admin_toast_resubmitted": "Cambios guardados. La propiedad volvió a Pendiente de aprobación.",
+    "admin_publish_btn": "Publicar propiedad ahora",
+    "admin_save_live_btn": "Guardar cambios en vivo",
+    "admin_save_btn": "Guardar cambios directamente",
+    "admin_toast_published": "Propiedad publicada y activa.",
+    "admin_toast_live_saved": "Propiedad en vivo actualizada.",
+    "admin_toast_saved": "Cambios guardados. El estado de la propiedad no cambió.",
     "back_to_listings":    "Volver a propiedades",
     "back_to_listing":     "Volver a la propiedad",
     "edit_title":          "Editar propiedad",

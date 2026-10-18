@@ -6,14 +6,15 @@ import { useTranslation } from 'react-i18next'
 import { fetchDealListings, fetchListingById, type ApiListingDetail } from '../api/listings'
 import { HOMEPAGE_PROPERTIES, homepagePhoto } from '../data/homepageHighlights'
 import styles from './HomepageHighlights.module.css'
+import { useWebsiteSettings } from './WebsiteSettingsProvider'
 
 type GalleryProperty = ApiListingDetail & { photo: string }
 type GalleryData = { properties: GalleryProperty[]; deals: boolean; loaded: boolean }
 
-function galleryProperty(property: ApiListingDetail, preferredPhoto?: string): GalleryProperty | null {
-  if (property.status !== 'active' || !property.images?.length) return null
+function galleryProperty(property: ApiListingDetail, preferredPhoto?: string, override?: string): GalleryProperty | null {
+  if (property.status !== 'active' || (!property.images?.length && !override)) return null
   const approvedPhoto = preferredPhoto && homepagePhoto(preferredPhoto)
-  const photo = approvedPhoto && property.images.includes(approvedPhoto) ? approvedPhoto : property.images[0]
+  const photo = override || (approvedPhoto && property.images.includes(approvedPhoto) ? approvedPhoto : property.images[0])
   return { ...property, photo }
 }
 
@@ -25,6 +26,7 @@ function positionFor(index: number, current: number, count: number) {
 
 export default function PropertyGallery() {
   const { t, i18n } = useTranslation('home_showcase')
+  const configuration = JSON.stringify(useWebsiteSettings().gallery)
   const [data, setData] = useState<GalleryData>({ properties: [], deals: false, loaded: false })
   const [current, setCurrent] = useState(0)
   const [userPaused, setUserPaused] = useState(false)
@@ -45,28 +47,37 @@ export default function PropertyGallery() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      // Fetch the real deals feed and the approved fallback collection in parallel.
+      const gallery = JSON.parse(configuration) as ReturnType<typeof useWebsiteSettings>['gallery']
+      const selected = gallery.ids.length ? gallery.ids.map(id => ({ id, photo: '' })) : HOMEPAGE_PROPERTIES
+      // Use the shared admin selection and current listing data on every visit.
       const [deals, regularResults] = await Promise.all([
-        fetchDealListings(),
-        Promise.allSettled(HOMEPAGE_PROPERTIES.map(async property => {
+        gallery.mode === 'auto' ? fetchDealListings() : Promise.resolve([]),
+        Promise.allSettled(selected.map(async property => {
           const detail = await fetchListingById(property.id)
-          return galleryProperty(detail, property.photo)
+          return galleryProperty(detail, property.photo, gallery.photos[property.id])
         })),
       ])
       const regular = regularResults.flatMap(result => result.status === 'fulfilled' && result.value ? [result.value] : [])
       let dealProperties: GalleryProperty[] = []
       if (deals.length) {
-        const results = await Promise.allSettled(deals.filter(deal => deal.is_deal).slice(0, 5).map(async deal => {
+        const ordered = deals.filter(deal => deal.is_deal).sort((a, b) => {
+          const rank = (id: string) => gallery.ids.includes(id) ? gallery.ids.indexOf(id) : gallery.ids.length
+          return rank(a.id) - rank(b.id)
+        })
+        const results = await Promise.allSettled(ordered.slice(0, 5).map(async deal => {
           const detail = await fetchListingById(deal.id)
-          return detail.is_deal ? galleryProperty(detail) : null
+          return detail.is_deal ? galleryProperty(detail, undefined, gallery.photos[detail.id]) : null
         }))
         dealProperties = results.flatMap(result => result.status === 'fulfilled' && result.value ? [result.value] : [])
       }
-      if (!cancelled) setData({ properties: dealProperties.length ? dealProperties : regular, deals: dealProperties.length > 0, loaded: true })
+      if (!cancelled) {
+        setCurrent(0)
+        setData({ properties: dealProperties.length ? dealProperties : regular, deals: dealProperties.length > 0, loaded: true })
+      }
     }
     load().catch(() => { if (!cancelled) setData({ properties: [], deals: false, loaded: true }) })
     return () => { cancelled = true }
-  }, [])
+  }, [configuration])
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -112,18 +123,20 @@ export default function PropertyGallery() {
   }, [canRotate, count, current])
 
   function priceFor(property: GalleryProperty) {
+    const currency = (property.currency || 'USD').toUpperCase()
+    const prefix = currency === 'DOP' ? 'RD$' : currency === 'USD' ? 'US$' : `${currency} `
     if (property.transaction === 'rent') {
-      if (Number(property.price_per_month) > 0) return { amount: Number(property.price_per_month), unit: t('gallery.per_month') }
-      if (Number(property.price_per_day) > 0) return { amount: Number(property.price_per_day), unit: t('gallery.per_day') }
+      if (Number(property.price_per_month) > 0) return { amount: Number(property.price_per_month), prefix, unit: t('gallery.native_month', { currency }) }
+      if (Number(property.price_per_day) > 0) return { amount: Number(property.price_per_day), prefix, unit: t('gallery.native_day', { currency }) }
       // The generic rental price has no reliable period; do not call a nightly rate monthly.
-      return { amount: 0, unit: '' }
+      return { amount: 0, prefix, unit: '' }
     }
     const base = Number(property.price)
     const discount = property.is_deal ? Number(property.deal_discount_value) : 0
     const amount = discount > 0
       ? Math.max(0, property.deal_discount_type === 'fixed' ? base - discount : base * (1 - discount / 100))
       : base
-    return { amount: Math.round(amount), unit: t('gallery.currency') }
+    return { amount: Math.round(amount), prefix, unit: t('gallery.native_currency', { currency }) }
   }
 
   function show(index: number) {
@@ -139,7 +152,7 @@ export default function PropertyGallery() {
     setUserPaused(true)
     setAnnouncement(t('gallery.announcement', {
       number: next + 1, total: count, title: property.title,
-      price: price.amount > 0 ? `US$${number.format(price.amount)}` : t('gallery.request_price'), unit: price.unit,
+      price: price.amount > 0 ? `${price.prefix}${number.format(price.amount)}` : t('gallery.request_price'), unit: price.unit,
     }))
   }
 
@@ -193,12 +206,12 @@ export default function PropertyGallery() {
               const offset = positionFor(index, current, count)
               const active = offset === 0
               const price = priceFor(property)
-              const priceText = price.amount > 0 ? `US$${number.format(price.amount)}` : t('gallery.request_price')
+              const priceText = price.amount > 0 ? `${price.prefix}${number.format(price.amount)}` : t('gallery.request_price')
               return (
                 <article key={property.id} className={styles.propertySlide} data-position={offset} role="group" aria-roledescription={t('gallery.slide')} aria-label={t('gallery.slide_label', { number: index + 1, total: count, title: property.title })} aria-hidden={!active}>
                   <Link href={`/listing/${property.id}/`} className={styles.propertyLink} tabIndex={active ? 0 : -1} aria-label={t('gallery.view_label', { title: property.title, location: property.location, price: priceText, unit: price.unit })} draggable={false}>
                     <img src={property.photo} alt={`${property.title} — ${property.location}`} width={1200} height={660} loading={index < 2 ? 'eager' : 'lazy'} decoding="async" draggable={false} />
-                    <span className={styles.listingType}>{t(property.transaction === 'rent' ? 'gallery.rent' : 'gallery.sale')}</span>
+                    <span className={styles.listingType}>{t(property.transaction === 'rent' ? 'gallery.rent' : property.transaction === 'both' ? 'gallery.both' : 'gallery.sale')}</span>
                     <div className={styles.propertyCopy}>
                       <div>
                         <p className={styles.propertyLocation}>{property.location}</p>

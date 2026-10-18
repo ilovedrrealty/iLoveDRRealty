@@ -38,6 +38,10 @@ interface ApiListing {
   deal_discount_value: number | null
   deal_discount_type: string
   created_at: string | null
+  currency?: string
+  search_price?: number | null
+  search_price_currency?: string | null
+  search_price_period?: 'month' | 'day' | null
 }
 
 export interface ApiListingDetail {
@@ -48,6 +52,7 @@ export interface ApiListingDetail {
   type: string
   transaction: string
   price: number
+  currency?: string
   location: string
   bedrooms: number | null
   bathrooms: number | null
@@ -117,25 +122,30 @@ export async function recordListingView(id: string): Promise<void> {
 }
 
 function mapApiListing(l: ApiListing): Listing {
+  const rental = l.transaction === 'rent' || l.search_price_period === 'month' || l.search_price_period === 'day'
   return {
     id: l.id,
     title: l.title,
     region: l.location,
-    price: Number(l.price),
+    price: l.search_price_currency ? Number(l.search_price ?? 0) : Number(l.price),
+    currency: l.search_price_currency ?? l.currency ?? 'USD',
+    pricePeriod: l.search_price_period ?? undefined,
     bd: l.bedrooms ?? 0,
     ba: l.bathrooms ?? 0,
     m2: l.area_sqft ? Math.round(l.area_sqft / 10.764) : 0,
     roi: Number(l.roi ?? 0),
     tags: toTags(l.tag),
     type: l.type.charAt(0).toUpperCase() + l.type.slice(1),
-    purpose: l.transaction === 'rent' ? 'rent' : 'sale',
+    purpose: rental ? 'rent' : 'sale',
     features: l.features ?? [],
     v: 0,
     img: l.images?.[0] ?? '',
     latitude: l.latitude,
     longitude: l.longitude,
     is_deal: l.is_deal,
-    deal_discount_value: l.deal_discount_value,
+    deal_discount_value: l.deal_discount_type === 'fixed' && !rental && l.search_price_currency && Number(l.price) > 0 && l.deal_discount_value != null
+      ? Number(l.deal_discount_value) * Number(l.search_price ?? 0) / Number(l.price)
+      : l.deal_discount_value,
     deal_discount_type: l.deal_discount_type,
     created_at: l.created_at,
   }
@@ -144,9 +154,11 @@ function mapApiListing(l: ApiListing): Listing {
 export interface ListingsQuery {
   page?: number
   pageSize?: number
-  purpose?: 'rent' | 'investment'
+  purpose?: 'sale' | 'rent' | 'investment'
   type?: string
+  types?: string[]
   region?: string
+  locations?: string[]
   minPrice?: number
   maxPrice?: number
   beds?: number
@@ -155,6 +167,20 @@ export interface ListingsQuery {
   sort?: 'new' | 'low' | 'high' | 'roi'
   excludeIds?: string[]
   includeAggregates?: boolean
+  priceCurrency?: 'USD' | 'DOP'
+  usdToDop?: number
+  rentalPeriod?: 'month' | 'day'
+  signal?: AbortSignal
+}
+
+export interface ListingFilterOptions {
+  locations: { value: string; count: number }[]
+  types: { value: string; count: number }[]
+}
+
+export async function fetchListingFilterOptions(): Promise<ListingFilterOptions> {
+  const res = await client.get<ListingFilterOptions>('/listings/filter-options')
+  return res.data
 }
 
 export interface ListingsPage {
@@ -177,12 +203,15 @@ interface ApiListingPage {
 
 export async function fetchListings(q: ListingsQuery = {}): Promise<ListingsPage> {
   const res = await client.get<ApiListingPage>('/listings', {
+    signal: q.signal,
     params: {
       page: q.page,
       page_size: q.pageSize,
       purpose: q.purpose,
       type: q.type,
+      types: q.types?.map(type => type.toLowerCase()),
       region: q.region,
+      locations: q.locations,
       min_price: q.minPrice,
       max_price: q.maxPrice,
       beds: q.beds,
@@ -191,6 +220,9 @@ export async function fetchListings(q: ListingsQuery = {}): Promise<ListingsPage
       sort: q.sort,
       exclude_ids: q.excludeIds,
       include_aggregates: q.includeAggregates,
+      price_currency: q.priceCurrency,
+      usd_to_dop: q.usdToDop,
+      rental_period: q.rentalPeriod,
     },
   })
   return {

@@ -19,6 +19,8 @@ export interface Listing {
   deal_discount_value?: number | null
   deal_discount_type?: string
   created_at?: string | null
+  currency?: string
+  pricePeriod?: 'month' | 'day'
 }
 
 export const LISTINGS: Listing[] = [

@@ -2,7 +2,7 @@ import { X, Mail, Phone, Calendar, Home, Copy, CheckCheck, Check, UserCheck, Zap
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assignLead, updateLeadStatus, type Lead } from '../../api/leads'
-import type { AdminUser } from '../../api/admin'
+import type { AdminAgent } from '../../api/admin'
 import { TONE } from '../../pages/admin/shared'
 import { parsePhone } from '../../utils/phone'
 import { ConfirmModal } from '../shared/ConfirmModal'
@@ -39,7 +39,7 @@ function fmtDateTime(iso: string) {
 
 interface Props {
   lead: Lead | null
-  realtors: AdminUser[]
+  realtors: AdminAgent[]
   onClose: () => void
   onAssigned: (leadId: string, realtorId: string, realtorName: string) => void
   onStatusUpdated: (leadId: string, status: string) => void
@@ -404,6 +404,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
                 {/* Quick-assign: property agent (inquiry + booking only) */}
                 {(lead.type === 'property_inquiry' || lead.type === 'booking') &&
                   lead.listing_realtor_id &&
+                  realtors.some(agent => agent.id === lead.listing_realtor_id) &&
                   lead.listing_realtor_id !== lead.assigned_realtor_id && (
                   <div className="flex items-center justify-between gap-3 px-3 py-2.5 mb-2 rounded-xl border border-line bg-paper2">
                     <div className="min-w-0">
@@ -425,8 +426,10 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
                 <RealtorCombobox
                   realtors={realtors}
                   currentId={lead.assigned_realtor_id}
+                  currentLabel={lead.assigned_realtor_name}
                   onSelect={requestAssign}
                   saving={assignSaving}
+                  allowUnassign={false}
                 />
               </div>
             )}

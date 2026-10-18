@@ -28,6 +28,7 @@ import { RealtorBookings } from './realtor/Bookings'
 import { AdminBookings } from './admin/Bookings'
 import { UserSettings } from './Settings'
 import { Upgrade } from './buyer/Upgrade'
+import { ResearchTools } from './shared/ResearchTools'
 
 const ROLE_ORDER: Role[] = ['Buyer', 'Owner', 'Realtor']
 const ROLE_ACCESS: Record<string, Role[]> = {
@@ -66,6 +67,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
   const tabTone = ROLE_TONE[activeTab]
 
   function getPageTitle(v: string): string {
+    if (v === 'research') return tNav('research')
     const key = `pages.${v}`
     if (role === 'Buyer')   return tBuyer(key,   { defaultValue: tBuyer('pages.home') })
     if (role === 'Owner')   return tOwner(key,   { defaultValue: tOwner('pages.home') })
@@ -115,9 +117,10 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
       case 'earnings':   return <Earnings tone={tone} go={go} />
       // Realtor
       case 'pipeline':   return <Pipeline user={user} />
+      case 'research':   return <ResearchTools user={user} />
       // Shared by role
       case 'listings':        return role === 'Owner' ? <OwnerListings tone={tone} go={go} user={user} /> : <RealtorListings tone={tone} go={go} user={user} />
-      case 'submit-listing':  return role === 'Owner' ? <OwnerSubmitListing go={go} tone={tone} /> : <SubmitListing go={go} tone={tone} />
+      case 'submit-listing':  return role === 'Owner' ? <OwnerSubmitListing go={go} tone={tone} isAdmin={user.role === 'admin'} /> : <SubmitListing go={go} tone={tone} isAdmin={user.role === 'admin'} />
       case 'calendar':   return role === 'Owner' ? <OwnerCalendar user={user} go={go} /> : <RealtorCalendar user={user} go={go} />
       case 'bookings':        return role === 'Admin' ? <AdminBookings /> : <BuyerBookings />
       case 'owner-bookings':    return <OwnerBookings go={go} />

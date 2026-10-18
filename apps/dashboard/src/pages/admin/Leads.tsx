@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ClipboardList, Search } from 'lucide-react'
 import { getAdminLeads, type Lead } from '../../api/leads'
-import { getAdminUsers, type AdminUser } from '../../api/admin'
+import { getAdminAgents, type AdminAgent } from '../../api/admin'
 import { TONE, FilterPills } from './shared'
 import { LeadDetailPanel } from '../../components/admin/LeadDetailPanel'
 import { parsePhone } from '../../utils/phone'
@@ -155,7 +155,7 @@ function LeadStatusBadge({ lead }: { lead: Lead }) {
 export function AdminLeads() {
   const { t } = useTranslation('admin')
   const [leads,        setLeads]        = useState<Lead[]>([])
-  const [realtors,     setRealtors]     = useState<AdminUser[]>([])
+  const [realtors,     setRealtors]     = useState<AdminAgent[]>([])
   const [loading,      setLoading]      = useState(true)
   const [typeFilter,   setTypeFilter]   = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
@@ -166,7 +166,7 @@ export function AdminLeads() {
   useEffect(() => {
     Promise.all([
       getAdminLeads(),
-      getAdminUsers('realtor'),
+      getAdminAgents(),
     ]).then(([l, r]) => {
       setLeads(l)
       setRealtors(r)

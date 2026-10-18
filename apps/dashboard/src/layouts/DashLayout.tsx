@@ -54,6 +54,7 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
     { Icon: Bell,          view: 'realtor-bookings'  },
     { Icon: GitBranch,     view: 'pipeline'          },
     { Icon: CalendarDays,  view: 'calendar'          },
+    { Icon: BookOpen,      view: 'research'          },
   ],
 }
 
@@ -64,6 +65,8 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Inbox,           view: 'leads'     },
   { Icon: Upload,          view: 'bulk-import' },
   { Icon: Bell,            view: 'bookings'  },
+  { Icon: BookOpen,        view: 'research' },
+  { Icon: Globe,           view: 'website-editor' },
   { Icon: Settings,        view: 'settings'  },
 ]
 
@@ -73,10 +76,11 @@ interface Props {
   go: (v: string, openId?: string) => void
   onLogout: () => void
   user: UserInfo
+  onWorkspaceChange?: (role: Role) => void
   children: React.ReactNode
 }
 
-export default function DashLayout({ role, view, go, onLogout, user, children }: Props) {
+export default function DashLayout({ role, view, go, onLogout, user, children, onWorkspaceChange }: Props) {
   const { t } = useTranslation('nav')
   const tone = ROLE_TONE[role]
   const ownNavItems = role === 'Admin'
@@ -237,6 +241,30 @@ export default function DashLayout({ role, view, go, onLogout, user, children }:
           </button>
         </div>
 
+        {user.role === 'admin' && onWorkspaceChange && (
+          <div className="px-3 pb-4 shrink-0">
+            <label htmlFor="dashboard-workspace" className="block text-[11px] font-semibold text-white/70 mb-1.5">
+              {t('workspace_label')}
+            </label>
+            <select
+              id="dashboard-workspace"
+              value={role}
+              onChange={event => { onWorkspaceChange(event.target.value as Role); closeNav() }}
+              className="w-full rounded-lg border border-white/20 bg-nav px-2.5 py-2 text-[13px] text-white cursor-pointer"
+            >
+              {(['Admin', 'Buyer', 'Owner', 'Realtor'] as Role[]).map(workspace => (
+                <option key={workspace} value={workspace}>{t(`workspace_options.${workspace}`)}</option>
+              ))}
+            </select>
+            <p className="text-[10.5px] text-white/55 leading-relaxed mt-2 mb-0">{t('workspace_identity')}</p>
+            {role !== 'Admin' && (
+              <button onClick={() => { onWorkspaceChange('Admin'); closeNav() }} className="mt-2 text-[11.5px] text-white underline border-0 bg-transparent cursor-pointer p-0">
+                {t('return_admin')}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Nav — scrollable */}
         <nav className="flex-1 px-2 flex flex-col overflow-y-auto min-h-0 pb-2">
           {navContent}
@@ -292,7 +320,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children }:
       </aside>
 
       {/* ── Main content ── */}
-      <main className="md:ml-58 flex-1 flex flex-col min-h-screen">
+      <main className="md:ml-58 min-w-0 flex-1 flex flex-col min-h-screen">
 
         {/* Topbar */}
         <div className="h-15 bg-paper border-b border-line flex items-center px-4 md:px-7 gap-3 sticky top-0 z-30">
@@ -310,8 +338,8 @@ export default function DashLayout({ role, view, go, onLogout, user, children }:
               className="text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5"
               style={{ background: `${tone}15`, color: tone }}
             >
-              <RoleIcon size={12} />
-              {t(`roles.${role}`)}
+              {user.role === 'admin' ? <Shield size={12} /> : <RoleIcon size={12} />}
+              {t(`roles.${user.role === 'admin' ? 'Admin' : role}`)}
             </div>
             {user.avatar_url ? (
               <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -327,7 +355,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children }:
         </div>
 
         {/* Page content */}
-        <div className="flex-1 p-4 pb-10 sm:p-7 bg-[#F8F9FC]">
+        <div className="min-w-0 flex-1 p-4 pb-10 sm:p-7 bg-[#F8F9FC]">
           {children}
         </div>
       </main>

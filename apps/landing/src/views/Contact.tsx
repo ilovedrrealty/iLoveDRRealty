@@ -1,4 +1,5 @@
 'use client'
+import { useWebsiteImage } from '../components/WebsiteSettingsProvider'
 import { useTranslation } from 'react-i18next'
 import { useNav } from '../hooks/useNav'
 import { useSearchParams } from 'next/navigation'
@@ -37,6 +38,8 @@ const SELLER_INTEREST_VALUES = [
 ]
 
 export default function Contact() {
+  const contactHero = useWebsiteImage('contact_hero', 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1600&q=80&auto=format&fit=crop')
+  const contactStory = useWebsiteImage('contact_story', 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&q=80&auto=format&fit=crop')
   const go = useNav()
   const { t } = useTranslation('contact')
   const searchParams = useSearchParams()
@@ -123,7 +126,7 @@ export default function Contact() {
 
       {/* HERO */}
       <div className="relative overflow-hidden pt-16 sm:pt-20 px-4 sm:px-6 pb-14 sm:pb-18"
-        style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1600&q=80&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        style={{ backgroundImage: `url(${contactHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0"
           style={{ background: 'linear-gradient(135deg, rgba(0,16,46,.94) 0%, rgba(13,34,80,.86) 60%, rgba(0,58,115,.75) 100%)' }} />
         <div className="absolute inset-0"
@@ -174,7 +177,7 @@ export default function Contact() {
             {/* Map placeholder */}
             <div className="mt-6 rounded-xl overflow-hidden border border-line">
               <div className="h-45 flex flex-col items-center justify-center gap-2 text-white relative overflow-hidden"
-                style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&q=80&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                style={{ backgroundImage: `url(${contactStory})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                 <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(0,58,115,.72) 0%, rgba(11,99,171,.6) 50%, rgba(26,122,191,.55) 100%)' }} />
                 <div className="relative text-white/50 text-2.75 tracking-widest uppercase">{t('map.placeholder')}</div>
                 <div className="relative"><Icon d={I.map} size={28} /></div>

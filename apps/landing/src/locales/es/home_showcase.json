@@ -5,7 +5,17 @@
     "explore": "Explorar",
     "explore_label": "Explorar {{title}}",
     "image_note": "Las fotos de las categorías son ilustrativas y pueden incluir representaciones de proyectos o imágenes de la comunidad. Consulta cada anuncio original. Los anuncios y precios pueden cambiar.",
-    "items": { "new": "Recién publicadas", "rent": "Alquileres", "villa": "Villas", "apartment": "Apartamentos", "condo": "Condominios y casas adosadas", "land": "Terrenos", "commercial": "Comerciales", "punta-cana": "Punta Cana", "sosua": "Sosúa" }
+    "items": {
+      "new": "Recién publicadas",
+      "rent": "Alquileres",
+      "villa": "Villas",
+      "apartment": "Apartamentos",
+      "condo": "Condominios y casas adosadas",
+      "land": "Terrenos",
+      "commercial": "Comerciales",
+      "punta-cana": "Punta Cana",
+      "sosua": "Sosúa"
+    }
   },
   "gallery": {
     "eyebrow": "Una mirada más cercana",
@@ -44,6 +54,10 @@
     "beds": "{{count}} habitaciones",
     "baths": "{{count}} baños",
     "area": "{{area}} pies²",
-    "disclaimer": "Los anuncios y precios pueden cambiar. Confirma la disponibilidad y las condiciones actuales con nuestro equipo."
+    "disclaimer": "Los anuncios y precios pueden cambiar. Confirma la disponibilidad y las condiciones actuales con nuestro equipo.",
+    "native_currency": "{{currency}} · precio de venta",
+    "native_month": "{{currency}} · por mes",
+    "native_day": "{{currency}} · por noche",
+    "both": "Venta y alquiler"
   }
 }

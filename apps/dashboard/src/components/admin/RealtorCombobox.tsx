@@ -1,21 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { Search, Check } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { AdminUser } from '../../api/admin'
+import type { AdminAgent } from '../../api/admin'
+import { agentChoiceLabel, agentName, filterAgentChoices } from '../../lib/agentChoices'
 import { TONE } from '../../pages/admin/shared'
 
 export function RealtorCombobox({
   realtors,
   currentId,
+  currentLabel,
   onSelect,
   saving,
+  allowUnassign = true,
 }: {
-  realtors: AdminUser[]
+  realtors: AdminAgent[]
   currentId: string | null
+  currentLabel?: string | null
   onSelect: (id: string) => void
   saving: boolean
+  allowUnassign?: boolean
 }) {
   const { t } = useTranslation('admin')
+  const roleLabels = { admin: t('agent_choices.role_admin'), realtor: t('agent_choices.role_realtor') }
   const current = realtors.find(r => r.id === currentId)
   const [open, setOpen]     = useState(false)
   const [query, setQuery]   = useState('')
@@ -33,10 +39,7 @@ export function RealtorCombobox({
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const filtered = realtors.filter(r => {
-    const name = (r.display_name || r.email).toLowerCase()
-    return name.includes(query.toLowerCase())
-  })
+  const filtered = filterAgentChoices(realtors, query, roleLabels)
 
   function handleOpen() {
     setOpen(true)
@@ -44,7 +47,7 @@ export function RealtorCombobox({
     setTimeout(() => inputRef.current?.focus(), 0)
   }
 
-  function handleSelect(r: AdminUser) {
+  function handleSelect(r: AdminAgent) {
     onSelect(r.id)
     setOpen(false)
     setQuery('')
@@ -59,7 +62,7 @@ export function RealtorCombobox({
         className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-line bg-paper text-[13px] cursor-pointer hover:bg-paper2 transition-colors disabled:opacity-50 text-left"
       >
         <span className={current ? 'text-ink font-medium' : 'text-dim'}>
-          {current ? (current.display_name || current.email) : t('lead_panel.unassigned')}
+          {current ? agentChoiceLabel(current, roleLabels) : currentId ? currentLabel || t('agent_choices.unavailable_current') : t('lead_panel.unassigned')}
         </span>
         {saving
           ? <span className="text-[11px] text-dim">{t('lead_panel.saving')}</span>
@@ -84,18 +87,18 @@ export function RealtorCombobox({
           {/* Results */}
           <div className="max-h-48 overflow-y-auto py-1">
             {/* Unassigned option */}
-            <button
+            {allowUnassign && <button
               onClick={() => { onSelect(''); setOpen(false); setQuery('') }}
               className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-dim hover:bg-paper2 cursor-pointer border-0 bg-transparent text-left"
             >
               {!currentId && <Check size={12} style={{ color: TONE }} />}
               <span className={!currentId ? 'font-semibold text-ink' : ''}>{t('lead_panel.unassigned')}</span>
-            </button>
+            </button>}
 
             {filtered.length === 0 ? (
               <div className="px-3 py-2 text-[12px] text-dim">{t('lead_panel.no_realtors')}</div>
             ) : filtered.map(r => {
-              const label    = r.display_name || r.email
+              const label    = agentName(r)
               const isActive = r.id === currentId
               return (
                 <button
@@ -105,7 +108,7 @@ export function RealtorCombobox({
                 >
                   {isActive && <Check size={12} style={{ color: TONE }} />}
                   <div className="min-w-0">
-                    <div className={`truncate ${isActive ? 'font-semibold' : ''}`}>{label}</div>
+                    <div className={`truncate ${isActive ? 'font-semibold' : ''}`}>{label} <span className="text-[10px] font-semibold text-dim">· {roleLabels[r.role]}</span></div>
                     {r.display_name && (
                       <div className="text-[11px] text-dim truncate">{r.email}</div>
                     )}

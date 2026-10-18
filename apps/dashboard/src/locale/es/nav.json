@@ -21,6 +21,17 @@
   "realtor-bookings": "Reservas de huéspedes",
   "portal_eyebrow": "Portal {{role}} · {{name}}",
   "lang_toggle": "Idioma",
+  "workspace_label": "Abrir espacio de trabajo",
+  "workspace_identity": "Sigues conectado con tu propia cuenta y acceso de administrador. Las vistas personales muestran tu actividad.",
+  "return_admin": "Volver a herramientas de Admin",
+  "research": "Herramientas inmobiliarias",
+  "website-editor": "Editor del sitio web",
+  "workspace_options": {
+    "Admin": "Herramientas de Admin",
+    "Buyer": "Herramientas de comprador",
+    "Owner": "Herramientas de vendedor / propietario",
+    "Realtor": "Herramientas de agente"
+  },
   "roles": {
     "Buyer": "Comprador",
     "Owner": "Propietario",

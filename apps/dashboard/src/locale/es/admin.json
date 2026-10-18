@@ -1,5 +1,16 @@
 {
   "eyebrow": "Admin",
+  "agent_choices": {
+    "role_admin": "Admin",
+    "role_realtor": "Agente",
+    "assigned_agent": "Agente asignado",
+    "unavailable_current": "La persona asignada no está disponible para nuevas asignaciones",
+    "assigned": "{{name}} asignado",
+    "unassigned": "Asignación de agente eliminada",
+    "assign_error": "No se pudo asignar el agente",
+    "none": "— Sin agente asignado —",
+    "assign": "Asignar"
+  },
   "pages": {
     "home":      { "title": "Resumen de la plataforma",  "sub": "Propiedades, usuarios y actividad"                          },
     "users":     { "title": "Gestión de usuarios",       "sub": "Administrar usuarios, roles y solicitudes de acceso"        },
@@ -8,7 +19,9 @@
     "bookings":  { "title": "Reservas",                  "sub": "Todas las reservas de huéspedes en cada propiedad"          },
     "analytics": { "title": "Analíticas",                "sub": "Métricas de la plataforma · Mayo 2026"                      },
     "settings":  { "title": "Configuración",             "sub": "Configuración de la plataforma"                             },
-    "bulk-import": { "title": "Importación masiva",      "sub": "Crear propiedades en masa desde un archivo CSV de un socio" }
+    "bulk-import": { "title": "Importación masiva",      "sub": "Crear propiedades en masa desde un archivo CSV de un socio" },
+    "research": { "title": "Herramientas de investigación inmobiliaria", "sub": "Servicios oficiales, investigación y hojas de trabajo prácticas" },
+    "website-editor": { "title": "Editor del sitio web", "sub": "Administra textos, imágenes, recursos y propiedades de la galería" }
   },
   "home_page": {
     "approval_queue":        "Cola de aprobación",
@@ -149,9 +162,9 @@
     "label_property_agent": "Agente de la propiedad",
     "not_provided":         "No proporcionado",
     "saving":               "Guardando…",
-    "search_realtors_ph":   "Buscar agentes…",
+    "search_realtors_ph":   "Buscar agentes o administradores…",
     "unassigned":           "Sin asignar",
-    "no_realtors":          "No se encontraron agentes",
+    "no_realtors":          "No se encontraron agentes elegibles",
     "quick_assign":         "Asignar rápido",
     "open_ghl":             "Abrir en GHL",
     "close":                "Cerrar",
