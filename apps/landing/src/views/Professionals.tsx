@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { emptyProfessionalOptions, professionalLabel, professionalOptionLabels, type ProfessionalOption, type ProfessionalOptions, type ProfessionalPage, type PublicProfessional } from '../../../../packages/professionals/src'
+import { emptyProfessionalOptions, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalOption, type ProfessionalOptions, type ProfessionalPage, type PublicProfessional } from '../../../../packages/professionals/src'
 import { getProfessional, getProfessionalOptions, getProfessionals } from '../api/professionals'
 import { ProfessionalDetails, ProfessionalPortrait } from '../components/ProfessionalDetails'
 
@@ -101,7 +101,7 @@ export default function Professionals() {
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">{page.items.map(profile => {
           const name = profile.business_name || profile.contact_name
           return <article key={profile.id} className="min-w-0 rounded-2xl border border-line bg-white p-5 flex flex-col gap-4">
-            <div className="flex items-start gap-3"><ProfessionalPortrait photo={profile.photo_url} name={name} /><div className="min-w-0"><h2 className="text-xl font-bold text-ink break-words">{name}</h2><p className="text-xs font-semibold text-coral mt-2">{professionalOptionLabels(profile.category_ids, options.categories, i18n.language).join(' · ')}</p></div></div>
+            <div className="flex items-start gap-3"><ProfessionalPortrait photo={profile.photo_url} name={name} /><div className="min-w-0"><h2 className="text-xl font-bold text-ink break-words">{name}</h2><p className="break-words text-xs font-semibold text-coral mt-2">{professionalServiceLabels(profile, options.categories, i18n.language).join(' · ')}</p></div></div>
             <p className="text-xs text-dim">{professionalOptionLabels(profile.service_area_ids, options.areas, i18n.language).join(' · ')}</p>
             <p className="line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-ink2 break-words">{professionalLabel(profile.descriptions, i18n.language)}</p>
             <button type="button" className={`${button} mt-auto self-start`} onClick={() => open(profile.id)} aria-label={`${t('view')}: ${name}`}>{t('view')}</button>

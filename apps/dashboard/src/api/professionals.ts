@@ -27,6 +27,20 @@ export async function getAdminProfessionals(params: { review_status?: string; li
 export async function getAdminProfessional(id: string): Promise<AdminProfessional> {
   return (await client.get<AdminProfessional>(`/admin/professionals/${encodeURIComponent(id)}`)).data
 }
+export async function createAdminProfessional(draft: ProfessionalDraft): Promise<AdminProfessional> {
+  return (await client.post<AdminProfessional>('/admin/professionals', { draft })).data
+}
+export async function saveAdminProfessional(id: string, expected_version: number, draft: ProfessionalDraft): Promise<AdminProfessional> {
+  return (await client.put<AdminProfessional>(`/admin/professionals/${encodeURIComponent(id)}`, { expected_version, draft })).data
+}
+export async function submitAdminProfessional(id: string, expected_version: number): Promise<AdminProfessional> {
+  return (await client.post<AdminProfessional>(`/admin/professionals/${encodeURIComponent(id)}/submit`, { expected_version })).data
+}
+export async function uploadAdminProfessionalPhoto(id: string, file: File): Promise<string> {
+  const form = new FormData()
+  form.append('file', file)
+  return (await client.post<{ photo_url: string }>(`/admin/professionals/${encodeURIComponent(id)}/photo`, form)).data.photo_url
+}
 export async function moderateProfessional(id: string, action: 'approve' | 'reject' | 'suspend' | 'reinstate', expected_version: number, reason?: string): Promise<AdminProfessional> {
   return (await client.post<AdminProfessional>(`/admin/professionals/${encodeURIComponent(id)}/${action}`, { expected_version, ...(reason ? { note: reason } : {}) })).data
 }

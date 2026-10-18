@@ -126,5 +126,17 @@
     "cta_button": "Get in touch →"
   },
   "custom_resources": "Property resources & services",
-  "open_resource": "Open resource"
+  "open_resource": "Open resource",
+  "resource_library": {
+    "intro": "Find property research, financing, ownership and everyday services in one place.",
+    "search": "Search resources",
+    "search_placeholder": "Search by service, topic or organization",
+    "category": "Category",
+    "all_categories": "All categories",
+    "count": "Showing {{count}} of {{total}}",
+    "clear": "Clear filters",
+    "no_matches": "No resources match these filters. Try another search or clear the filters.",
+    "empty": "New resources will appear here when they are published.",
+    "external_note": "External websites open in a new tab and may require an account or charge fees. A listing is not an endorsement; parcel maps and online searches do not replace legal advice or an official title certificate."
+  }
 }

@@ -121,7 +121,12 @@
     "realtor_only": "Signed-in realtors and admins",
     "public": "Public visitors too",
     "add_resource": "Add a public resource",
-    "add_tool": "Add a realtor tool"
+    "add_tool": "Add a realtor tool",
+    "library_title": "Recommended Dominican Republic resources",
+    "library_help": "Add 22 public links for taxes, financing, permits, utilities and professional credentials, plus 5 GIS and technical resources for Realtors and Admins. Curated from your DR resource sheet and checked on October 18, 2026. Review, edit or hide any entry before publishing. Existing entries and access choices are preserved.",
+    "import_library": "Add missing recommended resources ({{count}})",
+    "library_added": "These resources are already in your draft. Publish changes to make new entries available.",
+    "library_limit": "There is not enough room in the 100-tool limit. Remove unused tools before adding this collection."
   },
   "team": {
     "help": "Update names, photos, roles and descriptions, add people, or change their order. Keep at least one profile; use visibility to hide the last one.",

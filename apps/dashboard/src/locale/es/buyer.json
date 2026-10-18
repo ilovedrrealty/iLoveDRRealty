@@ -102,7 +102,29 @@
   },
   "resources_page": {
     "title": "Recursos",
-    "read":  "Leer →"
+    "read":  "Leer →",
+    "intro": "Planifica tu búsqueda de inmuebles y encuentra servicios públicos útiles para comprar, tener y mantener una vivienda.",
+    "quick": {
+      "buying": { "title": "Guía de compra", "description": "Conoce el proceso de compra y contacta a nuestro equipo." },
+      "calculator": { "title": "Calculadora ROI", "description": "Estima los ingresos por alquiler y los gastos del inmueble." },
+      "professionals": { "title": "Profesionales RD", "description": "Encuentra profesionales y servicios relacionados con inmuebles." },
+      "library": { "title": "Biblioteca pública de recursos", "description": "Abre la biblioteca de recursos en nuestro sitio principal." }
+    },
+    "library_title": "Recursos y servicios inmobiliarios",
+    "library_intro": "Los mismos enlaces públicos de nuestro sitio web, organizados por tema.",
+    "loading": "Cargando la biblioteca pública de recursos…",
+    "error": "No se pudo cargar la biblioteca. Los enlaces de arriba siguen disponibles.",
+    "retry": "Intentar de nuevo",
+    "search": "Buscar recursos",
+    "search_placeholder": "Busca por servicio, tema u organización",
+    "category": "Categoría",
+    "all_categories": "Todas las categorías",
+    "count": "Mostrando {{count}} de {{total}}",
+    "clear": "Limpiar filtros",
+    "no_matches": "Ningún recurso coincide con estos filtros. Prueba otra búsqueda o limpia los filtros.",
+    "empty": "Los nuevos recursos aparecerán aquí cuando se publiquen.",
+    "open": "Abrir recurso",
+    "external_note": "Los sitios externos se abren en otra pestaña y pueden requerir una cuenta o cobrar tarifas. La inclusión no implica una recomendación; los mapas parcelarios y las consultas en línea no sustituyen el asesoramiento legal ni una certificación oficial del título."
   },
   "upgrade_page": {
     "intro":                "Amplía tu acceso solicitando una mejora de rol. Una vez revisado y aprobado, desbloquearás todas las funciones de ese rol.",

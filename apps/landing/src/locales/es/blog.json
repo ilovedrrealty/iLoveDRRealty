@@ -126,5 +126,17 @@
     "cta_button": "Contáctanos →"
   },
   "custom_resources": "Recursos y servicios inmobiliarios",
-  "open_resource": "Abrir recurso"
+  "open_resource": "Abrir recurso",
+  "resource_library": {
+    "intro": "Encuentra recursos sobre inmuebles, financiamiento, propiedad y servicios cotidianos en un solo lugar.",
+    "search": "Buscar recursos",
+    "search_placeholder": "Busca por servicio, tema u organización",
+    "category": "Categoría",
+    "all_categories": "Todas las categorías",
+    "count": "Mostrando {{count}} de {{total}}",
+    "clear": "Limpiar filtros",
+    "no_matches": "Ningún recurso coincide con estos filtros. Prueba otra búsqueda o limpia los filtros.",
+    "empty": "Los nuevos recursos aparecerán aquí cuando se publiquen.",
+    "external_note": "Los sitios externos se abren en otra pestaña y pueden requerir una cuenta o cobrar tarifas. La inclusión no implica una recomendación; los mapas parcelarios y las consultas en línea no sustituyen el asesoramiento legal ni una certificación oficial del título."
+  }
 }

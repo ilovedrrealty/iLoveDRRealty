@@ -102,7 +102,29 @@
   },
   "resources_page": {
     "title": "Resources",
-    "read":  "Read →"
+    "read":  "Read →",
+    "intro": "Plan your property search and find useful public services for buying, owning and maintaining a home.",
+    "quick": {
+      "buying": { "title": "Buying guide", "description": "Explore the buying process and contact our team." },
+      "calculator": { "title": "ROI calculator", "description": "Model estimated rental income and property costs." },
+      "professionals": { "title": "DR Professionals", "description": "Find property-related professionals and services." },
+      "library": { "title": "Public resource library", "description": "Open the resource library on our main website." }
+    },
+    "library_title": "Property resources & services",
+    "library_intro": "The same public links published on our website, organized by topic.",
+    "loading": "Loading the public resource library…",
+    "error": "The resource library could not load. The links above are still available.",
+    "retry": "Try again",
+    "search": "Search resources",
+    "search_placeholder": "Search by service, topic or organization",
+    "category": "Category",
+    "all_categories": "All categories",
+    "count": "Showing {{count}} of {{total}}",
+    "clear": "Clear filters",
+    "no_matches": "No resources match these filters. Try another search or clear the filters.",
+    "empty": "New resources will appear here when they are published.",
+    "open": "Open resource",
+    "external_note": "External websites open in a new tab and may require an account or charge fees. A listing is not an endorsement; parcel maps and online searches do not replace legal advice or an official title certificate."
   },
   "upgrade_page": {
     "intro":                "Expand your access by requesting a role upgrade. Once reviewed and approved, you'll unlock the full feature set for that role.",

@@ -68,6 +68,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
   const tabTone = ROLE_TONE[activeTab]
 
   function getPageTitle(v: string): string {
+    if (v === 'resources') return tNav('resources')
     if (v === 'research') return tNav('research')
     if (v === 'professional-profile') return tNav('professional-profile')
     const key = `pages.${v}`
