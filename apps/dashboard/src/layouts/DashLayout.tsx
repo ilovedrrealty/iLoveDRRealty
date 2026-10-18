@@ -31,6 +31,7 @@ const ROLE_ICON: Record<Role, LucideIcon> = {
 const GENERAL_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: LayoutDashboard, view: 'home'     },
   { Icon: Users,           view: 'professional-profile' },
+  { Icon: BookOpen,        view: 'resources' },
   { Icon: Settings,        view: 'settings' },
 ]
 
@@ -40,7 +41,6 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
     { Icon: MessageCircle, view: 'inquiries'  },
     { Icon: CalendarDays,  view: 'bookings'   },
     { Icon: Calculator,    view: 'calculator' },
-    { Icon: BookOpen,      view: 'resources'  },
   ],
   Owner: [
     { Icon: Home,          view: 'listings'        },
@@ -68,6 +68,7 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Inbox,           view: 'leads'     },
   { Icon: Upload,          view: 'bulk-import' },
   { Icon: Bell,            view: 'bookings'  },
+  { Icon: BookOpen,        view: 'resources' },
   { Icon: BookOpen,        view: 'research' },
   { Icon: Globe,           view: 'website-editor' },
   { Icon: Settings,        view: 'settings'  },

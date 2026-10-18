@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { professionalContactHref, professionalLabel, professionalOptionLabels, type ProfessionalDraft, type ProfessionalOptions } from '../../../../../packages/professionals/src'
+import { professionalContactHref, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalDraft, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 
 export function ProfessionalPreview({ profile, options }: { profile: Omit<ProfessionalDraft, 'public_contact_consent'>; options: ProfessionalOptions }) {
   const { t, i18n } = useTranslation('professionals')
@@ -10,7 +10,7 @@ export function ProfessionalPreview({ profile, options }: { profile: Omit<Profes
       <div className="min-w-0">
         <h3 className="text-xl font-bold text-ink">{name || t('preview_empty')}</h3>
         {profile.contact_name && profile.contact_name !== profile.business_name && <p className="mt-1 text-sm text-ink2">{profile.contact_name}</p>}
-        <p className="mt-2 text-xs font-semibold text-coral">{professionalOptionLabels(profile.category_ids, options.categories, i18n.language).join(' · ')}</p>
+        <p className="mt-2 break-words text-xs font-semibold text-coral">{professionalServiceLabels(profile, options.categories, i18n.language).join(' · ')}</p>
       </div>
     </div>
     <p className="text-sm text-ink2">{professionalOptionLabels(profile.service_area_ids, options.areas, i18n.language).join(' · ')}</p>

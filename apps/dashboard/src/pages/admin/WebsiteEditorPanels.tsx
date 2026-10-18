@@ -5,6 +5,7 @@ import { DEFAULT_GALLERY_PHOTOS, DEFAULT_REALTOR_TOOLS, WEBSITE_IMAGE_KEYS, WEBS
 import { EditorCard, LocalizedFields, OrderControls, PhotoField, TextField, VisibilityField, editorButton, editorInput, moved } from './WebsiteEditorFields'
 import type { ChangeWebsiteDraft } from './WebsiteEditorCopy'
 import type { RealtorTool, WebsiteResource, WebsiteSettings } from '../../../../../packages/website-settings/src'
+import { recommendedDRToolsToAdd } from '../../../../../packages/website-settings/src/drResources'
 
 interface PanelProps { draft: WebsiteSettings; change: ChangeWebsiteDraft }
 const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`
@@ -158,12 +159,23 @@ export function WebsiteAreasPanel({ draft, change, locationOptions }: PanelProps
 export function WebsiteResourcesPanel({ draft, change }: PanelProps) {
   const { t } = useTranslation('website_editor')
   const mutate = useDraftMutation(change)
+  const recommended = recommendedDRToolsToAdd([...draft.resources, ...draft.realtorTools])
+  const canImport = recommended.length > 0 && draft.realtorTools.length + recommended.length <= 100
   const update = (kind: 'resources' | 'realtorTools', index: number, patch: Partial<RealtorTool>) => mutate(next => {
     if (kind === 'resources') next.resources[index] = { ...next.resources[index], ...patch }
     else next.realtorTools[index] = { ...next.realtorTools[index], ...patch }
   })
   return <div className="space-y-6">
     <p className="text-sm text-dim leading-relaxed">{t('resources.help')}</p>
+    <EditorCard title={t('resources.library_title')}>
+      <p className="text-sm text-dim leading-relaxed">{t('resources.library_help')}</p>
+      <button type="button" className={editorButton} disabled={!canImport} onClick={() => mutate(next => {
+        const additions = recommendedDRToolsToAdd([...next.resources, ...next.realtorTools])
+        if (next.realtorTools.length + additions.length <= 100) next.realtorTools.push(...cloneSettings(additions))
+      })}>{t('resources.import_library', { count: recommended.length })}</button>
+      {recommended.length === 0 && <p role="status" className="text-xs text-dim">{t('resources.library_added')}</p>}
+      {recommended.length > 0 && !canImport && <p role="status" className="text-xs text-amber-800">{t('resources.library_limit')}</p>}
+    </EditorCard>
     {(['resources', 'realtorTools'] as const).map(kind => <section key={kind} className="space-y-4">
       <h3 className="text-lg font-bold text-ink">{t(`resources.${kind}`)}</h3>
       {draft[kind].map((item, index) => <EditorCard key={item.id} title={item.title.en || t('resources.item')}>

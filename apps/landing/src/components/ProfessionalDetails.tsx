@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { professionalContactHref, professionalLabel, professionalOptionLabels, type ProfessionalOptions, type PublicProfessional } from '../../../../packages/professionals/src'
+import { professionalContactHref, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalOptions, type PublicProfessional } from '../../../../packages/professionals/src'
 
 export function ProfessionalPortrait({ photo, name, large = false }: { photo: string; name: string; large?: boolean }) {
   const [failed, setFailed] = useState(false)
@@ -45,7 +45,7 @@ export function ProfessionalDetails({ profile, options, loading, unavailable, on
       <div className="flex justify-end mb-3"><button type="button" aria-label={t('close')} onClick={onClose} className="rounded-full bg-paper2 p-2 text-ink"><X size={22} /></button></div>
       {loading ? <p role="status">{t('loading')}</p> : unavailable || !profile ? <p role="alert">{t('unavailable')}</p> : <article className="space-y-5 min-w-0 break-words">
         <div className="flex items-start gap-4"><ProfessionalPortrait photo={profile.photo_url} name={name} large /><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-coral">{t('eyebrow')}</p><h2 className="text-2xl sm:text-3xl font-extrabold text-ink mt-1">{name}</h2>{profile.contact_name && profile.contact_name !== profile.business_name && <p className="text-sm text-ink2 mt-2">{t('contact_name')}: {profile.contact_name}</p>}</div></div>
-        <p className="font-semibold text-coral text-sm">{professionalOptionLabels(profile.category_ids, options.categories, i18n.language).join(' · ')}</p>
+        <p className="break-words font-semibold text-coral text-sm">{professionalServiceLabels(profile, options.categories, i18n.language).join(' · ')}</p>
         <p className="text-sm text-ink2"><strong>{t('areas')}:</strong> {professionalOptionLabels(profile.service_area_ids, options.areas, i18n.language).join(', ')}</p>
         {profile.languages.length > 0 && <p className="text-sm text-ink2"><strong>{t('languages')}:</strong> {professionalOptionLabels(profile.languages, options.languages, i18n.language).join(', ')}</p>}
         <section><h3 className="font-bold text-ink mb-2">{t('about')}</h3><p className="text-sm leading-relaxed whitespace-pre-wrap text-ink2">{professionalLabel(profile.descriptions, i18n.language)}</p></section>
