@@ -559,4 +559,3 @@ export function publicWebsiteResources(settings: Partial<WebsiteSettings>): Webs
     return true
   })
 }
-

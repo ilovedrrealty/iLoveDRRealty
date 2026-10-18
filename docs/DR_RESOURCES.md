@@ -51,4 +51,3 @@ These links open the provider's portal in a new tab. Account, document, fee or p
 ## Release verification
 
 Automated checks cover public/private separation, disabled and unsafe links, repeat-import preservation, bilingual copy and unique IDs. Browser verification must exercise draft import → published settings → public and dashboard search/category results, confirm specialist links remain absent publicly, and verify a second import does not override existing choices.
-
