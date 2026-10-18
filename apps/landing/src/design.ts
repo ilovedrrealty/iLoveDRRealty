@@ -22,16 +22,14 @@ export const c = {
 export const fontSerif = '"Fraunces", "Playfair Display", Georgia, serif'
 export const fontSans  = '"Mona Sans", "Inter", -apple-system, system-ui, sans-serif'
 
-// Nav items — used by Navbar and App router.
+// Main navigation — Resources contains the articles, buying guide, and ROI calculator.
 // [routeKey, label]
 export const NAV_ITEMS: [string, string][] = [
-  ['search',     'Search'],
-  ['rentals',    'Rentals'],
+  ['landing',    'Home'],
   ['buying',     'Buying'],
   ['selling',    'Selling'],
-  ['blog',       'Resources'],
   ['team',       'Our Team'],
   ['contact',    'Contact'],
   ['get-started', 'Get Started'],
-  ['calculator', 'ROI Calculator'],
+  ['blog',       'Resources'],
 ]
