@@ -5,6 +5,8 @@ import enCommon from './locales/en/common.json'
 import esCommon from './locales/es/common.json'
 import enLanding from './locales/en/landing.json'
 import esLanding from './locales/es/landing.json'
+import enHomeShowcase from './locales/en/home_showcase.json'
+import esHomeShowcase from './locales/es/home_showcase.json'
 import enAuth from './locales/en/auth.json'
 import esAuth from './locales/es/auth.json'
 import enFooter from './locales/en/footer.json'
@@ -41,6 +43,7 @@ i18n.use(initReactI18next).init({
     en: {
       common: enCommon,
       landing: enLanding,
+      home_showcase: enHomeShowcase,
       auth: enAuth,
       footer: enFooter,
       search: enSearch,
@@ -60,6 +63,7 @@ i18n.use(initReactI18next).init({
     es: {
       common: esCommon,
       landing: esLanding,
+      home_showcase: esHomeShowcase,
       auth: esAuth,
       footer: esFooter,
       search: esSearch,
@@ -79,7 +83,7 @@ i18n.use(initReactI18next).init({
   },
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'landing', 'auth', 'footer', 'search', 'buying', 'selling', 'contact', 'blog', 'team', 'calculator', 'not_found', 'verify', 'property_detail', 'lead_capture', 'rentals', 'get_started'],
+  ns: ['common', 'landing', 'home_showcase', 'auth', 'footer', 'search', 'buying', 'selling', 'contact', 'blog', 'team', 'calculator', 'not_found', 'verify', 'property_detail', 'lead_capture', 'rentals', 'get_started'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })

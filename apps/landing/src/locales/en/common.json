@@ -1,5 +1,6 @@
 {
   "nav": {
+    "landing": "Home",
     "search": "Search",
     "buying": "Buying",
     "selling": "Selling",
@@ -9,8 +10,13 @@
     "calculator": "ROI Calculator",
     "rentals": "Rentals",
     "get-started": "Get Started",
+    "main_navigation": "Main navigation",
     "open_menu": "Open menu",
     "close_menu": "Close menu"
+  },
+  "resources": {
+    "articles": "Resources & articles",
+    "buying_guide": "Buying guide"
   },
   "auth": {
     "login": "Log in",

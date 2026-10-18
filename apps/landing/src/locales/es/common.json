@@ -1,5 +1,6 @@
 {
   "nav": {
+    "landing": "Inicio",
     "search": "Buscar",
     "buying": "Comprar",
     "selling": "Vender",
@@ -9,8 +10,13 @@
     "calculator": "Calculadora ROI",
     "rentals": "Alquileres",
     "get-started": "Comenzar",
+    "main_navigation": "Navegación principal",
     "open_menu": "Abrir menú",
     "close_menu": "Cerrar menú"
+  },
+  "resources": {
+    "articles": "Recursos y artículos",
+    "buying_guide": "Guía de compra"
   },
   "auth": {
     "login": "Ingresar",
