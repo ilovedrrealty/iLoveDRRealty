@@ -158,6 +158,7 @@
     "size": "El borrador es demasiado grande. Reduce el texto de reemplazo antes de publicar."
   },
   "namespaces": {
+    "professionals": "Directorio de Profesionales de RD",
     "common": "Etiquetas compartidas",
     "landing": "Inicio",
     "home_showcase": "Galería y tarjetas de inicio",

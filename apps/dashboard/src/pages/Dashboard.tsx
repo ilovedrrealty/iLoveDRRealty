@@ -29,6 +29,7 @@ import { AdminBookings } from './admin/Bookings'
 import { UserSettings } from './Settings'
 import { Upgrade } from './buyer/Upgrade'
 import { ResearchTools } from './shared/ResearchTools'
+import { ProfessionalProfile } from './shared/ProfessionalProfile'
 
 const ROLE_ORDER: Role[] = ['Buyer', 'Owner', 'Realtor']
 const ROLE_ACCESS: Record<string, Role[]> = {
@@ -68,6 +69,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
 
   function getPageTitle(v: string): string {
     if (v === 'research') return tNav('research')
+    if (v === 'professional-profile') return tNav('professional-profile')
     const key = `pages.${v}`
     if (role === 'Buyer')   return tBuyer(key,   { defaultValue: tBuyer('pages.home') })
     if (role === 'Owner')   return tOwner(key,   { defaultValue: tOwner('pages.home') })
@@ -118,6 +120,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
       // Realtor
       case 'pipeline':   return <Pipeline user={user} />
       case 'research':   return <ResearchTools user={user} />
+      case 'professional-profile': return <ProfessionalProfile />
       // Shared by role
       case 'listings':        return role === 'Owner' ? <OwnerListings tone={tone} go={go} user={user} /> : <RealtorListings tone={tone} go={go} user={user} />
       case 'submit-listing':  return role === 'Owner' ? <OwnerSubmitListing go={go} tone={tone} isAdmin={user.role === 'admin'} /> : <SubmitListing go={go} tone={tone} isAdmin={user.role === 'admin'} />

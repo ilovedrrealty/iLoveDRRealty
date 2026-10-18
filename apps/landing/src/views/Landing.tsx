@@ -17,7 +17,7 @@ type GoFn = (page: string, slug?: string, params?: Record<string, string>) => vo
 const fmtP = (n: number) =>
   n >= 1_000_000_000_000 ? `$${(n / 1_000_000_000_000).toFixed(2)}T` :
   n >= 1_000_000_000 ? `$${(n / 1_000_000_000).toFixed(2)}B` :
-  n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : `$${(n / 1_000).toFixed(0)}K`
+  n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : n >= 1_000 ? `$${(n / 1_000).toFixed(0)}K` : `$${n.toLocaleString()}`
 
 function CurrencyToggle({ currency, onChange }: { currency: 'USD' | 'DOP'; onChange: (c: 'USD' | 'DOP') => void }) {
   return (
@@ -35,6 +35,7 @@ function CurrencyToggle({ currency, onChange }: { currency: 'USD' | 'DOP'; onCha
 
 function HeroListingCard({ prop, go }: { prop: Listing; go: GoFn }) {
   const { t } = useTranslation('landing')
+  const nativeCurrency = prop.currency === 'DOP' ? 'DOP' : 'USD'
   return (
     <div
       onClick={() => go('detail', undefined, { id: String(prop.id) })}
@@ -51,7 +52,7 @@ function HeroListingCard({ prop, go }: { prop: Listing; go: GoFn }) {
         <div className="text-white/70 text-2.5 font-sans flex items-center gap-1 mb-0.75"><MapPin size={9} /> {prop.region}</div>
         <div className="text-white text-3.5 font-semibold font-sans leading-tight truncate mb-1.5">{prop.title}</div>
         <div className="flex items-center justify-between">
-          <div className="text-white font-bold font-sans text-4">{fmtP(prop.price)}<span className="text-white/60 text-2.75 font-normal ml-1">USD</span></div>
+          <div className="text-white font-bold font-sans text-4">{nativeCurrency === 'DOP' ? fmtDOP(prop.price) : fmtP(prop.price)}<span className="text-white/60 text-2.75 font-normal ml-1">{nativeCurrency}</span></div>
           <div className="text-white/60 text-2.75 font-sans flex gap-2">
             {prop.bd > 0 && <span>{prop.bd} {t('card.bd')}</span>}
             {prop.ba > 0 && <span>{prop.ba} {t('card.ba')}</span>}
@@ -71,9 +72,13 @@ function PropertyCard({ prop, go, currency, dopRate }: { prop: Listing; go: GoFn
         : Math.round(prop.price * (1 - prop.deal_discount_value / 100)))
     : null
   const effectivePrice = discountedPrice ?? prop.price
-  const displayPrice = currency === 'DOP' ? fmtDOP(Math.round(effectivePrice * dopRate)) : fmtP(effectivePrice)
+  const nativeCurrency = prop.currency === 'DOP' ? 'DOP' : 'USD'
+  const convertPrice = (amount: number) => nativeCurrency === currency ? amount
+    : nativeCurrency === 'DOP' ? amount / dopRate : amount * dopRate
+  const formatPrice = (amount: number) => currency === 'DOP' ? fmtDOP(Math.round(convertPrice(amount))) : fmtP(convertPrice(amount))
+  const displayPrice = formatPrice(effectivePrice)
   const displayOrig = discountedPrice
-    ? (currency === 'DOP' ? fmtDOP(Math.round(prop.price * dopRate)) : fmtP(prop.price))
+    ? formatPrice(prop.price)
     : null
   return (
     <div
@@ -90,8 +95,8 @@ function PropertyCard({ prop, go, currency, dopRate }: { prop: Listing; go: GoFn
           <span className="absolute top-3 right-3 text-2.75 font-bold bg-coral text-white px-2.25 py-0.75 rounded-md font-sans">
             {prop.deal_discount_type === 'fixed'
               ? currency === 'DOP'
-                ? `−${fmtDOP(Math.round(prop.deal_discount_value * dopRate))} ${t('card.off')}`
-                : `−$${Number(prop.deal_discount_value).toLocaleString()} ${t('card.off')}`
+                ? `−${fmtDOP(Math.round(convertPrice(prop.deal_discount_value)))} ${t('card.off')}`
+                : `−$${Math.round(convertPrice(prop.deal_discount_value)).toLocaleString()} ${t('card.off')}`
               : `−${prop.deal_discount_value}% ${t('card.off')}`}
           </span>
         ) : prop.roi > 0 ? (

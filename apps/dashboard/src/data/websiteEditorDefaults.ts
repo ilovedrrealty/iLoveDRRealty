@@ -24,6 +24,8 @@ import es_lead_capture from '../../../landing/src/locales/es/lead_capture.json'
 import es_footer from '../../../landing/src/locales/es/footer.json'
 import es_blog from '../../../landing/src/locales/es/blog.json'
 import es_search from '../../../landing/src/locales/es/search.json'
+import en_professionals from '../../../landing/src/locales/en/professionals.json'
+import es_professionals from '../../../landing/src/locales/es/professionals.json'
 import { PRINCIPALS, REALTORS } from '../../../landing/src/data/teamData'
 import { HOMEPAGE_PROPERTIES, homepagePhoto } from '../../../landing/src/data/homepageHighlights'
 import { LOCATION_GROUPS, groupLocations, normalizeLocation } from '../../../landing/src/data/searchLocations'
@@ -44,6 +46,7 @@ export const COPY_DEFAULTS: Record<string, { en: Record<string, string>; es: Rec
   footer: { en: flattenStrings(en_footer), es: flattenStrings(es_footer) },
   blog: { en: flattenStrings(en_blog), es: flattenStrings(es_blog) },
   search: { en: flattenStrings(en_search), es: flattenStrings(es_search) },
+  professionals: { en: flattenStrings(en_professionals), es: flattenStrings(es_professionals) },
 }
 
 export function flattenStrings(value: unknown, prefix = ''): Record<string, string> {

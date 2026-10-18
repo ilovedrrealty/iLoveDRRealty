@@ -51,7 +51,7 @@ export const WEBSITE_IMAGE_KEYS = [
 ] as const
 export const WEBSITE_COPY_NAMESPACES = [
   'common', 'landing', 'home_showcase', 'buying', 'selling', 'rentals', 'team',
-  'contact', 'get_started', 'lead_capture', 'footer', 'blog', 'search',
+  'contact', 'get_started', 'lead_capture', 'footer', 'blog', 'search', 'professionals',
 ] as const
 export const WEBSITE_ROUTES = [
   'landing', 'buying', 'selling', 'team', 'contact', 'get-started', 'blog', 'rentals', 'search', 'calculator',

@@ -8,6 +8,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useTranslation } from 'react-i18next'
 import { usePlatformStats } from '../hooks/usePlatformStats'
 import { fmt } from '../data/listings'
+import { dashboardAfterAuth, professionalAuthParams, rememberProfessionalJoin } from '../lib/professionalJoin'
 
 const _dashRaw = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'https://app.ilovedrrealty.com'
 const DASHBOARD_URL = _dashRaw.startsWith('http') ? _dashRaw : `https://${_dashRaw}`
@@ -21,6 +22,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [professionalJoin, setProfessionalJoin] = useState(false)
+  const { t: tProfessional } = useTranslation('professionals')
   const platformStats = usePlatformStats()
 
   const STATS = [
@@ -37,7 +40,7 @@ export default function Login() {
       try {
         await googleAuth(tokenResponse.access_token)
         toast.success(t('login.toast.success'))
-        setTimeout(() => { window.location.href = DASHBOARD_URL }, 1500)
+        setTimeout(() => { window.location.href = dashboardAfterAuth(DASHBOARD_URL) }, 1500)
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : t('login.toast.google_error'))
       } finally {
@@ -48,8 +51,9 @@ export default function Login() {
   })
 
   useEffect(() => {
+    setProfessionalJoin(rememberProfessionalJoin())
     getMe()
-      .then(() => { window.location.href = DASHBOARD_URL })
+      .then(() => { window.location.href = dashboardAfterAuth(DASHBOARD_URL) })
       .catch(() => setChecking(false))
   }, [])
 
@@ -62,7 +66,7 @@ export default function Login() {
     try {
       await login({ email, password })
       toast.success(t('login.toast.success'))
-      setTimeout(() => { window.location.href = DASHBOARD_URL }, 1500)
+      setTimeout(() => { window.location.href = dashboardAfterAuth(DASHBOARD_URL) }, 1500)
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : t('login.toast.login_error'))
     } finally {
@@ -117,11 +121,12 @@ export default function Login() {
           <h2 className="font-sans text-7.5 font-bold text-ink mb-1.5 tracking-[-.02em]">{t('login.form.heading')}</h2>
           <p className="text-[14.5px] text-ink2 mb-8">
             {t('login.form.no_account')}{' '}
-            <button onClick={() => go('signup')} className="bg-transparent border-0 cursor-pointer text-coral font-bold text-[14.5px] font-sans p-0">
+            <button onClick={() => go('signup', undefined, professionalAuthParams())} className="bg-transparent border-0 cursor-pointer text-coral font-bold text-[14.5px] font-sans p-0">
               {t('login.form.signup_cta')}
             </button>
           </p>
 
+          {professionalJoin && <p className="mb-4 rounded-xl border border-line bg-white p-4 text-sm text-ink2">{tProfessional('join_auth')}</p>}
           <div className="bg-paper border border-line rounded-2xl p-8">
             <div className="mb-4.5">
               <label className="text-xs font-semibold text-ink2 block mb-1.75">{t('login.form.email_label')}</label>

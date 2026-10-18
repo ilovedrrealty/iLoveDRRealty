@@ -30,6 +30,7 @@ const ROLE_ICON: Record<Role, LucideIcon> = {
 
 const GENERAL_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: LayoutDashboard, view: 'home'     },
+  { Icon: Users,           view: 'professional-profile' },
   { Icon: Settings,        view: 'settings' },
 ]
 
@@ -61,6 +62,8 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
 const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: LayoutDashboard, view: 'home'      },
   { Icon: Users,           view: 'users'     },
+  { Icon: Users,           view: 'professionals' },
+  { Icon: Users,           view: 'professional-profile' },
   { Icon: Building2,       view: 'listings'  },
   { Icon: Inbox,           view: 'leads'     },
   { Icon: Upload,          view: 'bulk-import' },

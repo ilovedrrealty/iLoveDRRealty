@@ -10,11 +10,13 @@ import { AdminSettings } from './admin/Settings'
 import { BulkImportListings } from './admin/BulkImportListings'
 import { ResearchTools } from './shared/ResearchTools'
 import { WebsiteEditor } from './admin/WebsiteEditor'
+import { AdminProfessionals } from './admin/Professionals'
+import { ProfessionalProfile } from './shared/ProfessionalProfile'
 
 export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { go: (v: string, openId?: string) => void; view?: string; user: UserInfo; onUserUpdate: (updates: Partial<UserInfo>) => void }) {
   const { t } = useTranslation('admin')
 
-  const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor'].includes(view) ? view : 'home'
+  const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'professional-profile'].includes(view) ? view : 'home'
   const title = t(`pages.${pageKey}.title`)
   const sub   = t(`pages.${pageKey}.sub`)
 
@@ -29,6 +31,8 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
       case 'bulk-import': return <BulkImportListings />
       case 'research': return <ResearchTools user={user} />
       case 'website-editor': return <WebsiteEditor userId={user.id} />
+      case 'professionals': return <AdminProfessionals />
+      case 'professional-profile': return <ProfessionalProfile />
       default:         return <AdminHome go={go} />
     }
   }

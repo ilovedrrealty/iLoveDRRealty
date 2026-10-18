@@ -12,6 +12,8 @@
     "assign": "Asignar"
   },
   "pages": {
+    "professionals": { "title": "Revisión de profesionales", "sub": "Revisa solicitudes y administra el directorio público de Profesionales de RD" },
+    "professional-profile": { "title": "Mi perfil profesional", "sub": "Administra tu propio perfil de servicios profesionales" },
     "home":      { "title": "Resumen de la plataforma",  "sub": "Propiedades, usuarios y actividad"                          },
     "users":     { "title": "Gestión de usuarios",       "sub": "Administrar usuarios, roles y solicitudes de acceso"        },
     "listings":  { "title": "Propiedades",               "sub": "Gestionar solicitudes de propiedades"                       },

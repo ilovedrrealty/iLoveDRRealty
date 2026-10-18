@@ -1,7 +1,7 @@
 'use client'
 import { useNav } from '../hooks/useNav'
 import { useRouter } from 'next/navigation'
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { PhoneInput } from 'react-international-phone'
 import 'react-international-phone/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
@@ -11,11 +11,15 @@ import { register, googleAuth } from '../api/auth'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useTranslation } from 'react-i18next'
 import { usePlatformStats } from '../hooks/usePlatformStats'
+import { dashboardAfterAuth, professionalAuthParams, rememberProfessionalJoin } from '../lib/professionalJoin'
 
 type Fields = { name: string; phone: string; email: string; password: string; confirmPassword: string; agreed: boolean }
 type FieldErrors = Partial<Record<keyof Fields, string>>
 
 export default function Signup() {
+  const [professionalJoin, setProfessionalJoin] = useState(false)
+  const { t: tProfessional } = useTranslation('professionals')
+  useEffect(() => { setProfessionalJoin(rememberProfessionalJoin()) }, [])
   const go = useNav()
   const router = useRouter()
   const { t } = useTranslation('auth')
@@ -59,7 +63,7 @@ export default function Signup() {
       try {
         await googleAuth(tokenResponse.access_token)
         toast.success(t('signup.toast.success'))
-        setTimeout(() => { window.location.href = DASHBOARD_URL }, 1500)
+        setTimeout(() => { window.location.href = dashboardAfterAuth(DASHBOARD_URL) }, 1500)
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : t('signup.toast.google_error'))
       } finally {
@@ -89,7 +93,8 @@ export default function Signup() {
     try {
       await register({ display_name: name, email, password, phone: phone || undefined })
       toast.success(t('signup.toast.email_sent'))
-      setTimeout(() => router.push(`/verify?email=${encodeURIComponent(email)}`), 1500)
+      const verifyParams = new URLSearchParams({ email, ...professionalAuthParams() })
+      setTimeout(() => router.push(`/verify?${verifyParams}`), 1500)
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : t('signup.toast.signup_error'))
     } finally {
@@ -135,12 +140,13 @@ export default function Signup() {
           <h2 className="font-sans text-7 font-bold text-ink mb-1.5 tracking-[-.02em]">{t('signup.form.heading')}</h2>
           <p className="text-[14.5px] text-ink2 mb-7">
             {t('signup.form.has_account')}{' '}
-            <button onClick={() => go('login')}
+            <button onClick={() => go('login', undefined, professionalAuthParams())}
               className="bg-transparent border-0 cursor-pointer text-coral font-bold text-[14.5px] font-sans p-0">
               {t('signup.form.login_cta')}
             </button>
           </p>
 
+          {professionalJoin && <p className="mb-4 rounded-xl border border-line bg-white p-4 text-sm text-ink2">{tProfessional('join_auth')}</p>}
           <div className="bg-paper border border-line rounded-2xl p-5 sm:p-7">
 
             {/* Name */}
