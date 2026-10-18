@@ -128,13 +128,13 @@ function ResourcesNavigation({ active, mobile = false, onNavigate }: {
   const toggleRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    if (!open) return
+    if (!open || mobile) return
     function closeOutside(event: PointerEvent) {
       if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false)
     }
     document.addEventListener('pointerdown', closeOutside)
     return () => document.removeEventListener('pointerdown', closeOutside)
-  }, [open])
+  }, [open, mobile])
 
   const links = [
     { href: '/blog/', label: t('resources.articles') },
@@ -147,7 +147,7 @@ function ResourcesNavigation({ active, mobile = false, onNavigate }: {
       ref={wrapperRef}
       className={mobile ? 'w-full' : 'relative'}
       onBlur={event => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false)
+        if (!mobile && !event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false)
       }}
       onKeyDown={event => {
         if (event.key === 'Escape' && open) {
