@@ -1,14 +1,15 @@
 'use client'
 import { useNav } from '../hooks/useNav'
 import { useState, useEffect } from 'react'
-import { Search, Check, ArrowRight, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Check, ArrowRight, MapPin } from 'lucide-react'
 import { STATS_KEYS, MISTAKES, ROLES } from '../data/landingData'
-import { fetchListings, fetchDealListings } from '../api/listings'
-import type { ApiDealListing } from '../api/listings'
+import { fetchListings } from '../api/listings'
 import { fmtDOP, type Listing } from '../data/listings'
 import { supabaseImgUrl } from '../api/imgUrl'
 import { usePlatformStats } from '../hooks/usePlatformStats'
 import { useTranslation, Trans } from 'react-i18next'
+import HomepagePhotoCards from '../components/HomepagePhotoCards'
+import PropertyGallery from '../components/PropertyGallery'
 
 type GoFn = (page: string, slug?: string, params?: Record<string, string>) => void
 
@@ -133,9 +134,6 @@ export default function Landing() {
   const [hBudget, setHBudget] = useState('')
   const [featured,      setFeatured]      = useState<Listing[]>([])
   const [featuredLoaded, setFeaturedLoaded] = useState(false)
-  const [deals,       setDeals]       = useState<ApiDealListing[]>([])
-  const [dealIdx,     setDealIdx]     = useState(0)
-  const [dealHovered, setDealHovered] = useState(false)
   const [currency,  setCurrency]  = useState<'USD' | 'DOP'>('DOP')
   const [dopRate,   setDopRate]   = useState(59.5)
   const platformStats = usePlatformStats()
@@ -164,16 +162,6 @@ export default function Landing() {
       setFeaturedLoaded(true)
     }).catch(() => { setFeaturedLoaded(true) })
   }, [])
-
-  useEffect(() => {
-    fetchDealListings().then(setDeals).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (deals.length < 2 || dealHovered) return
-    const timer = setInterval(() => setDealIdx(i => (i + 1) % deals.length), 5000)
-    return () => clearInterval(timer)
-  }, [deals.length, dealHovered])
 
   const TYPE_OPTIONS = ['All', 'Villa', 'Apartment', 'Condo', 'Land', 'Commercial'] as const
 
@@ -306,163 +294,8 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ─────────────────────── Deal of the Week ─────────────────────── */}
-      {deals.length > 0 && (() => {
-        const deal = deals[dealIdx]
-        return (
-          <div
-            className="bg-paper pt-14 sm:pt-17.5 px-4 sm:px-6 pb-7.5"
-            onMouseEnter={() => setDealHovered(true)}
-            onMouseLeave={() => setDealHovered(false)}
-          >
-            <div className="max-w-310 mx-auto">
-              <div className="flex items-center gap-3 mb-5.5 flex-wrap">
-                <span className="inline-flex items-center gap-1.75 px-3.5 py-1.5 rounded-full bg-gold text-ink text-2.75 font-extrabold tracking-[0.14em] uppercase">
-                  {t('deal.badge')}
-                </span>
-                <span className="font-sans text-3.25 text-dim">{t('deal.sub')}</span>
-                <div className="ml-auto flex items-center gap-3">
-                  {deals.length > 1 && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setDealIdx(i => (i - 1 + deals.length) % deals.length)}
-                        className="w-7 h-7 rounded-full flex items-center justify-center border border-line-soft bg-white hover:bg-line-soft transition-colors cursor-pointer"
-                      >
-                        <ChevronLeft size={14} className="text-dim" />
-                      </button>
-                      <div className="flex items-center gap-1.5">
-                        {deals.map((_, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setDealIdx(i)}
-                            className="rounded-full transition-all cursor-pointer border-0 p-0"
-                            style={{
-                              width: i === dealIdx ? 20 : 7,
-                              height: 7,
-                              background: i === dealIdx ? '#0d9488' : '#cbd5e1',
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => setDealIdx(i => (i + 1) % deals.length)}
-                        className="w-7 h-7 rounded-full flex items-center justify-center border border-line-soft bg-white hover:bg-line-soft transition-colors cursor-pointer"
-                      >
-                        <ChevronRight size={14} className="text-dim" />
-                      </button>
-                    </div>
-                  )}
-                  <CurrencyToggle currency={currency} onChange={setCurrency} />
-                </div>
-              </div>
-
-              <div className="bg-paper border border-line-soft rounded-3xl overflow-hidden shadow-[rgba(0,16,46,0.3)_0px_30px_60px_-40px] grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
-                {/* Left — property photo */}
-                <div
-                  className="relative h-64 lg:h-115 overflow-hidden bg-ink"
-                  style={deal.images?.[0] ? { backgroundImage: `url(${supabaseImgUrl(deal.images[0], 1200)})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-                >
-                  <div className="absolute top-4.5 left-4.5 flex flex-col gap-2">
-                    {deal.deal_discount_value && (
-                      <span className="bg-coral text-white text-2.75 font-extrabold tracking-[0.08em] uppercase px-2.75 py-1.25 rounded-full font-sans">
-                        {deal.deal_discount_type === 'fixed'
-                          ? currency === 'DOP'
-                            ? `−RD$${Math.round(deal.deal_discount_value * dopRate).toLocaleString()} ${t('card.off')}`
-                            : `−$${Number(deal.deal_discount_value).toLocaleString()} USD ${t('card.off')}`
-                          : `−${deal.deal_discount_value}% ${t('card.off')}`}
-                      </span>
-                    )}
-                    <span className="bg-ink/80 text-white text-[10.5px] font-bold px-2.75 py-1.25 rounded-full backdrop-blur-1.5 font-sans inline-flex items-center gap-1">
-                      <MapPin size={10} /> {deal.location}
-                    </span>
-                  </div>
-                  {deal.features?.length > 0 && (
-                    <div className="absolute bottom-4.5 left-4.5 right-4.5 flex flex-wrap gap-1.5">
-                      {deal.features.slice(0, 3).map(f => (
-                        <span key={f} className="bg-white/95 text-ink text-2.75 font-bold px-2.5 py-1.25 rounded-full font-sans whitespace-nowrap">{f}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right — details */}
-                <div className="px-5 py-6 sm:px-9 sm:py-8 flex flex-col">
-                  <div className="font-sans text-3 font-bold tracking-[0.12em] uppercase text-coral mb-2">{t('deal.pick_label')}</div>
-                  <h2 className="font-sans text-7 font-bold text-ink leading-[1.15] mb-2">{deal.title}</h2>
-                  {deal.description && (
-                    <p className="font-sans text-[14.5px] text-ink2 leading-[1.65] mb-4.5 line-clamp-4">
-                      {deal.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}
-                    </p>
-                  )}
-                  <div className="flex divide-x divide-line-soft py-4 border-t border-b border-line-soft mb-4.5">
-                    {[
-                      deal.bedrooms  != null && [String(deal.bedrooms),                         t('deal.bedrooms')],
-                      deal.bathrooms != null && [String(deal.bathrooms),                         t('deal.bathrooms')],
-                      deal.area_sqft != null && [`${Math.round(deal.area_sqft / 10.764)} m²`,   t('deal.area')],
-                    ].filter((x): x is [string, string] => Boolean(x)).map(([val, lbl]) => (
-                      <div key={lbl} className="flex-1 pr-3 last:pr-0 first:pl-0 pl-3">
-                        <div className="font-sans text-5 sm:text-5.5 font-bold text-ink">{val}</div>
-                        <div className="font-sans text-[10px] sm:text-2.75 text-dim sm:tracking-[0.06em] uppercase mt-0.5 leading-tight">{lbl}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {(() => {
-                    const fmtUSD = (n: number) => `$${Number(n).toLocaleString()}`
-                    const effectivePrice = deal.deal_discount_value
-                      ? (deal.deal_discount_type === 'fixed'
-                          ? Math.round(deal.price - deal.deal_discount_value)
-                          : Math.round(deal.price * (1 - deal.deal_discount_value / 100)))
-                      : deal.price
-                    const displayPrice = currency === 'DOP'
-                      ? fmtDOP(Math.round(effectivePrice * dopRate))
-                      : fmtUSD(effectivePrice)
-                    const displayOrig = deal.deal_discount_value
-                      ? (currency === 'DOP'
-                          ? fmtDOP(Math.round(deal.price * dopRate))
-                          : fmtUSD(deal.price))
-                      : null
-                    return (
-                      <div className="mb-5">
-                        <div className="flex items-baseline gap-3">
-                          <div className="font-sans text-9.5 font-bold text-ink leading-none">
-                            {displayPrice}{currency === 'USD' && <span className="font-sans text-4 text-dim font-normal ml-1.5">USD</span>}
-                          </div>
-                          {displayOrig && (
-                            <div className="font-sans text-4 text-dim line-through">
-                              {displayOrig}{currency === 'USD' && <span className="font-normal ml-1">USD</span>}
-                            </div>
-                          )}
-                          {deal.deal_discount_value && (
-                            <div className="font-sans text-3 text-brand font-bold px-2 py-0.75 bg-brand/10 rounded-full">
-                              {deal.deal_discount_type === 'fixed'
-                                ? currency === 'DOP'
-                                  ? `−RD$${Math.round(deal.deal_discount_value * dopRate).toLocaleString()}`
-                                  : `−$${Number(deal.deal_discount_value).toLocaleString()} USD`
-                                : `−${deal.deal_discount_value}%`}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })()}
-                  <div className="flex flex-col sm:flex-row gap-2.5 mt-auto">
-                    <button onClick={() => go('detail', undefined, { id: String(deal.id) })} className="font-sans text-3.5 font-semibold cursor-pointer px-5.5 py-2.75 rounded-full inline-flex items-center justify-center gap-2 border border-coral bg-coral text-white">
-                      {t('deal.view_cta')} <ArrowRight size={16} />
-                    </button>
-                    <button onClick={() => go('calculator')} className="font-sans text-3.5 font-semibold cursor-pointer px-5.5 py-2.75 rounded-full inline-flex items-center justify-center gap-2 border border-ink bg-transparent text-ink">
-                      {t('deal.roi_cta')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="font-sans text-3 text-dim mt-3.5 text-center leading-[1.55]">
-                <Trans t={t} i18nKey="deal.disclaimer" components={{ strong: <strong className="text-ink2" /> }} />
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      <PropertyGallery />
+      <HomepagePhotoCards />
 
       {/* ─────────────────────── Founder Story ─────────────────────── */}
       <div className="bg-paper2 py-14 sm:py-20 px-4 sm:px-6 relative overflow-hidden">
