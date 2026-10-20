@@ -1,8 +1,14 @@
 import client from './axios'
-import type { AdminProfessional, AdminProfessionalSummary, ProfessionalDraft, ProfessionalOptions, ProfessionalPage, ProfessionalProfile } from '../../../../packages/professionals/src'
+import type { AdminProfessional, AdminProfessionalSummary, ProfessionalDraft, ProfessionalOptions, ProfessionalPage, ProfessionalProfile, PublicProfessional } from '../../../../packages/professionals/src'
 
-export async function getProfessionalOptions(): Promise<ProfessionalOptions> {
-  return (await client.get<ProfessionalOptions>('/professionals/options')).data
+export async function getProfessionalOptions(signal?: AbortSignal): Promise<ProfessionalOptions> {
+  return (await client.get<ProfessionalOptions>('/professionals/options', { signal })).data
+}
+export async function getProfessionals(params: { category: string[]; area: string[]; q: string; limit: number; offset: number }, signal?: AbortSignal): Promise<ProfessionalPage<PublicProfessional>> {
+  return (await client.get<ProfessionalPage<PublicProfessional>>('/professionals', { params, paramsSerializer: { indexes: null }, signal })).data
+}
+export async function getProfessional(id: string, signal?: AbortSignal): Promise<PublicProfessional> {
+  return (await client.get<PublicProfessional>(`/professionals/${encodeURIComponent(id)}`, { signal })).data
 }
 export async function getMyProfessionalProfile(): Promise<ProfessionalProfile | null> {
   return (await client.get<ProfessionalProfile | null>('/professional-profile')).data

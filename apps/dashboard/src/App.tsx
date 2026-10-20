@@ -5,8 +5,9 @@ import { logout } from './api/auth'
 import DashLayout from './layouts/DashLayout'
 import Dashboard from './pages/Dashboard'
 import AdminDash from './pages/AdminDash'
+import { landingBaseUrl } from './lib/siteUrls'
 
-const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'http://localhost:3000'
+const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 
 export type Role = 'Buyer' | 'Owner' | 'Realtor' | 'Admin'
 
@@ -25,7 +26,8 @@ function DashboardPage() {
 
   useEffect(() => {
     if (!loading && (error || !user)) {
-      window.location.href = `${LANDING_URL.replace(/\/$/, '')}/login${view === 'professional-profile' ? '?join=professional' : ''}`
+      const destination = view === 'professional-profile' ? '?join=professional' : view === 'professional-directory' ? '?directory=professionals' : ''
+      window.location.href = `${LANDING_URL.replace(/\/$/, '')}/login${destination}`
     }
   }, [loading, user, error, view])
 
@@ -41,11 +43,11 @@ function DashboardPage() {
   const requestedWorkspace = ['admin', 'buyer', 'owner', 'realtor'].includes(workspaceParam) ? ROLE_MAP[workspaceParam] : undefined
   // A workspace selects screens, never the user's identity or server permissions.
   const role: Role = accountRole === 'Admin' ? requestedWorkspace ?? 'Admin' : accountRole
-  const go = (v: string, openId?: string) => {
+  const go = (v: string, openId?: string, workspace?: Role) => {
     if (!window.dispatchEvent(new Event('ildr:before-dashboard-navigation', { cancelable: true }))) return
     const path = v === 'home' ? '/' : `/${v}`
     const params = new URLSearchParams()
-    if (accountRole === 'Admin') params.set('workspace', role.toLowerCase())
+    if (accountRole === 'Admin') params.set('workspace', (workspace ?? role).toLowerCase())
     if (openId) params.set('openId', openId)
     navigate(`${path}${params.size ? `?${params}` : ''}`)
   }
@@ -65,7 +67,7 @@ function DashboardPage() {
     <DashLayout role={role} view={view} go={go} onLogout={handleLogout} user={user} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined}>
       {role === 'Admin'
         ? <AdminDash go={go} view={view} user={user} onUserUpdate={updateUser} />
-        : <Dashboard key={role} go={go} view={view} role={role} user={user} onUserUpdate={updateUser} />
+        : <Dashboard key={role} go={go} view={view} role={role} user={user} onUserUpdate={updateUser} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined} />
       }
     </DashLayout>
   )

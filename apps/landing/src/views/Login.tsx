@@ -8,7 +8,7 @@ import GoogleAuthSection from '../components/GoogleAuthSection'
 import { useTranslation } from 'react-i18next'
 import { usePlatformStats } from '../hooks/usePlatformStats'
 import { fmt } from '../data/listings'
-import { dashboardAfterAuth, professionalAuthParams, rememberProfessionalJoin } from '../lib/professionalJoin'
+import { dashboardAfterAuth, professionalAuthParams, rememberProfessionalDirectory, rememberProfessionalJoin } from '../lib/professionalJoin'
 
 const _dashRaw = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'https://app.ilovedrrealty.com'
 const DASHBOARD_URL = _dashRaw.startsWith('http') ? _dashRaw : `https://${_dashRaw}`
@@ -22,6 +22,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
   const [professionalJoin, setProfessionalJoin] = useState(false)
+  const [professionalDirectory, setProfessionalDirectory] = useState(false)
   const { t: tProfessional } = useTranslation('professionals')
   const platformStats = usePlatformStats()
 
@@ -33,7 +34,7 @@ export default function Login() {
   ]
 
   useEffect(() => {
-    setProfessionalJoin(rememberProfessionalJoin())
+    setProfessionalJoin(rememberProfessionalJoin()); setProfessionalDirectory(rememberProfessionalDirectory())
     getMe()
       .then(() => { window.location.href = dashboardAfterAuth(DASHBOARD_URL) })
       .catch(() => setChecking(false))
@@ -108,7 +109,7 @@ export default function Login() {
             </button>
           </p>
 
-          {professionalJoin && <p className="mb-4 rounded-xl border border-line bg-white p-4 text-sm text-ink2">{tProfessional('join_auth')}</p>}
+          {(professionalJoin || professionalDirectory) && <p className="mb-4 rounded-xl border border-line bg-white p-4 text-sm text-ink2">{tProfessional(professionalJoin ? 'join_auth' : 'directory_auth')}</p>}
           <div className="bg-paper border border-line rounded-2xl p-8">
             <div className="mb-4.5">
               <label className="text-xs font-semibold text-ink2 block mb-1.75">{t('login.form.email_label')}</label>

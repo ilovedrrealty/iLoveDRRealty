@@ -130,6 +130,7 @@ export function professionalContactHref(kind: 'phone' | 'whatsapp' | 'email' | '
 export function professionalSubmissionIssues(draft: ProfessionalDraft): string[] {
   const issues: string[] = []
   if (!draft.business_name.trim() && !draft.contact_name.trim()) issues.push('business_name')
+  if (draft.category_ids.includes('real_estate_agent') && !draft.business_name.trim()) issues.push('company')
   if (!draft.category_ids.length) issues.push('categories')
   if (professionalCustomServicesInvalid(draft, true)) issues.push('custom_services')
   if (!draft.service_area_ids.length) issues.push('areas')

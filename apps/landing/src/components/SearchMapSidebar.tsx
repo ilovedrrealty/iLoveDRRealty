@@ -1,51 +1,15 @@
 'use client'
-import { GoogleMap, OverlayView, useJsApiLoader } from '@react-google-maps/api'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useId } from 'react'
+import { createPortal } from 'react-dom'
+import { ArrowLeft, Maximize2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fmt, fmtDOP, type Listing } from '../data/listings'
-import { DR_REGIONS, coordsForRegion, isLocality } from '../data/searchData'
+import { areaSummaryPoints, type ListingMapData, type MapBounds } from '../data/searchMap'
+import { SearchInventoryMap } from './SearchInventoryMap'
 import { supabaseImgUrl } from '../api/imgUrl'
 
 const titleCase = (s: string) =>
   s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s
-
-function strHash(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) >>> 0
-  return h
-}
-
-function coordsForListing(l: Listing): { lat: number; lng: number } {
-  if (l.latitude != null && l.longitude != null) {
-    return { lat: l.latitude, lng: l.longitude }
-  }
-  // No exact coordinates — pin on the region the listing was filed under, with a
-  // deterministic offset so the address stays approximate and stacked listings
-  // in one region fan out instead of overlapping.
-  const base = coordsForRegion(l.region) ?? DR_REGIONS[0]
-  const seed = (strHash(l.id) * 9301 + 49297) % 233280
-  const rand = (i: number) => (((seed * (i + 1)) % 233280) / 233280) * 2 - 1
-  return { lat: base.lat + rand(1) * 0.055, lng: base.lng + rand(2) * 0.075 }
-}
-
-const MAP_CENTER = { lat: 18.73, lng: -70.16 }
-const MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { featureType: 'poi',            elementType: 'labels.icon',        stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit',        elementType: 'labels.icon',        stylers: [{ visibility: 'off' }] },
-  { featureType: 'road',           elementType: 'geometry.fill',      stylers: [{ color: '#f0ede8' }] },
-  { featureType: 'road.highway',   elementType: 'geometry.fill',      stylers: [{ color: '#e4dfd8' }] },
-  { featureType: 'water',          elementType: 'geometry',           stylers: [{ color: '#cfe0f0' }] },
-  { featureType: 'landscape',      elementType: 'geometry',           stylers: [{ color: '#f7f5f2' }] },
-  { featureType: 'administrative', elementType: 'geometry.stroke',    stylers: [{ color: '#d8d3cc' }] },
-]
-const MAP_OPTIONS: google.maps.MapOptions = {
-  disableDefaultUI: true,
-  zoomControl: true,
-  styles: MAP_STYLES,
-  gestureHandling: 'cooperative',
-  minZoom: 7,
-  maxZoom: 14,
-}
 
 function fmtPill(l: { price: number; purpose: string }, currency: 'USD' | 'DOP', dopRate: number, unit: string): string {
   if (currency === 'DOP') {
@@ -69,126 +33,36 @@ function Insight({ label, value, tone }: { label: string; value: string | number
   )
 }
 
-function LiveMap({ apiKey, hovered, listings, onSelect, currency, dopRate, region, locations }: {
-  apiKey: string
+function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChange, locations, inventory, expanded = false, onExpand }: {
   hovered: Listing | null
   listings: Listing[]
-  onSelect: (l: Listing) => void
-  currency: 'USD' | 'DOP'
-  dopRate: number
-  region: string | null
-  locations: string[]
-}) {
-  const { t } = useTranslation('search')
-  const { isLoaded } = useJsApiLoader({ id: 'google-map-script', googleMapsApiKey: apiKey })
-  const mapRef = useRef<google.maps.Map | null>(null)
-
-  const selectedLocations = JSON.stringify(locations)
-  function positionMap(map: google.maps.Map) {
-    const points = locations.map(coordsForRegion).filter((point): point is { lat: number; lng: number } => point !== null)
-    if (points.length > 1) {
-      const bounds = new google.maps.LatLngBounds()
-      points.forEach(point => bounds.extend(point))
-      map.fitBounds(bounds, 24)
-    } else if (points.length === 1) {
-      map.panTo(points[0])
-      map.setZoom(isLocality(locations[0]) ? 12 : 10)
-    } else {
-      map.panTo(MAP_CENTER)
-      map.setZoom(8)
-    }
-  }
-  useEffect(() => { if (mapRef.current) positionMap(mapRef.current) }, [selectedLocations])
-
-
-  if (!isLoaded) {
-    return (
-      <div style={{ width: '100%', height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#00102e', color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
-        {t('map.loading')}
-      </div>
-    )
-  }
-
-  return (
-    <GoogleMap
-      mapContainerStyle={{ width: '100%', height: '260px' }}
-      center={MAP_CENTER}
-      zoom={8}
-      options={MAP_OPTIONS}
-      onLoad={map => { mapRef.current = map; positionMap(map) }}
-    >
-      {listings.map(l => {
-        const pos   = coordsForListing(l)
-        const isHot = hovered?.id === l.id
-        return (
-          <OverlayView
-            key={l.id}
-            position={pos}
-            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-            getPixelPositionOffset={(w, h) => ({ x: -w / 2, y: -h / 2 })}
-          >
-            <div style={{ overflow: 'visible', whiteSpace: 'nowrap' }}>
-              <div
-                onClick={() => onSelect(l)}
-                style={{
-                  display: 'inline-block',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  overflow: 'visible',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  fontFamily: '"Mona Sans","Inter",system-ui,sans-serif',
-                  padding: '7px 13px',
-                  borderRadius: '9999px',
-                  background: isHot ? '#00102e' : 'white',
-                  color: isHot ? 'white' : '#00102e',
-                  border: `1.5px solid ${isHot ? '#00102e' : 'rgba(0,0,0,0.18)'}`,
-                  userSelect: 'none',
-                  boxShadow: isHot ? '0 2px 10px rgba(0,0,0,0.35)' : '0 2px 6px rgba(0,0,0,0.14)',
-                  zIndex: isHot ? 10 : 1,
-                  position: 'relative',
-                  transform: isHot ? 'scale(1.08)' : 'scale(1)',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                {l.price > 0 ? fmtPill(l, currency, dopRate, t(l.pricePeriod === 'day' ? 'per_day' : 'per_month')) : t('request_price')}
-              </div>
-            </div>
-          </OverlayView>
-        )
-      })}
-    </GoogleMap>
-  )
-}
-
-function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChange, region, locations }: {
-  hovered: Listing | null
-  listings: Listing[]
-  onSelect: (l: Listing) => void
+  onSelect: (l: Pick<Listing, 'id'>) => void
   currency: 'USD' | 'DOP'
   dopRate: number
   onCurrencyChange: (c: 'USD' | 'DOP') => void
-  region: string | null
   locations: string[]
+  inventory: MapInventoryState
+  expanded?: boolean
+  onExpand?: () => void
 }) {
   const { t } = useTranslation('search')
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const hasKey = Boolean(apiKey && apiKey !== 'YOUR_KEY_HERE')
+  const { data, loading, error, scope, retry, onAreaSelect, onViewportChange } = inventory
+  const unplaced = data.ungrouped_total + data.areas.reduce((sum, area) => sum + (areaSummaryPoints([area]).length ? 0 : area.count), 0)
 
   return (
-    <div className="bg-paper rounded-2xl overflow-hidden border border-line">
-      <div className="pt-3.5 px-4.5 pb-3.5 flex items-start justify-between gap-2">
+    <div className={`bg-paper overflow-hidden ${expanded ? 'h-full flex flex-col' : 'rounded-2xl border border-line'}`}>
+      <div className="p-4 flex flex-wrap items-start justify-between gap-3 shrink-0">
         <div>
-          <div className="font-sans text-4.25 font-semibold text-ink">Dominican Republic</div>
+          <div className="font-sans text-4.25 font-semibold text-ink">{t('map.country')}</div>
           <div className="text-xs text-dim mt-0.5 font-sans">
-            {listings.length > 0
-              ? t('map.mapped', { count: listings.length })
-              : t('map.tap_region')}
+            {t('map.inventory_count', { count: data.total })}
           </div>
         </div>
         <div className="flex rounded-lg border border-line overflow-hidden text-[11px] font-bold shrink-0">
           {(['DOP', 'USD'] as const).map(c => (
-            <button key={c} type="button" onClick={() => onCurrencyChange(c)}
+            <button key={c} type="button" onClick={() => onCurrencyChange(c)} aria-pressed={currency === c}
               className="px-2.5 py-1 transition-colors cursor-pointer"
               style={{ background: currency === c ? '#00102e' : 'white', color: currency === c ? 'white' : '#64748b' }}>
               {c}
@@ -196,46 +70,108 @@ function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChang
           ))}
         </div>
       </div>
-      <div>
+      <div className={expanded ? 'min-h-0 flex-1' : 'h-[420px]'}>
         {hasKey ? (
-          <LiveMap
-            apiKey={apiKey}
-            hovered={hovered}
-            listings={listings}
-            onSelect={onSelect}
-            currency={currency}
-            dopRate={dopRate}
-            region={region}
-            locations={locations}
-          />
+          <SearchInventoryMap apiKey={apiKey} data={data} scope={scope} hoveredId={hovered?.id} locations={locations} expanded={expanded}
+            onSelect={id => onSelect({ id })} onAreaSelect={onAreaSelect} onViewportChange={onViewportChange} />
         ) : (
-          <div style={{ width: '100%', height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#00102e', color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
+          <div role="status" className="h-full flex items-center justify-center bg-ink text-white/80 p-6 text-center text-sm">
             {t('map.unavailable')}
           </div>
         )}
       </div>
+      <div className="p-4 border-t border-line-soft shrink-0">
+        {loading ? <p className="text-xs text-dim m-0" role="status">{t('map.inventory_loading')}</p> : null}
+        {error ? <div role="alert" className="text-xs text-red-800"><p>{t('map.inventory_error')}</p><button type="button" onClick={retry} className="underline font-semibold">{t('retry')}</button></div> : <>
+          <p className="text-xs text-dim leading-relaxed m-0">{t('map.coverage', { total: data.total, exact: data.mapped_total, approximate: data.unmapped_total })}</p>
+          <p className="text-xs leading-relaxed text-[#5b21b6] mt-2 mb-0">{t('map.area_legend')}</p>
+          {unplaced > 0 && <p className="text-xs text-dim leading-relaxed mt-1 mb-0">{t('map.unplaced', { count: unplaced })}</p>}
+          {data.mapped_total > data.limit && <p className="text-xs text-dim leading-relaxed mt-2 mb-0">{t('map.point_limit', { count: data.returned, total: data.mapped_total })}</p>}
+        </>}
+        {onExpand && <button type="button" onClick={onExpand} aria-haspopup="dialog" className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-ink text-paper px-4 py-2.5 text-sm font-semibold focus-visible:outline-coral cursor-pointer"><Maximize2 size={16} aria-hidden="true" />{t('map.expand')}</button>}
+      </div>
     </div>
   )
+}
+
+export interface MapInventoryState {
+  data: ListingMapData; loading: boolean; error: boolean; scope: string; retry: () => void
+  onAreaSelect: (locations: string[]) => void; onViewportChange: (bounds: MapBounds) => void
 }
 
 export interface MapSidebarProps {
   hovered: Listing | null
   results: Listing[]
   alsoLike: Listing[]
+  inventory: MapInventoryState
   insights: { count: number; median: number; avgYield: number } | null
   currency: 'USD' | 'DOP'
   dopRate: number
-  region: string | null
   locations: string[]
   locationLabel: string | null
+  expanded: boolean
+  onExpand: () => void
+  onClose: () => void
   onCurrencyChange: (c: 'USD' | 'DOP') => void
-  onSelect: (l: Listing) => void
+  onSelect: (l: Pick<Listing, 'id'>) => void
   go: (path: string) => void
 }
 
+function ExpandedSearchMap({ hovered, results, inventory, currency, dopRate, locations, locationLabel, onCurrencyChange, onSelect, onClose }: Pick<MapSidebarProps,
+  'hovered' | 'results' | 'inventory' | 'currency' | 'dopRate' | 'locations' | 'locationLabel' | 'onCurrencyChange' | 'onSelect' | 'onClose'>) {
+  const { t } = useTranslation('search')
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const close = useRef(onClose)
+  close.current = onClose
+  const titleId = useId()
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    dialog.showModal()
+    closeRef.current?.focus()
+    return () => {
+      dialog.close()
+      document.body.style.overflow = overflow
+      if (previous?.isConnected) previous.focus()
+    }
+  }, [])
+
+  return createPortal(
+    <dialog ref={dialogRef} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); close.current() }}
+      className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-paper p-0 text-ink font-sans backdrop:bg-black/50">
+      <div className="h-full flex flex-col overflow-hidden">
+        <header className="border-b border-line px-4 py-3 sm:px-6 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="min-w-0"><h2 id={titleId} className="text-lg font-bold m-0">{t('map.title')}</h2><p className="text-xs text-dim mt-1 mb-0">{locationLabel || t('location_across')}</p></div>
+          <button ref={closeRef} type="button" onClick={onClose} className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-sm font-semibold focus-visible:outline-coral cursor-pointer"><ArrowLeft size={17} aria-hidden="true" />{t('map.return_to_results')}</button>
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto md:grid md:grid-cols-[minmax(0,1fr)_300px] md:overflow-hidden">
+          <section aria-label={t('map.title')} className="h-[75dvh] min-h-[520px] md:h-full md:min-h-0">
+            <DRMap inventory={inventory} hovered={hovered} listings={results} onSelect={onSelect} currency={currency} dopRate={dopRate} onCurrencyChange={onCurrencyChange} locations={locations} expanded />
+          </section>
+          <section aria-label={t('map.page_results')} className="min-w-0 border-t md:border-t-0 md:border-l border-line p-4 md:overflow-y-auto">
+            <h3 className="font-bold text-sm m-0">{t('map.page_results')}</h3>
+            <p className="text-xs text-dim mt-1 mb-3">{t('results_count', { count: results.length })}</p>
+            {!results.length && <p className="text-sm text-dim">{t('empty')}</p>}
+            <div className="space-y-3">
+              {results.map(listing => <button key={listing.id} type="button" onClick={() => onSelect(listing)} className="w-full overflow-hidden rounded-xl border border-line bg-white text-left text-ink focus-visible:outline-coral cursor-pointer">
+                <img src={supabaseImgUrl(listing.img, 400)} alt="" loading="lazy" className="h-28 w-full object-cover bg-paper2" />
+                <span className="block p-3"><span className="block text-sm font-semibold">{titleCase(listing.title)}</span><span className="block text-xs text-dim mt-1">{listing.region}</span><span className="block text-sm font-bold text-coral mt-2">{listing.price > 0 ? fmtPill(listing, currency, dopRate, t(listing.pricePeriod === 'day' ? 'per_day' : 'per_month')) : t('request_price')}</span></span>
+              </button>)}
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>, document.body,
+  )
+}
+
 export function SearchMapSidebar({
-  hovered, results, alsoLike, insights, currency, dopRate, region, locations, locationLabel,
-  onCurrencyChange, onSelect, go,
+  hovered, results, alsoLike, insights, inventory, currency, dopRate, locations, locationLabel,
+  expanded, onExpand, onClose, onCurrencyChange, onSelect, go,
 }: MapSidebarProps) {
   const { t } = useTranslation('search')
   const rentalPeriod = results[0]?.pricePeriod
@@ -253,17 +189,19 @@ export function SearchMapSidebar({
   }
 
   return (
+    <>
     <aside className="hidden lg:block self-start sticky top-22.5 max-h-[calc(100vh-110px)] overflow-y-auto space-y-3.5">
 
       <DRMap
+        inventory={inventory}
         hovered={hovered}
         listings={results}
         onSelect={onSelect}
         currency={currency}
         dopRate={dopRate}
         onCurrencyChange={onCurrencyChange}
-        region={region}
         locations={locations}
+        onExpand={onExpand}
       />
 
       {insights && (
@@ -323,5 +261,7 @@ export function SearchMapSidebar({
       </div>
 
     </aside>
+    {expanded && <ExpandedSearchMap inventory={inventory} hovered={hovered} results={results} currency={currency} dopRate={dopRate} locations={locations} locationLabel={locationLabel} onCurrencyChange={onCurrencyChange} onSelect={onSelect} onClose={onClose} />}
+    </>
   )
 }

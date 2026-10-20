@@ -10,8 +10,10 @@ import i18n from '../i18n'
 import type { Role } from '../App'
 import type { UserInfo } from '../lib/auth'
 import logo from '../assets/iLoveDRRealty_White.png'
+import { TOOL_WORKSPACE_VIEW, type ToolWorkspace } from '../data/toolHubs'
+import { landingBaseUrl } from '../lib/siteUrls'
 
-const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
+const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 
 const ROLE_ORDER: Role[] = ['Buyer', 'Owner', 'Realtor']
 const ROLE_ACCESS: Record<string, Role[]> = {
@@ -32,6 +34,7 @@ const GENERAL_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: LayoutDashboard, view: 'home'     },
   { Icon: Users,           view: 'professional-profile' },
   { Icon: BookOpen,        view: 'resources' },
+  { Icon: Users,           view: 'professional-directory' },
   { Icon: Settings,        view: 'settings' },
 ]
 
@@ -69,6 +72,10 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Upload,          view: 'bulk-import' },
   { Icon: Bell,            view: 'bookings'  },
   { Icon: BookOpen,        view: 'resources' },
+  { Icon: Search,          view: 'buyer-tools' },
+  { Icon: Key,             view: 'owner-tools' },
+  { Icon: Building2,       view: 'realtor-tools' },
+  { Icon: Users,           view: 'professional-directory' },
   { Icon: BookOpen,        view: 'research' },
   { Icon: Globe,           view: 'website-editor' },
   { Icon: Settings,        view: 'settings'  },
@@ -77,7 +84,7 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
 interface Props {
   role: Role
   view: string
-  go: (v: string, openId?: string) => void
+  go: (v: string, openId?: string, workspace?: Role) => void
   onLogout: () => void
   user: UserInfo
   onWorkspaceChange?: (role: Role) => void
@@ -99,7 +106,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
   const closeNav = () => setSidebarOpen(false)
   const toggleLocked = (r: string) => setExpandedLocked(prev => ({ ...prev, [r]: !prev[r] }))
 
-  const isSectionLocked = (r: Role) => !ROLE_ACCESS[role]?.includes(r)
+  const isSectionLocked = (r: Role) => user.role !== 'admin' && !ROLE_ACCESS[role]?.includes(r)
 
   function toggleLang() {
     const next = lang === 'en' ? 'es' : 'en'
@@ -170,13 +177,15 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
         return (
           <div key={r} className="mb-3">
             <button
-              onClick={() => sectionLocked ? toggleLocked(r) : undefined}
-              className="flex items-center gap-1.5 px-3 mb-0.5 mt-1 w-full border-0 bg-transparent cursor-pointer text-left"
-              style={{ cursor: sectionLocked ? 'pointer' : 'default' }}
+              onClick={() => { if (sectionLocked) toggleLocked(r); else { go(TOOL_WORKSPACE_VIEW[r as ToolWorkspace], undefined, r); closeNav() } }}
+              aria-expanded={sectionLocked ? isExpanded : undefined}
+              aria-current={!sectionLocked && view === TOOL_WORKSPACE_VIEW[r as ToolWorkspace] ? 'page' : undefined}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg mb-0.5 mt-1 w-full border-0 cursor-pointer text-left"
+              style={{ cursor: 'pointer', background: !sectionLocked && view === TOOL_WORKSPACE_VIEW[r as ToolWorkspace] ? `${sectionTone}22` : 'transparent' }}
             >
               <SectionIcon size={10} style={{ color: sectionLocked ? 'rgba(255,255,255,.38)' : sectionTone, flexShrink: 0 }} />
               <span className="text-[10px] font-bold uppercase tracking-widest flex-1" style={{ color: sectionLocked ? 'rgba(255,255,255,.38)' : sectionTone }}>
-                {t(`roles.${r}`)}
+                {t(`workspace_options.${r}`)}
               </span>
               {sectionLocked && (
                 <ChevronRight
@@ -195,7 +204,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
               return (
                 <button
                   key={`${r}-${item.view}`}
-                  onClick={() => { if (sectionLocked) { go('home'); closeNav() } else { go(item.view); closeNav() } }}
+                  onClick={() => { if (sectionLocked) { go('home'); closeNav() } else { go(item.view, undefined, r); closeNav() } }}
                   className="flex items-center gap-2.5 w-full px-3 py-1.75 rounded-lg border-0 cursor-pointer text-[13px] text-left transition-all duration-120"
                   style={{
                     background: active ? `${sectionTone}22` : 'transparent',

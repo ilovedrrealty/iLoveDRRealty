@@ -18,6 +18,7 @@ export function ProfessionalDraftFields({ draft, options, onChange, onUpload, up
             <ProfessionalField label={t('business_name')} value={draft.business_name} onChange={value => onChange('business_name', value)} maxLength={120} />
             <ProfessionalField label={t('contact_name')} value={draft.contact_name} onChange={value => onChange('contact_name', value)} maxLength={100} />
           </div>
+          {draft.category_ids.includes('real_estate_agent') && <p className="text-sm text-ink2">{t('company_help')}</p>}
           <ProfessionalServices draft={draft} options={options} onChange={onChange} />
           <ProfessionalChoices title={t('areas')} values={draft.service_area_ids} options={options.areas} max={20} onChange={value => onChange('service_area_ids', value)} />
           <ProfessionalChoices title={t('languages')} values={draft.languages} options={options.languages} max={8} onChange={value => onChange('languages', value)} />

@@ -1,5 +1,6 @@
 import client from './axios'
 import type { Listing } from '../data/listings'
+import type { ListingMapData, MapBounds } from '../data/searchMap'
 
 export interface ApiDealListing {
   id: string
@@ -233,4 +234,19 @@ export async function fetchListings(q: ListingsQuery = {}): Promise<ListingsPage
     medianPrice: res.data.median_price,
     avgRoi: res.data.avg_roi,
   }
+}
+
+/** Reuses the card-search filter contract; map results never inherit its page. */
+export async function fetchListingMap(q: ListingsQuery, bounds?: MapBounds | null): Promise<ListingMapData> {
+  const res = await client.get<ListingMapData>('/listings/map', {
+    signal: q.signal,
+    params: {
+      purpose: q.purpose, type: q.type, types: q.types?.map(type => type.toLowerCase()),
+      region: q.region, locations: q.locations, min_price: q.minPrice, max_price: q.maxPrice,
+      beds: q.beds, min_roi: q.minRoi, features: q.features, exclude_ids: q.excludeIds,
+      price_currency: q.priceCurrency, usd_to_dop: q.usdToDop, rental_period: q.rentalPeriod,
+      ...bounds,
+    },
+  })
+  return { ...res.data, items: res.data.items.map(item => ({ ...item, price: item.price == null ? null : Number(item.price) })) }
 }

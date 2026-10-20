@@ -4,7 +4,7 @@ import Professionals from '../../views/Professionals'
 
 export const metadata: Metadata = {
   title: 'DR Professionals — Property Services Directory',
-  description: 'Find professionals serving Dominican Republic property buyers and owners. Browse services, areas and business contact details.',
+  description: 'Join the DR Professionals network for Dominican Republic property services. Learn how to create a profile and sign in to search approved professionals.',
 }
 
 export default function Page() {

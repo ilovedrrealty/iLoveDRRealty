@@ -4,18 +4,19 @@ import { useTranslation } from 'react-i18next'
 import { Card } from '../../components/dashboard/shared'
 import { getPublicResources } from '../../api/publicResources'
 import { localizedValue, type WebsiteResource } from '../../../../../packages/website-settings/src'
+import { landingBaseUrl } from '../../lib/siteUrls'
 
-const LANDING_URL = (import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com').replace(/\/+$/, '')
+const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 const QUICK_LINKS = [
   { key: 'buying', path: '/buying/', Icon: BookOpen },
   { key: 'calculator', path: '/calculator/', Icon: Calculator },
-  { key: 'professionals', path: '/professionals/', Icon: Users },
   { key: 'library', path: '/blog/#website-resources-heading', Icon: ExternalLink },
 ] as const
 const searchable = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase()
 
-export function Resources() {
+export function Resources({ go }: { go: (view: string) => void }) {
   const { t, i18n } = useTranslation('buyer')
+  const { t: tTools } = useTranslation('tool_hubs')
   const [resources, setResources] = useState<WebsiteResource[]>([])
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [retry, setRetry] = useState(0)
@@ -49,6 +50,14 @@ export function Resources() {
       <Card title={<><BookOpen size={16} />{t('resources_page.title')}</>}>
         <p className="text-sm text-ink2 mb-4">{t('resources_page.intro')}</p>
         <div className="grid sm:grid-cols-2 gap-3">
+          <button type="button" onClick={() => go('professional-directory')} className="block text-left rounded-xl border border-line bg-white p-4 hover:border-coral focus-visible:outline-coral cursor-pointer">
+            <span className="flex items-center gap-2 font-semibold text-sm text-coral"><Users size={17} aria-hidden="true" />{t('resources_page.quick.professionals.title')} →</span>
+            <span className="block text-xs text-ink2 mt-2">{t('resources_page.quick.professionals.description')}</span>
+          </button>
+          <button type="button" onClick={() => go('professional-profile')} className="block text-left rounded-xl border border-line bg-white p-4 hover:border-coral focus-visible:outline-coral cursor-pointer">
+            <span className="flex items-center gap-2 font-semibold text-sm text-coral"><Users size={17} aria-hidden="true" />{tTools('join.title')} →</span>
+            <span className="block text-xs text-ink2 mt-2">{tTools('join.description')}</span>
+          </button>
           {QUICK_LINKS.map(({ key, path, Icon }) => (
             <a key={key} href={`${LANDING_URL}${path}`} target="_blank" rel="noopener noreferrer"
               className="block rounded-xl border border-line p-4 hover:border-coral focus-visible:outline-coral">

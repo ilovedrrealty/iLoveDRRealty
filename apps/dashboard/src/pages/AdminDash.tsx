@@ -13,14 +13,21 @@ import { WebsiteEditor } from './admin/WebsiteEditor'
 import { AdminProfessionals } from './admin/Professionals'
 import { ProfessionalProfile } from './shared/ProfessionalProfile'
 import { Resources } from './buyer/Resources'
+import ProfessionalDirectory from './shared/ProfessionalDirectory'
+import { ToolHub } from './shared/ToolHub'
+import { ROICalculator } from './buyer/ROICalculator'
+import type { Role } from '../App'
+import type { ToolWorkspace } from '../data/toolHubs'
 
-export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { go: (v: string, openId?: string) => void; view?: string; user: UserInfo; onUserUpdate: (updates: Partial<UserInfo>) => void }) {
+export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { go: (v: string, openId?: string, workspace?: Role) => void; view?: string; user: UserInfo; onUserUpdate: (updates: Partial<UserInfo>) => void }) {
   const { t } = useTranslation('admin')
   const { t: tNav } = useTranslation('nav')
 
   const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'professional-profile'].includes(view) ? view : 'home'
-  const title = view === 'resources' ? tNav('resources') : t(`pages.${pageKey}.title`)
-  const sub   = view === 'resources' ? '' : t(`pages.${pageKey}.sub`)
+  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator'].includes(view)
+  const title = sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
+  const sub = sharedTitle ? '' : t(`pages.${pageKey}.sub`)
+  const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function renderView() {
     switch (view) {
@@ -32,10 +39,16 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
       case 'settings': return <AdminSettings user={user} onUserUpdate={onUserUpdate} />
       case 'bulk-import': return <BulkImportListings />
       case 'research': return <ResearchTools user={user} />
-      case 'resources': return <Resources />
+      case 'resources': return <Resources go={go} />
+      case 'buyer-tools': return <ToolHub workspace="Buyer" user={user} go={goToTool} />
+      case 'owner-tools': return <ToolHub workspace="Owner" user={user} go={goToTool} />
+      case 'realtor-tools':
+      case 'tools': return <ToolHub workspace="Realtor" user={user} go={goToTool} />
+      case 'calculator': return <ROICalculator />
       case 'website-editor': return <WebsiteEditor userId={user.id} />
       case 'professionals': return <AdminProfessionals />
       case 'professional-profile': return <ProfessionalProfile />
+      case 'professional-directory': return <ProfessionalDirectory />
       default:         return <AdminHome go={go} />
     }
   }

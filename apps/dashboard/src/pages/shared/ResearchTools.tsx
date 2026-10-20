@@ -7,13 +7,14 @@ import type { UserInfo } from '../../lib/auth'
 import { getResearchTools } from '../../api/researchTools'
 import { ALL_REGIONS } from '../../data/regions'
 import { BUILT_IN_RESEARCH_TOOLS, CHECKLIST_ITEMS, convertArea, mergeResearchTools, type AreaUnit, type ResearchTool } from '../../data/researchTools'
+import { landingBaseUrl } from '../../lib/siteUrls'
 
-const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
+const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 const FIELD = 'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-sea'
 const CARD = 'rounded-2xl border border-line bg-paper p-5 research-tools-card'
 const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
-function AreaConverter() {
+export function AreaConverter() {
   const { t, i18n } = useTranslation('research_tools')
   const [amount, setAmount] = useState('100')
   const [unit, setUnit] = useState<AreaUnit>('m2')
@@ -42,7 +43,7 @@ function AreaConverter() {
   )
 }
 
-function DueDiligenceChecklist() {
+export function DueDiligenceChecklist() {
   const { t } = useTranslation('research_tools')
   const [checks, setChecks] = useState<Record<string, boolean>>({})
   const [notes, setNotes] = useState<Record<string, string>>({})
@@ -84,6 +85,7 @@ export function ResearchTools({ user }: { user: UserInfo }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [city, setCity] = useState('')
+  const [retry, setRetry] = useState(0)
   useEffect(() => {
     const controller = new AbortController()
     setTools([])
@@ -108,13 +110,14 @@ export function ResearchTools({ user }: { user: UserInfo }) {
       }
     })
     return () => controller.abort()
-  }, [canUse, user.id])
+  }, [canUse, user.id, retry])
   const categories = useMemo(() => [...new Map(tools.map(tool => [tool.category.en, tool.category])).entries()], [tools])
+  const activeCategory = categories.some(([key]) => key === category) ? category : 'all'
   const filtered = useMemo(() => tools.filter(tool => {
-    if (category !== 'all' && tool.category.en !== category) return false
+    if (activeCategory !== 'all' && tool.category.en !== activeCategory) return false
     const searchable = [tool.title.en, tool.title.es, tool.description.en, tool.description.es, tool.category.en, tool.category.es, tool.organization ?? ''].join(' ')
     return normalize(searchable).includes(normalize(query.trim()))
-  }), [tools, query, category])
+  }), [tools, query, activeCategory])
   if (!canUse || status === 'denied') return <section className={CARD} role="alert"><h2 className="text-[17px] font-bold">{t('access.title')}</h2><p className="text-[13px] text-ink2 leading-relaxed">{t('access.description')}</p></section>
   const searchUrl = new URL('/search/', LANDING_URL)
   if (city) searchUrl.searchParams.set('location', city)
@@ -146,10 +149,11 @@ export function ResearchTools({ user }: { user: UserInfo }) {
         <p className="text-[12px] text-dim leading-relaxed mt-0 mb-4">{t('directory.external_note')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 research-no-print">
           <label className="text-[12px] font-semibold text-ink2"><span className="flex items-center gap-1.5"><Search size={13} />{t('directory.search')}</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} className={`${FIELD} mt-1.5`} placeholder={t('directory.search_placeholder')} /></label>
-          <label className="text-[12px] font-semibold text-ink2">{t('directory.category')}<select value={category} onChange={event => setCategory(event.target.value)} className={`${FIELD} mt-1.5`}><option value="all">{t('directory.all_categories')}</option>{categories.map(([key, value]) => <option key={key} value={key}>{localizedValue(value, i18n.language)}</option>)}</select></label>
+          <label className="text-[12px] font-semibold text-ink2">{t('directory.category')}<select value={activeCategory} onChange={event => setCategory(event.target.value)} className={`${FIELD} mt-1.5`}><option value="all">{t('directory.all_categories')}</option>{categories.map(([key, value]) => <option key={key} value={key}>{localizedValue(value, i18n.language)}</option>)}</select></label>
         </div>
         {status === 'loading' && <p role="status" className="text-[12px] text-dim mt-4">{t('directory.loading')}</p>}
-        {status === 'unavailable' && <p role="status" className="text-[12px] text-amber-800 mt-4">{t('directory.unavailable')}</p>}
+        {status === 'unavailable' && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 mt-4"><p role="status" className="text-[12px] text-amber-900 mt-0">{t('directory.unavailable')}</p><button type="button" onClick={() => setRetry(value => value + 1)} className="text-[12px] font-semibold text-amber-900 underline">{t('directory.retry')}</button></div>}
+        {query || activeCategory !== 'all' ? <button type="button" onClick={() => { setQuery(''); setCategory('all') }} className="text-[12px] font-semibold text-sea underline mt-3">{t('directory.clear')}</button> : null}
         {status !== 'loading' && <p className="text-[12px] text-dim mt-4">{t('directory.count', { count: filtered.length })}</p>}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
           {filtered.map(tool => (
