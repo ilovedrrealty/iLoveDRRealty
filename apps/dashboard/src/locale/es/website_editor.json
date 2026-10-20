@@ -123,7 +123,7 @@
     "add_resource": "Agregar recurso público",
     "add_tool": "Agregar herramienta para agentes",
     "library_title": "Recursos recomendados de República Dominicana",
-    "library_help": "Agrega 22 enlaces públicos de impuestos, financiamiento, permisos, servicios y credenciales profesionales, más 5 recursos de SIG y técnicos para Agentes y Admins. Seleccionados de tu hoja de recursos de RD y revisados el 18 de octubre de 2026. Revisa, edita u oculta cada recurso antes de publicar. Se conservan los recursos y permisos existentes.",
+    "library_help": "Agrega 26 enlaces públicos de impuestos, financiamiento, permisos, servicios y credenciales profesionales, más 5 recursos de SIG y técnicos para Agentes y Admins. Seleccionados de tu hoja de recursos de RD y actualizados el 20 de octubre de 2026. Revisa, edita u oculta cada recurso antes de publicar. Se conservan los recursos y permisos existentes.",
     "import_library": "Agregar recursos recomendados faltantes ({{count}})",
     "library_added": "Estos recursos ya están en tu borrador. Publica los cambios para mostrar los nuevos recursos.",
     "library_limit": "No hay espacio dentro del límite de 100 herramientas. Elimina las que no uses antes de agregar esta colección."
