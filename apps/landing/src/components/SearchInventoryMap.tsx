@@ -2,7 +2,7 @@
 import { GoogleMap, MarkerF, OverlayView, useJsApiLoader } from '@react-google-maps/api'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { areaSummaryPoints, clusterMapListings, type ListingMapData, type MapBounds, type MapCluster } from '../data/searchMap'
+import { areaSummaryPoints, clusterAreaSummaries, clusterMapListings, type AreaMapCluster, type ListingMapData, type MapBounds, type MapCluster } from '../data/searchMap'
 import { coordsForRegion } from '../data/searchData'
 
 const CENTER = { lat: 18.73, lng: -70.16 }
@@ -13,7 +13,7 @@ export function SearchInventoryMap({ apiKey, data, scope, locations, expanded, h
   apiKey: string; data: ListingMapData; scope: string; locations: string[]; expanded: boolean; hoveredId?: string
   onSelect: (id: string) => void; onAreaSelect: (locations: string[]) => void; onViewportChange: (bounds: MapBounds) => void
 }) {
-  const { t } = useTranslation('search')
+  const { t, i18n } = useTranslation('search')
   const { isLoaded, loadError } = useJsApiLoader({ id: 'google-map-script', googleMapsApiKey: apiKey })
   const mapRef = useRef<google.maps.Map | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -21,6 +21,7 @@ export function SearchInventoryMap({ apiKey, data, scope, locations, expanded, h
   const [bounds, setBounds] = useState<MapBounds | null>(null)
   const [selected, setSelected] = useState<MapCluster | null>(null)
   const areas = useMemo(() => areaSummaryPoints(data.areas), [data.areas])
+  const areaClusters = useMemo(() => clusterAreaSummaries(data.areas, zoom), [data.areas, zoom])
   const clusters = useMemo(() => clusterMapListings(data.items, zoom, bounds), [data.items, zoom, bounds])
   const fitRef = useRef<() => void>(() => {})
   fitRef.current = () => {
@@ -72,6 +73,12 @@ export function SearchInventoryMap({ apiKey, data, scope, locations, expanded, h
     const map = mapRef.current
     if (map) { const box = new google.maps.LatLngBounds(); cluster.items.forEach(item => box.extend({ lat: item.latitude, lng: item.longitude })); map.fitBounds(box, 64) }
   }
+  function selectArea(cluster: AreaMapCluster) {
+    const map = mapRef.current
+    if (cluster.distinctCentres && map && zoom < 20) {
+      map.fitBounds(cluster.bounds, 72)
+    } else onAreaSelect(cluster.locations)
+  }
   if (!isLoaded || loadError) return <div role="status" className="h-full min-h-64 flex items-center justify-center bg-ink text-white/80 p-6 text-center text-sm">{t(loadError ? 'map.unavailable' : 'map.loading')}</div>
   return <div ref={containerRef} className="relative h-full w-full">
     <GoogleMap mapContainerStyle={{ width: '100%', height: '100%' }} center={CENTER} zoom={8} options={expanded ? EXPANDED_OPTIONS : OPTIONS}
@@ -81,13 +88,21 @@ export function SearchInventoryMap({ apiKey, data, scope, locations, expanded, h
         label={cluster.items.length > 1 ? { text: String(cluster.items.length), color: '#fff', fontWeight: '700' } : undefined}
         zIndex={cluster.items.some(item => item.id === hoveredId) ? 500 : 100}
         options={{ optimized: false }} />)}
-      {areas.map(area => <OverlayView key={area.location} position={area.point} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET} getPixelPositionOffset={(width, height) => ({ x: -width / 2, y: -height / 2 })}>
-        <button type="button" onClick={() => onAreaSelect(area.locations)} title={t('map.area_summary_label', { area: area.location, count: area.count })}
-          aria-label={t('map.area_summary_label', { area: area.location, count: area.count })}
-          className="rounded-full border-2 border-dashed border-[#5b21b6] bg-white px-3 py-2 text-xs font-bold text-[#5b21b6] shadow-md cursor-pointer whitespace-nowrap focus-visible:outline-coral">
-          <span className="block text-[10px] leading-tight">{area.location} · {t('map.area_label')}</span><span className="block text-sm">{area.count.toLocaleString()}</span>
-        </button>
-      </OverlayView>)}
+      {areaClusters.map(area => {
+        const label = t(area.distinctCentres && zoom < 20 ? 'map.area_cluster_zoom' : 'map.area_cluster_filter', {
+          area: area.locations.join(', '), count: area.count, areas: area.locations.length,
+        })
+        const count = new Intl.NumberFormat(i18n.language, area.count > 9999 ? { notation: 'compact', maximumFractionDigits: 1 } : {}).format(area.count)
+        return <OverlayView key={area.key} position={area.point} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET} getPixelPositionOffset={(width, height) => ({ x: -width / 2, y: -height / 2 })}>
+          <div className="group relative z-10 hover:z-[2000] focus-within:z-[2000]">
+            <button type="button" onClick={() => selectArea(area)} title={label} aria-label={label}
+              className="grid h-[50px] w-[50px] place-items-center rounded-full border-2 border-dashed border-[#5b21b6] bg-white text-[13px] font-bold text-[#5b21b6] shadow-md cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral">
+              {count}
+            </button>
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-full left-1/2 z-[1100] mb-2 w-52 -translate-x-1/2 rounded-lg bg-ink px-3 py-2 text-xs font-semibold leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">{label}</span>
+          </div>
+        </OverlayView>
+      })}
     </GoogleMap>
     {selected && <div className="absolute bottom-3 left-3 right-3 max-h-52 overflow-y-auto rounded-xl bg-white border border-line p-3 shadow-lg">
       <div className="flex justify-between gap-3"><p className="text-xs font-bold">{t('map.exact_cluster', { count: selected.items.length })}</p><button type="button" onClick={() => setSelected(null)} className="text-xs underline">{t('map.close_cluster')}</button></div>

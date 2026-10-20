@@ -27,6 +27,66 @@ export function areaSummaryPoints(areas: ListingMapData['areas']) {
   return [...groups.values()]
 }
 
+export interface AreaMapCluster {
+  key: string
+  point: MapPoint
+  primaryLocation: string
+  locations: string[]
+  count: number
+  bounds: MapBounds
+  distinctCentres: boolean
+}
+
+function worldPixel(point: MapPoint, zoom: number) {
+  const scale = 256 * 2 ** (Number.isFinite(zoom) ? Math.max(0, Math.min(22, zoom)) : 8)
+  const latitude = Math.max(-85.051128, Math.min(85.051128, point.lat)) * Math.PI / 180
+  return { x: (point.lng + 180) / 360 * scale, y: (1 - Math.log(Math.tan(Math.PI / 4 + latitude / 2)) / Math.PI) / 2 * scale }
+}
+
+/** Approximate area counts are independent of exact property markers.
+ * Largest areas anchor first at their existing centre. Neighbour-cell distance
+ * checks avoid overlapping bubbles even across a grid boundary; anchors never
+ * move to an invented centroid or jittered property position.
+ */
+export function clusterAreaSummaries(areas: ListingMapData['areas'], zoom: number, minimumPixels = 66): AreaMapCluster[] {
+  const distance = Number.isFinite(minimumPixels) ? Math.max(56, minimumPixels) : 66
+  const known = areas.flatMap(area => {
+    const point = coordsForRegion(area.location)
+    return point && Number.isFinite(area.count) && area.count > 0 ? [{ ...area, point }] : []
+  }).sort((a, b) => b.count - a.count || a.location.localeCompare(b.location))
+  const groups: (AreaMapCluster & { pixel: { x: number; y: number } })[] = []
+  const grid = new Map<string, number[]>()
+  for (const area of known) {
+    const pixel = worldPixel(area.point, zoom)
+    const cellX = Math.floor(pixel.x / distance), cellY = Math.floor(pixel.y / distance)
+    let nearest = -1, nearestDistance = distance
+    for (let x = cellX - 1; x <= cellX + 1; x++) for (let y = cellY - 1; y <= cellY + 1; y++) {
+      for (const index of grid.get(`${x}:${y}`) ?? []) {
+        const anchor = groups[index].pixel
+        const separation = Math.hypot(pixel.x - anchor.x, pixel.y - anchor.y)
+        if (separation < nearestDistance) { nearest = index; nearestDistance = separation }
+      }
+    }
+    if (nearest >= 0) {
+      const group = groups[nearest]
+      group.count += area.count
+      if (!group.locations.includes(area.location)) group.locations.push(area.location)
+      group.bounds.south = Math.min(group.bounds.south, area.point.lat)
+      group.bounds.north = Math.max(group.bounds.north, area.point.lat)
+      group.bounds.west = Math.min(group.bounds.west, area.point.lng)
+      group.bounds.east = Math.max(group.bounds.east, area.point.lng)
+      group.distinctCentres ||= area.point.lat !== group.point.lat || area.point.lng !== group.point.lng
+    } else {
+      const index = groups.length
+      groups.push({ key: area.location, primaryLocation: area.location, locations: [area.location], count: area.count, point: area.point, pixel,
+        bounds: { south: area.point.lat, north: area.point.lat, west: area.point.lng, east: area.point.lng }, distinctCentres: false })
+      const key = `${cellX}:${cellY}`
+      grid.set(key, [...(grid.get(key) ?? []), index])
+    }
+  }
+  return groups.map(({ pixel: _pixel, ...group }) => group)
+}
+
 export interface MapCluster { key: string; point: MapPoint; items: MapListing[] }
 
 /** Bounded geographic grid: at most 160 native markers, never 5,000 DOM price pills. */

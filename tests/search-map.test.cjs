@@ -12,7 +12,7 @@ function loadFile(file) {
   } }).outputText, { exports: moduleState.exports, module: moduleState, require: id => loadFile(path.resolve(path.dirname(file), id + '.ts')) })
   return moduleState.exports
 }
-const { listingMapPoint, mappedListings, areaSummaryPoints, clusterMapListings } = loadFile(path.resolve(__dirname, '../apps/landing/src/data/searchMap.ts'))
+const { listingMapPoint, mappedListings, areaSummaryPoints, clusterAreaSummaries, clusterMapListings } = loadFile(path.resolve(__dirname, '../apps/landing/src/data/searchMap.ts'))
 const clone = value => JSON.parse(JSON.stringify(value))
 
 test('pins retain the listing coordinates exactly without region offsets', () => {
@@ -91,4 +91,49 @@ test('map requests retain all listing filters and comparable price settings with
   assert.equal(Object.hasOwn(requested.params, 'page'), false)
   assert.equal(Object.hasOwn(requested.params, 'page_size'), false)
   assert.equal(response.items[0].price, 123.45)
+})
+
+test('approximate areas cluster across neighbouring grid boundaries and keep the largest known centre', () => {
+  const areas = [{ location: 'Cabarete', count: 9 }, { location: 'Sosúa', count: 57 }, { location: 'Puerto Plata', count: 17 }]
+  const overview = clusterAreaSummaries(areas, 8)
+  assert.equal(overview.length, 1)
+  assert.equal(overview[0].primaryLocation, 'Sosúa')
+  assert.deepEqual(clone(overview[0].point), { lat: 19.7517, lng: -70.5168 })
+  assert.equal(overview[0].count, 83)
+  assert.deepEqual(clone(overview[0].locations).sort(), ['Cabarete', 'Puerto Plata', 'Sosúa'].sort())
+  assert.equal(overview[0].distinctCentres, true)
+  const detailed = clusterAreaSummaries(areas, 13)
+  assert.equal(detailed.length, 3)
+  assert.equal(detailed.reduce((sum, area) => sum + area.count, 0), 83)
+})
+
+test('area counts and filter members survive every zoom without fabricated anchors or overlapping bubbles', () => {
+  const { REGION_COORDS } = loadFile(path.resolve(__dirname, '../apps/landing/src/data/searchData.ts'))
+  const areas = Object.keys(REGION_COORDS).map((location, index) => ({ location, count: index + 1 }))
+  const expected = areas.reduce((sum, area) => sum + area.count, 0)
+  const pixels = (point, zoom) => {
+    const scale = 256 * 2 ** zoom, latitude = point.lat * Math.PI / 180
+    return { x: (point.lng + 180) / 360 * scale, y: (1 - Math.log(Math.tan(Math.PI / 4 + latitude / 2)) / Math.PI) / 2 * scale }
+  }
+  for (const zoom of [6, 7, 8, 9, 11, 14, 20]) {
+    const groups = clusterAreaSummaries([...areas, { location: 'Unknown district', count: 100 }], zoom)
+    assert.equal(groups.reduce((sum, group) => sum + group.count, 0), expected)
+    assert.deepEqual(clone(groups.flatMap(group => group.locations)).sort(), areas.map(area => area.location).sort())
+    for (const group of groups) assert.deepEqual(clone(group.point), clone(REGION_COORDS[group.primaryLocation]))
+    for (let a = 0; a < groups.length; a++) for (let b = a + 1; b < groups.length; b++) {
+      const one = pixels(groups[a].point, zoom), two = pixels(groups[b].point, zoom)
+      assert.ok(Math.hypot(one.x - two.x, one.y - two.y) >= 66 - 0.00001)
+    }
+  }
+})
+
+test('identical known centres retain all stored area filters and require filtering rather than zooming forever', () => {
+  for (const zoom of [6, 20]) {
+    const groups = clusterAreaSummaries([{ location: 'Distrito Nacional', count: 1 }, { location: 'Santo Domingo', count: 1027 }], zoom)
+    assert.equal(groups.length, 1)
+    assert.equal(groups[0].count, 1028)
+    assert.equal(groups[0].primaryLocation, 'Santo Domingo')
+    assert.equal(groups[0].distinctCentres, false)
+    assert.deepEqual(clone(groups[0].locations), ['Santo Domingo', 'Distrito Nacional'])
+  }
 })
