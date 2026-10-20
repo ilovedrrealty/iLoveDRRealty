@@ -22,6 +22,8 @@ import enResearchTools from './locale/en/research_tools.json'
 import esResearchTools from './locale/es/research_tools.json'
 import enProfessionals from './locale/en/professionals.json'
 import esProfessionals from './locale/es/professionals.json'
+import enToolHubs from './locale/en/tool_hubs.json'
+import esToolHubs from './locale/es/tool_hubs.json'
 
 const savedLang = (localStorage.getItem('ildr_lang') as 'en' | 'es') ?? 'en'
 
@@ -38,6 +40,7 @@ i18n.use(initReactI18next).init({
       website_editor: enWebsiteEditor,
       research_tools: enResearchTools,
       professionals: enProfessionals,
+      tool_hubs: enToolHubs,
     },
     es: {
       nav:      esNav,
@@ -50,11 +53,12 @@ i18n.use(initReactI18next).init({
       website_editor: esWebsiteEditor,
       research_tools: esResearchTools,
       professionals: esProfessionals,
+      tool_hubs: esToolHubs,
     },
   },
   lng: savedLang,
   fallbackLng: 'en',
-  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'research_tools', 'professionals'],
+  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'research_tools', 'professionals', 'tool_hubs'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })

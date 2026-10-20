@@ -8,13 +8,13 @@ const moduleState = { exports: {} }
 vm.runInNewContext(ts.transpileModule(source, { compilerOptions: {
   target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS,
 } }).outputText, { exports: moduleState.exports, module: moduleState, URL, Set })
-const { RECOMMENDED_DR_TOOLS: tools, publicWebsiteResources, recommendedDRToolsToAdd, safePublicResourceUrl } = moduleState.exports
+const { RECOMMENDED_DR_TOOLS: tools, RECOMMENDED_DR_SOURCE_EVIDENCE: evidence, publicWebsiteResources, recommendedDRToolsToAdd, safePublicResourceUrl } = moduleState.exports
 const clone = value => JSON.parse(JSON.stringify(value))
 const resource = (id, patch = {}) => ({ ...clone(tools[0]), id, url: 'https://example.com/' + id, ...patch })
 
 test('curated collection separates public and specialist links with bilingual copy', () => {
-  assert.equal(tools.length, 27)
-  assert.equal(tools.filter(tool => tool.access === 'public').length, 22)
+  assert.equal(tools.length, 31)
+  assert.equal(tools.filter(tool => tool.access === 'public').length, 26)
   assert.equal(new Set(tools.map(tool => tool.id)).size, tools.length)
   for (const tool of tools) {
     assert.equal(safePublicResourceUrl(tool.url), true, tool.url)
@@ -44,7 +44,7 @@ test('import preserves existing edits, disabled records, access and alternate id
   const existing = [edited, sameUrl]
   const before = JSON.stringify(existing)
   const additions = recommendedDRToolsToAdd(existing)
-  assert.equal(additions.length, 25)
+  assert.equal(additions.length, 29)
   assert.equal(additions.some(item => item.id === tools[0].id || item.id === tools[1].id), false)
   assert.equal(JSON.stringify(existing), before)
   assert.equal(recommendedDRToolsToAdd([...existing, ...clone(additions)]).length, 0)
@@ -66,4 +66,17 @@ test('a hidden public resource remains hidden when importing the recommended too
   const additions = recommendedDRToolsToAdd([...resources, ...[]])
   assert.equal(additions.some(item => item.url === hiddenResource.url), false)
   assert.equal(publicWebsiteResources({ resources, realtorTools: additions }).some(item => item.url === hiddenResource.url), false)
+})
+
+test('new credential and owner-service sources have public official destinations and dated provenance', () => {
+  assert.equal(Object.keys(evidence).length, 4)
+  for (const [id, source] of Object.entries(evidence)) {
+    const tool = tools.find(item => item.id === id)
+    assert.ok(tool, id)
+    assert.equal(tool.access, 'public')
+    assert.equal(tool.url, source.url)
+    assert.equal(source.sourceUrl, source.url)
+    assert.equal(source.verifiedDate, '2026-10-20')
+    assert.ok(['codia.org.do', 'sie.gob.do', 'proconsumidor.gob.do'].includes(new URL(source.url).hostname))
+  }
 })

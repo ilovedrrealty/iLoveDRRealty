@@ -1,4 +1,5 @@
 import type { LocalizedText, RealtorTool } from '../../../../packages/website-settings/src'
+import { RECOMMENDED_DR_SOURCE_EVIDENCE } from '../../../../packages/website-settings/src/drResources'
 
 export type ResearchTool = RealtorTool & {
   notes?: LocalizedText
@@ -246,9 +247,11 @@ export function mergeResearchTools(configured: RealtorTool[]): ResearchTool[] {
       url: tool.url, enabled: tool.enabled, access: tool.access, mode: tool.mode,
     }
     const original = builtins.get(tool.id)
+    const reviewedSource = RECOMMENDED_DR_SOURCE_EVIDENCE[tool.id]
+    const evidence = reviewedSource?.url === tool.url ? reviewedSource : {}
     tools.set(tool.id, original?.url === tool.url
       ? { ...original, ...entry, configured: true }
-      : { ...entry, configured: true })
+      : { ...entry, ...evidence, configured: true })
   }
   for (const tool of BUILT_IN_RESEARCH_TOOLS) if (!tools.has(tool.id)) tools.set(tool.id, tool)
   return [...tools.values()].filter(tool => tool.enabled && tool.mode === 'link' && safeResearchUrl(tool.url))

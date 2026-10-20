@@ -1,6 +1,6 @@
 import type { RealtorTool, WebsiteResource, WebsiteSettings } from './index'
 
-/** Curated from the owner's DR directory and checked against official sites on 2026-10-18. */
+/** Curated from the owner's DR directory; original links checked 2026-10-18, additions below 2026-10-20. */
 export const RECOMMENDED_DR_TOOLS: RealtorTool[] = [
   {
     "id": "dr-dgii-transfer-tax",
@@ -514,8 +514,42 @@ export const RECOMMENDED_DR_TOOLS: RealtorTool[] = [
     "enabled": true,
     "access": "realtor",
     "mode": "link"
-  }
+  },
+  {
+    id: 'dr-codia-professional-services',
+    title: { en: 'CODIA professional certifications', es: 'Certificaciones profesionales del CODIA' },
+    description: { en: 'Request current professional membership and certification guidance for engineers, architects and surveyors directly from CODIA.', es: 'Consulta directamente al CODIA los servicios de certificación y colegiatura de ingenieros, arquitectos y agrimensores.' },
+    category: { en: 'Professional credentials', es: 'Credenciales profesionales' },
+    url: 'https://codia.org.do/', enabled: true, access: 'public', mode: 'link',
+  },
+  {
+    id: 'dr-sie-electrician-license',
+    title: { en: 'Check an electrician’s SIE licence', es: 'Consultar licencia SIE de un electricista' },
+    description: { en: 'Use SIE’s official instructions to check a technician’s licence before hiring.', es: 'Sigue las instrucciones oficiales de la SIE para consultar la licencia del técnico antes de contratar.' },
+    category: { en: 'Professional credentials', es: 'Credenciales profesionales' },
+    url: 'https://sie.gob.do/servicio/consulta-de-licencias-para-tecnicos-electricistas/', enabled: true, access: 'public', mode: 'link',
+  },
+  {
+    id: 'dr-proconsumidor-claims',
+    title: { en: 'Consumer complaints and claims', es: 'Denuncias y reclamaciones de consumo' },
+    description: { en: 'Read the official process and submit qualifying consumer-service complaints directly to Pro Consumidor.', es: 'Consulta el proceso oficial y presenta directamente a Pro Consumidor las reclamaciones de consumo que correspondan.' },
+    category: { en: 'Ownership and services', es: 'Propiedad y servicios' },
+    url: 'https://proconsumidor.gob.do/formulario-de-denuncias-y-reclamaciones/', enabled: true, access: 'public', mode: 'link',
+  },
+  {
+    id: 'dr-sie-electricity-help',
+    title: { en: 'Electricity service and PROTECOM help', es: 'Servicios eléctricos y ayuda de PROTECOM' },
+    description: { en: 'Find official electricity-service guidance and the PROTECOM claim portal.', es: 'Consulta la orientación oficial sobre servicios eléctricos y el portal de reclamaciones de PROTECOM.' },
+    category: { en: 'Ownership and services', es: 'Propiedad y servicios' },
+    url: 'https://sie.gob.do/informacion-basica-sobre-servicios-al-publicos/', enabled: true, access: 'public', mode: 'link',
+  },
 ]
+
+/** Evidence belongs to the reviewed URL, never an Admin's replacement destination. */
+export const RECOMMENDED_DR_SOURCE_EVIDENCE: Record<string, { url: string; sourceUrl: string; organization: string; verifiedDate: string }> = Object.fromEntries(
+  RECOMMENDED_DR_TOOLS.filter(tool => ['dr-codia-professional-services', 'dr-sie-electrician-license', 'dr-proconsumidor-claims', 'dr-sie-electricity-help'].includes(tool.id))
+    .map(tool => [tool.id, { url: tool.url, sourceUrl: tool.url, organization: tool.id.startsWith('dr-codia') ? 'CODIA' : tool.id.startsWith('dr-sie') ? 'Superintendencia de Electricidad' : 'Pro Consumidor', verifiedDate: '2026-10-20' }]),
+)
 
 export function safePublicResourceUrl(value: string): boolean {
   try {

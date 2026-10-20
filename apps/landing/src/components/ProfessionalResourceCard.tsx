@@ -9,7 +9,7 @@ export default function ProfessionalResourceCard() {
       <p className="text-xs font-bold tracking-wide uppercase text-coral">{t('eyebrow')}</p>
       <h2 className="text-2xl font-bold text-ink mt-2">{t('resource_title')}</h2>
       <p className="text-sm text-ink2 mt-3 max-w-3xl">{t('resource_description')}</p>
-      <span className="inline-block mt-4 text-sm font-bold text-coral">{t('browse')} →</span>
+      <span className="inline-block mt-4 text-sm font-bold text-coral">{t('learn_join')} →</span>
     </Link>
   </section>
 }

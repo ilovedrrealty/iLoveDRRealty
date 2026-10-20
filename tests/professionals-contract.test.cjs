@@ -83,6 +83,62 @@ test('explicit professional navigation still works when browser storage is unava
   const { api } = intentHarness('?join=professional', true)
   assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com/professional-profile')
 })
+
+test('member directory intent survives signup and verification without accepting an arbitrary redirect', () => {
+  const { api, window, values } = intentHarness('?directory=professionals&redirect=https://untrusted.example')
+  assert.equal(api.rememberProfessionalJoin(), false)
+  assert.equal(api.professionalAuthParams().directory, 'professionals')
+  window.location.search = '?email=synthetic%40example.com&code=123456'
+  assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com/professional-directory')
+  assert.equal(values.size, 0)
+  assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com')
+})
+
+test('an explicit directory or profile choice replaces the previous professional destination', () => {
+  const { api, window } = intentHarness('?join=professional')
+  api.rememberProfessionalJoin()
+  window.location.search = '?directory=professionals'
+  assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com/professional-directory')
+  window.location.search = '?join=professional'
+  assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com/professional-profile')
+  const blocked = intentHarness('?directory=professionals', true)
+  assert.equal(blocked.api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com/professional-directory')
+})
+
+test('real estate profiles identify their own company without changing the normal profile contract', () => {
+  const draft = complete()
+  draft.category_ids = ['real_estate_agent']; draft.business_name = ''; draft.contact_name = 'Synthetic agent'
+  assert.ok(model.professionalSubmissionIssues(draft).includes('company'))
+  draft.business_name = 'Synthetic other company'
+  assert.equal(model.professionalSubmissionIssues(draft).length, 0)
+  assert.equal(Object.hasOwn(draft, 'role'), false)
+})
+
+test('directory requests use the authenticated dashboard client and preserve bounded filters', async () => {
+  const requests = []
+  const client = { get: async (...args) => { requests.push(args); return { data: { items: [], total: 0 } } } }
+  const api = loadTS('apps/dashboard/src/api/professionals.ts', {}, { './axios': client })
+  const params = { category: ['real_estate_agent'], area: ['cabarete'], q: 'Synthetic', limit: 24, offset: 0 }
+  await api.getProfessionals(params)
+  await api.getProfessional('synthetic/id')
+  assert.equal(requests[0][0], '/professionals')
+  assert.equal(requests[0][1].params, params)
+  assert.equal(Object.hasOwn(requests[0][1], 'withCredentials'), false)
+  assert.equal(requests[1][0], '/professionals/synthetic%2Fid')
+})
+
+test('directory multiselect uses repeated FastAPI query keys with actual Axios serialization', async () => {
+  const axios = require('axios')
+  let config
+  const client = { get: async (url, options) => { config = { url, ...options }; return { data: { items: [], total: 0 } } } }
+  const api = loadTS('apps/dashboard/src/api/professionals.ts', {}, { './axios': client })
+  await api.getProfessionals({ category: ['real_estate_agent', 'property_management'], area: ['cabarete', 'sosua'], q: '', limit: 24, offset: 0 })
+  const serialized = new URL(axios.getUri(config), 'https://api.example.com')
+  assert.deepEqual(serialized.searchParams.getAll('category'), ['real_estate_agent', 'property_management'])
+  assert.deepEqual(serialized.searchParams.getAll('area'), ['cabarete', 'sosua'])
+  assert.equal(serialized.searchParams.has('category[]'), false)
+  assert.equal(serialized.searchParams.has('area[]'), false)
+})
 test('moderation sends private feedback as note and includes the reviewed expected version', async () => {
   const requests = []
   const client = { post: async (...args) => { requests.push(args); return { data: { version: 7 } } } }

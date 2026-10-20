@@ -141,6 +141,7 @@ function ResourcesNavigation({ active, mobile = false, onNavigate, label }: {
 
   const links = [
     { href: '/blog/', label: t('resources.articles') },
+    { href: '/professionals/', label: t('resources.professionals') },
     { href: '/buying/', label: t('resources.buying_guide') },
     { href: '/calculator/', label: t('nav.calculator') },
   ]

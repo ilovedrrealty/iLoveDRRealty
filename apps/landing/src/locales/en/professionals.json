@@ -1,11 +1,11 @@
 {
   "eyebrow": "DR Professionals",
-  "title": "Find help for every stage of property ownership",
-  "intro": "Connect directly with professionals serving the Dominican Republic, from your first purchase to renovation, maintenance and selling.",
+  "title": "A professional network for property life in the Dominican Republic",
+  "intro": "iLoveDR Realty helps property buyers, sellers and owners connect with the people they need to buy, improve, maintain and sell a property. Join our professional network or sign in to explore approved profiles.",
   "join": "Join DR Professionals",
-  "join_intro": "Offer property services? Create a profile and submit it for admin review before it appears here.",
-  "resource_title": "Find a DR professional",
-  "resource_description": "Browse property services, financing, legal help, repairs and maintenance by service and area.",
+  "join_intro": "Lawyers, lenders, tradespeople, property managers and real estate professionals from any company are welcome to apply.",
+  "resource_title": "DR Professionals",
+  "resource_description": "Join our property services network, learn how it works or sign in to find approved professionals by service and area.",
   "browse": "Browse professionals",
   "search": "Search services or businesses",
   "search_placeholder": "Business name or service…",
@@ -43,5 +43,42 @@
   "copy_failed": "Copy this page's address to share the profile.",
   "reviewed": "Approved for the directory",
   "review_note": "Directory approval is a profile review. Confirm qualifications, references and terms directly before hiring.",
-  "join_auth": "You are joining DR Professionals. After signing in, complete your profile and submit it for review."
+  "join_auth": "You are joining DR Professionals. After signing in, complete your profile and submit it for review.",
+  "member_login": "Sign in to search professionals",
+  "member_signup": "Create an account to search",
+  "learn_join": "Learn more and join",
+  "manage_profile": "Already a member? Manage your profile",
+  "help_heading": "Support through every stage of property ownership",
+  "how_heading": "How professionals join",
+  "directory_private_heading": "Search the directory inside your account",
+  "directory_private_description": "Professional profiles and business contact details are available to verified, signed-in users. Create an account or sign in, then open DR Professionals in your dashboard. Only approved profiles appear in search.",
+  "benefits": {
+    "buy": {
+      "title": "Buy and plan",
+      "description": "Find property lawyers, surveyors, inspectors, lenders and insurance services for the questions that come with a purchase."
+    },
+    "maintain": {
+      "title": "Improve and maintain",
+      "description": "Look for builders, designers, electricians, property managers and other services to help care for your property."
+    },
+    "professionals": {
+      "title": "Showcase your business",
+      "description": "Share your services, business or company name, areas served and chosen business contact details. Real estate agents from other companies can also create a professional profile."
+    }
+  },
+  "steps": {
+    "profile": {
+      "title": "Create your account",
+      "description": "Sign up and verify your email. If you already have an account, sign in to create your professional profile."
+    },
+    "services": {
+      "title": "Describe your services",
+      "description": "Choose multiple services and areas, add your business contacts, and optionally upload a photo or logo. Real estate professionals should identify their company or independent business."
+    },
+    "review": {
+      "title": "Submit for review",
+      "description": "Save a private draft, confirm permission to share your business details, then submit it. An admin reviews the profile before signed-in members can find it."
+    }
+  },
+  "directory_auth": "Sign in or create an account to search DR Professionals. After email verification, you will continue to the member directory."
 }

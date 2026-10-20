@@ -1,11 +1,11 @@
 {
   "eyebrow": "Profesionales de RD",
-  "title": "Encuentra ayuda en cada etapa de ser propietario",
-  "intro": "Contacta directamente a profesionales que ofrecen servicios en República Dominicana, desde la compra hasta la renovación, el mantenimiento y la venta.",
+  "title": "Una red de profesionales para tus propiedades en República Dominicana",
+  "intro": "iLoveDR Realty ayuda a compradores, vendedores y propietarios a encontrar los servicios que necesitan para comprar, mejorar, mantener y vender una propiedad. Únete a nuestra red profesional o inicia sesión para explorar perfiles aprobados.",
   "join": "Unirme a Profesionales de RD",
-  "join_intro": "¿Ofreces servicios para propiedades? Crea tu perfil y envíalo a revisión antes de aparecer aquí.",
-  "resource_title": "Encuentra un profesional en RD",
-  "resource_description": "Busca servicios para propiedades, financiamiento, ayuda legal, reparaciones y mantenimiento por servicio y zona.",
+  "join_intro": "Abogados, prestamistas, técnicos, administradores de propiedades y agentes inmobiliarios de cualquier empresa pueden solicitar su inclusión.",
+  "resource_title": "Profesionales de RD",
+  "resource_description": "Únete a nuestra red de servicios para propiedades, conoce cómo funciona o inicia sesión para buscar profesionales aprobados por servicio y zona.",
   "browse": "Ver profesionales",
   "search": "Buscar servicios o negocios",
   "search_placeholder": "Nombre del negocio o servicio…",
@@ -43,5 +43,42 @@
   "copy_failed": "Copia la dirección de esta página para compartir el perfil.",
   "reviewed": "Aprobado para el directorio",
   "review_note": "La aprobación del directorio es una revisión del perfil. Confirma las credenciales, referencias y condiciones directamente antes de contratar.",
-  "join_auth": "Estás uniéndote a Profesionales de RD. Después de iniciar sesión, completa tu perfil y envíalo a revisión."
+  "join_auth": "Estás uniéndote a Profesionales de RD. Después de iniciar sesión, completa tu perfil y envíalo a revisión.",
+  "member_login": "Iniciar sesión para buscar profesionales",
+  "member_signup": "Crear una cuenta para buscar",
+  "learn_join": "Conocer más y unirme",
+  "manage_profile": "¿Ya tienes cuenta? Administra tu perfil",
+  "help_heading": "Apoyo en cada etapa de ser propietario",
+  "how_heading": "Cómo unirse como profesional",
+  "directory_private_heading": "Busca en el directorio desde tu cuenta",
+  "directory_private_description": "Los perfiles profesionales y sus datos de contacto comercial están disponibles para usuarios verificados que han iniciado sesión. Crea una cuenta o inicia sesión y abre Profesionales de RD en tu panel. Solo aparecen perfiles aprobados.",
+  "benefits": {
+    "buy": {
+      "title": "Comprar y planificar",
+      "description": "Encuentra abogados inmobiliarios, agrimensores, inspectores, prestamistas y servicios de seguros para las dudas que surgen al comprar."
+    },
+    "maintain": {
+      "title": "Mejorar y mantener",
+      "description": "Busca constructores, diseñadores, electricistas, administradores y otros servicios para cuidar tu propiedad."
+    },
+    "professionals": {
+      "title": "Presenta tu negocio",
+      "description": "Comparte tus servicios, el nombre de tu negocio o empresa, las zonas que atiendes y tus contactos comerciales. Los agentes inmobiliarios de otras empresas también pueden crear un perfil profesional."
+    }
+  },
+  "steps": {
+    "profile": {
+      "title": "Crea tu cuenta",
+      "description": "Regístrate y verifica tu correo. Si ya tienes una cuenta, inicia sesión para crear tu perfil profesional."
+    },
+    "services": {
+      "title": "Describe tus servicios",
+      "description": "Elige varios servicios y zonas, agrega tus contactos comerciales y, si lo deseas, una foto o logo. Los agentes inmobiliarios deben identificar su empresa o negocio independiente."
+    },
+    "review": {
+      "title": "Envía el perfil a revisión",
+      "description": "Guarda un borrador privado, confirma el permiso para compartir los datos comerciales y envíalo. Un administrador lo revisa antes de que los usuarios con sesión iniciada puedan encontrarlo."
+    }
+  },
+  "directory_auth": "Inicia sesión o crea una cuenta para buscar en Profesionales de RD. Después de verificar tu correo, continuarás al directorio para miembros."
 }

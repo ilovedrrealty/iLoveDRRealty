@@ -9,8 +9,6 @@ import { ProfessionalPreview } from '../../components/shared/ProfessionalPreview
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { ProfessionalConfirmation } from '../../components/shared/ProfessionalConfirmation'
 
-const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
-
 export function ProfessionalProfile() {
   const { t } = useTranslation('professionals')
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -105,7 +103,7 @@ export function ProfessionalProfile() {
 
   return <div className="min-w-0 space-y-5">
     <p className="text-sm leading-relaxed text-ink2">{t('profile_intro')}</p>
-    <a href={`${LANDING_URL.replace(/\/$/, '')}/professionals/`} target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-semibold text-coral">{t('directory')} ↗</a>
+    <a href="/professional-directory" target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-semibold text-coral">{t('directory')} ↗</a>
     <div className="flex flex-wrap gap-3 rounded-xl border border-line bg-white p-4 text-sm">
       <span><strong>{t('status')}:</strong> {t(`review.${profile?.review_status ?? 'draft'}`)}</span>
       <span><strong>{t('visibility')}:</strong> {t(`listing.${profile?.listing_status ?? 'hidden'}`)}</span>

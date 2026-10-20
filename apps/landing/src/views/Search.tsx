@@ -4,7 +4,8 @@ import { useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { BedDouble, Bath, Maximize2, MapPin, Heart, TrendingUp, SlidersHorizontal } from 'lucide-react'
 import { fmt, fmtDOP, type Listing } from '../data/listings'
-import { fetchListings, fetchListingFilterOptions, type ListingFilterOptions } from '../api/listings'
+import { fetchListings, fetchListingFilterOptions, fetchListingMap, type ListingFilterOptions } from '../api/listings'
+import { EMPTY_LISTING_MAP, type ListingMapData, type MapBounds } from '../data/searchMap'
 import { supabaseImgUrl } from '../api/imgUrl'
 import { getMySavedIds, saveHome, unsaveHome } from '../api/savedHomes'
 import { SearchFilterSidebar } from '../components/SearchFilterSidebar'
@@ -177,7 +178,6 @@ export default function Search() {
   const filtersRef = useRef(filters)
   const { page, purpose, types, locations, minPrice, maxPrice, beds, minROI, rentalPeriod, sort } = filters
   const amenities = useMemo(() => new Set(filters.amenities), [filters.amenities])
-  const region = locations.length === 1 ? locations[0] : null
   const [listings, setListings] = useState<Listing[]>([])
   const [total, setTotal] = useState(0)
   const [medianPrice, setMedianPrice] = useState<number | null>(null)
@@ -190,6 +190,12 @@ export default function Search() {
   const [hovered, setHovered] = useState<Listing | null>(null)
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [mapExpanded, setMapExpanded] = useState(false)
+  const [mapResult, setMapResult] = useState<{ scope: string; data: ListingMapData }>({ scope: '', data: EMPTY_LISTING_MAP })
+  const [mapLoading, setMapLoading] = useState(true)
+  const [mapError, setMapError] = useState(false)
+  const [mapRetry, setMapRetry] = useState(0)
+  const [mapViewport, setMapViewport] = useState<{ scope: string; bounds: MapBounds } | null>(null)
   const [currency, setCurrency] = useState<'USD' | 'DOP'>('USD')
   const [dopRate, setDopRate] = useState(59.5)
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
@@ -272,6 +278,24 @@ export default function Search() {
     features: filters.amenities.length ? filters.amenities : undefined,
     sort, priceCurrency: 'USD', usdToDop: dopRate, rentalPeriod,
   })
+  const mapScope = JSON.stringify({ ...JSON.parse(requestQuery), page: undefined, pageSize: undefined, sort: undefined })
+  const mapData = mapResult.scope === mapScope ? mapResult.data : EMPTY_LISTING_MAP
+  const mapRequest = JSON.stringify({ scope: mapScope, bounds: mapViewport?.scope === mapScope ? mapViewport.bounds : null })
+  useEffect(() => {
+    const controller = new AbortController()
+    const requested = JSON.parse(mapRequest)
+    setMapLoading(true); setMapError(false)
+    fetchListingMap({ ...JSON.parse(requested.scope), signal: controller.signal }, requested.bounds)
+      .then(data => { if (!controller.signal.aborted) setMapResult({ scope: requested.scope, data }) })
+      .catch(() => { if (!controller.signal.aborted) { setMapError(true); setMapResult({ scope: requested.scope, data: EMPTY_LISTING_MAP }) } })
+      .finally(() => { if (!controller.signal.aborted) setMapLoading(false) })
+    return () => controller.abort()
+  }, [mapRequest, mapRetry])
+  function onMapViewportChange(bounds: MapBounds) {
+    if (mapData.mapped_total <= mapData.limit) return
+    const rounded = Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, Math.round(value * 10000) / 10000])) as unknown as MapBounds
+    setMapViewport(previous => previous?.scope === mapScope && JSON.stringify(previous.bounds) === JSON.stringify(rounded) ? previous : { scope: mapScope, bounds: rounded })
+  }
   useEffect(() => {
     const controller = new AbortController()
     let cancelled = false
@@ -356,6 +380,10 @@ export default function Search() {
             </span>
           </h1>
           <div className="flex items-center gap-2 flex-wrap">
+            <button type="button" onClick={() => setMapExpanded(true)} aria-haspopup="dialog"
+              className="inline-flex items-center gap-1.5 font-sans text-3.25 font-semibold cursor-pointer py-2 px-3.5 rounded-full border border-line bg-paper text-ink focus-visible:outline-coral">
+              <MapPin size={15} aria-hidden="true" />{t('map.open')}
+            </button>
             <button
               onClick={() => setFiltersOpen(true)}
               className="lg:hidden flex items-center gap-1.5 font-sans text-3.25 font-semibold cursor-pointer py-2 px-3.5 rounded-full border border-line bg-paper text-ink"
@@ -447,15 +475,18 @@ export default function Search() {
       </main>
 
       <SearchMapSidebar
+        inventory={{ data: mapData, loading: mapLoading, error: mapError, scope: mapScope, retry: () => setMapRetry(value => value + 1), onAreaSelect: setLocations, onViewportChange: onMapViewportChange }}
         hovered={hovered}
         results={listings}
         alsoLike={alsoLike}
         insights={insights}
         currency={currency}
         dopRate={dopRate}
-        region={region}
         locations={locations}
         locationLabel={locationLabel}
+        expanded={mapExpanded}
+        onExpand={() => setMapExpanded(true)}
+        onClose={() => setMapExpanded(false)}
         onCurrencyChange={setCurrency}
         onSelect={l => go(`detail?id=${l.id}`)}
         go={go}

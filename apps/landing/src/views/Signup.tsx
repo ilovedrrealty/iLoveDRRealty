@@ -11,15 +11,16 @@ import { register } from '../api/auth'
 import GoogleAuthSection from '../components/GoogleAuthSection'
 import { useTranslation } from 'react-i18next'
 import { usePlatformStats } from '../hooks/usePlatformStats'
-import { professionalAuthParams, rememberProfessionalJoin } from '../lib/professionalJoin'
+import { professionalAuthParams, rememberProfessionalDirectory, rememberProfessionalJoin } from '../lib/professionalJoin'
 
 type Fields = { name: string; phone: string; email: string; password: string; confirmPassword: string; agreed: boolean }
 type FieldErrors = Partial<Record<keyof Fields, string>>
 
 export default function Signup() {
   const [professionalJoin, setProfessionalJoin] = useState(false)
+  const [professionalDirectory, setProfessionalDirectory] = useState(false)
   const { t: tProfessional } = useTranslation('professionals')
-  useEffect(() => { setProfessionalJoin(rememberProfessionalJoin()) }, [])
+  useEffect(() => { setProfessionalJoin(rememberProfessionalJoin()); setProfessionalDirectory(rememberProfessionalDirectory()) }, [])
   const go = useNav()
   const router = useRouter()
   const { t } = useTranslation('auth')
@@ -125,7 +126,7 @@ export default function Signup() {
             </button>
           </p>
 
-          {professionalJoin && <p className="mb-4 rounded-xl border border-line bg-white p-4 text-sm text-ink2">{tProfessional('join_auth')}</p>}
+          {(professionalJoin || professionalDirectory) && <p className="mb-4 rounded-xl border border-line bg-white p-4 text-sm text-ink2">{tProfessional(professionalJoin ? 'join_auth' : 'directory_auth')}</p>}
           <div className="bg-paper border border-line rounded-2xl p-5 sm:p-7">
 
             {/* Name */}

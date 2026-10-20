@@ -30,6 +30,9 @@ import { UserSettings } from './Settings'
 import { Upgrade } from './buyer/Upgrade'
 import { ResearchTools } from './shared/ResearchTools'
 import { ProfessionalProfile } from './shared/ProfessionalProfile'
+import ProfessionalDirectory from './shared/ProfessionalDirectory'
+import { ToolHub } from './shared/ToolHub'
+import { TOOL_WORKSPACE_VIEW, type ToolWorkspace } from '../data/toolHubs'
 
 const ROLE_ORDER: Role[] = ['Buyer', 'Owner', 'Realtor']
 const ROLE_ACCESS: Record<string, Role[]> = {
@@ -48,14 +51,15 @@ const SETUP_BANNER_VIEWS = new Set([
 ])
 
 interface Props {
-  go: (v: string) => void
+  go: (v: string, openId?: string, workspace?: Role) => void
   view?: string
   role: Role
   user: UserInfo
   onUserUpdate: (updates: Partial<UserInfo>) => void
+  onWorkspaceChange?: (role: Role) => void
 }
 
-export default function Dashboard({ go, view = 'home', role, user, onUserUpdate }: Props) {
+export default function Dashboard({ go, view = 'home', role, user, onUserUpdate, onWorkspaceChange }: Props) {
   const { t: tBuyer }   = useTranslation('buyer')
   const { t: tOwner }   = useTranslation('owner')
   const { t: tRealtor } = useTranslation('realtor')
@@ -63,14 +67,13 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
 
   const [activeTab, setActiveTab] = useState<Role>(role)
 
-  const isLocked = (tab: Role) => !ROLE_ACCESS[role]?.includes(tab)
+  const isLocked = (tab: Role) => user.role !== 'admin' && !ROLE_ACCESS[role]?.includes(tab)
   const tone = ROLE_TONE[role]
   const tabTone = ROLE_TONE[activeTab]
+  const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function getPageTitle(v: string): string {
-    if (v === 'resources') return tNav('resources')
-    if (v === 'research') return tNav('research')
-    if (v === 'professional-profile') return tNav('professional-profile')
+    if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools'].includes(v)) return tNav(v)
     const key = `pages.${v}`
     if (role === 'Buyer')   return tBuyer(key,   { defaultValue: tBuyer('pages.home') })
     if (role === 'Owner')   return tOwner(key,   { defaultValue: tOwner('pages.home') })
@@ -82,7 +85,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
     if (view === 'home') {
       return (
         <div>
-          <div className="flex gap-1.5 mb-6 p-1 bg-paper border border-line rounded-xl w-fit">
+          <div className="flex flex-wrap gap-1.5 mb-6 p-1 bg-paper border border-line rounded-xl w-fit" role="group" aria-label={tNav('workspace_label')}>
             {ROLE_ORDER.map((tab: Role) => {
               const isActive = activeTab === tab
               const locked = isLocked(tab)
@@ -90,7 +93,8 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
               return (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => user.role === 'admin' && onWorkspaceChange ? onWorkspaceChange(tab) : setActiveTab(tab)}
+                  aria-pressed={isActive}
                   className="flex items-center gap-1.5 px-4 py-1.75 rounded-lg text-[12.5px] font-semibold cursor-pointer transition-all duration-150 border-0"
                   style={{
                     background: isActive ? tTone : 'transparent',
@@ -98,11 +102,12 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
                   }}
                 >
                   {locked && <Lock size={11} />}
-                  {tNav(`roles.${tab}`)}
+                  {tNav(`workspace_options.${tab}`)}
                 </button>
               )
             })}
           </div>
+          {!isLocked(activeTab) && <ToolHub workspace={activeTab as ToolWorkspace} user={user} go={goToTool} compact />}
           {activeTab === 'Buyer'   && <BuyerHome go={go} />}
           {activeTab === 'Owner'   && (isLocked('Owner')   ? <LockedView tab="Owner"   tone={tabTone} go={go} user={user} /> : <OwnerHome   go={go} tone={tabTone} user={user} />)}
           {activeTab === 'Realtor' && (isLocked('Realtor') ? <LockedView tab="Realtor" tone={tabTone} go={go} user={user} /> : <RealtorHome go={go} tone={tabTone} user={user} />)}
@@ -115,13 +120,18 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
       case 'saved':      return <SavedHomes />
       case 'inquiries':  return <Inquiries />
       case 'calculator': return <ROICalculator />
-      case 'resources':  return <Resources />
+      case 'resources':  return <Resources go={go} />
+      case 'buyer-tools': return <ToolHub workspace="Buyer" user={user} go={goToTool} />
+      case 'owner-tools': return <ToolHub workspace="Owner" user={user} go={goToTool} />
+      case 'realtor-tools': return <ToolHub workspace="Realtor" user={user} go={goToTool} />
+      case 'tools': return <ToolHub workspace={role === 'Owner' || role === 'Realtor' ? role : 'Buyer'} user={user} go={goToTool} />
       // Owner
       case 'earnings':   return <Earnings tone={tone} go={go} />
       // Realtor
       case 'pipeline':   return <Pipeline user={user} />
       case 'research':   return <ResearchTools user={user} />
       case 'professional-profile': return <ProfessionalProfile />
+      case 'professional-directory': return <ProfessionalDirectory />
       // Shared by role
       case 'listings':        return role === 'Owner' ? <OwnerListings tone={tone} go={go} user={user} /> : <RealtorListings tone={tone} go={go} user={user} />
       case 'submit-listing':  return role === 'Owner' ? <OwnerSubmitListing go={go} tone={tone} isAdmin={user.role === 'admin'} /> : <SubmitListing go={go} tone={tone} isAdmin={user.role === 'admin'} />
@@ -134,7 +144,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate 
       case 'settings:connections':
         return <UserSettings user={user} role={role} tone={tone} onUserUpdate={onUserUpdate} initialTab={view === 'settings:connections' ? 'connections' : undefined} />
       case 'upgrade':    return <Upgrade />
-      default:           return null
+      default: return <section className="rounded-xl border border-line bg-paper p-5"><p className="text-sm text-ink2">{tNav('section_unavailable')}</p><button type="button" onClick={() => go(TOOL_WORKSPACE_VIEW[role === 'Owner' || role === 'Realtor' ? role : 'Buyer'])} className="text-sm text-sea font-semibold underline mt-3">{tNav('open_tools')}</button></section>
     }
   }
 
