@@ -387,13 +387,14 @@ export function AdminSettings({ user, onUserUpdate }: { user: UserInfo; onUserUp
               </label>
               <input
                 type="email"
+                multiple
                 className={inp}
                 value={notifyEmail}
                 onChange={e => setNotifyEmail(e.target.value)}
-                placeholder="e.g. ilovedrrealty@gmail.com"
+                placeholder="e.g. first@example.com, second@example.com"
                 maxLength={200}
               />
-              <p className="text-[11.5px] text-dim mt-1.5">Leave empty to fall back to the NOTIFY_EMAIL environment variable.</p>
+              <p className="text-[11.5px] text-dim mt-1.5">Separate multiple email addresses with commas. Leave empty to use the configured default.</p>
             </div>
             <div className="flex justify-end">
               <button
@@ -557,3 +558,4 @@ export function AdminSettings({ user, onUserUpdate }: { user: UserInfo; onUserUp
     </div>
   )
 }
+
