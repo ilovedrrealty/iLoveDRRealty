@@ -6,6 +6,7 @@ import { getAdminLeads, type Lead } from '../../api/leads'
 import { getAdminAgents, type AdminAgent } from '../../api/admin'
 import { TONE, FilterPills } from './shared'
 import { LeadDetailPanel } from '../../components/admin/LeadDetailPanel'
+import { LeadTrackingOverview } from '../../components/admin/LeadTrackingOverview'
 import { parsePhone } from '../../utils/phone'
 
 const TYPE_LABEL: Record<string, string> = {
@@ -254,6 +255,7 @@ export function AdminLeads() {
 
   return (
     <div className="flex flex-col gap-4">
+      <LeadTrackingOverview />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { PhoneInput } from 'react-international-phone'
 import 'react-international-phone/style.css'
-import { submitContactLead } from '../api/inquiries'
-import { trackFormConversion, trackWhatsAppConversion } from '../lib/gtag'
-import { getTrackingReferenceLine } from '../lib/tracking'
+import { submitContactLead, type LeadSubmissionAttempt } from '../api/inquiries'
+import { trackWhatsAppConversion } from '../lib/gtag'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 
 const WHATSAPP_URL = 'https://wa.me/18096108094?text=' + encodeURIComponent(
   'Hola I Love DR Realty, quisiera orientación sobre bienes raíces en República Dominicana.',
@@ -44,6 +44,9 @@ function intentToLeadType(intent: Intent): 'buyer' | 'seller' {
 
 export default function SpanishLandingPage() {
   const formRef = useRef<HTMLFormElement>(null)
+  const submitting = useRef(false)
+  const attempt = useRef<LeadSubmissionAttempt>({})
+  const [dialCode, setDialCode] = useState('1809')
 
   const [form, setForm] = useState({
     name: '', phone: '', email: '', interest: '' as Intent | '',
@@ -64,7 +67,14 @@ export default function SpanishLandingPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!consent || loading || !form.interest) return
+    if (!consent || submitting.current || !form.interest) return
+    const digits = form.phone.replace(/\D/g, '')
+    const phone = !digits || digits === dialCode ? undefined : form.phone
+    if (!form.name.trim() || (!phone && !form.email.trim()) || (phone && !isValidPhoneNumber(phone))) {
+      setError('Escribe tu nombre y un teléfono o correo válido.')
+      return
+    }
+    submitting.current = true
     setLoading(true)
     setError(null)
     try {
@@ -74,22 +84,23 @@ export default function SpanishLandingPage() {
         `Plazo: ${form.timeline || 'Por definir'}`,
         `Contacto preferido: ${form.contactMethod}`,
         form.message,
-        getTrackingReferenceLine(),
       ].filter(Boolean)
 
       await submitContactLead({
         tab: intentToLeadType(form.interest),
         name: form.name,
         email: form.email,
-        phone: form.phone || undefined,
+        phone,
         interest: form.interest,
         message: parts.join('\n'),
+        form: 'spanish_landing', locale: 'es', contactConsent: consent, attempt: attempt.current,
+        conversionIntent: form.interest === 'Comprar' || form.interest === 'Invertir' ? 'buy' : form.interest === 'Vender' ? 'sell' : 'general',
       })
-      trackFormConversion()
       setSent(true)
     } catch {
       setError('Algo salió mal. Por favor intenta de nuevo.')
     } finally {
+      submitting.current = false
       setLoading(false)
     }
   }
@@ -358,19 +369,21 @@ export default function SpanishLandingPage() {
                         <input id="name" required autoComplete="name" value={form.name} onChange={set('name')} className={inputCls} />
                       </div>
                       <div>
-                        <label className={labelCls} htmlFor="phone">WhatsApp o teléfono *</label>
+                        <label className={labelCls} htmlFor="phone">WhatsApp o teléfono (preferido)</label>
                         <PhoneInput
                           defaultCountry="do"
                           value={form.phone}
-                          onChange={phone => setForm(f => ({ ...f, phone }))}
+                          onChange={(phone, metadata) => { setDialCode(metadata.country.dialCode); setForm(f => ({ ...f, phone })) }}
+                          inputProps={{ id: 'phone', autoComplete: 'tel', maxLength: 50 }}
                           inputStyle={{ flex: 1, width: '100%', minHeight: '50px', border: '1px solid #e4ddcf', borderLeft: 'none', borderRadius: '0 0.6875rem 0.6875rem 0', fontFamily: 'inherit', fontSize: '14px', color: '#00102e', outline: 'none' }}
                           countrySelectorStyleProps={{ buttonStyle: { border: '1px solid #e4ddcf', borderRight: 'none', borderRadius: '0.6875rem 0 0 0.6875rem', background: '#f3f1ea', height: '100%' } }}
                           style={{ width: '100%', display: 'flex' }}
                         />
                       </div>
                       <div>
-                        <label className={labelCls} htmlFor="email">Correo electrónico *</label>
-                        <input id="email" type="email" required autoComplete="email" value={form.email} onChange={set('email')} className={inputCls} />
+                        <label className={labelCls} htmlFor="email">Correo electrónico</label>
+                        <input id="email" type="email" maxLength={254} autoComplete="email" value={form.email} onChange={set('email')} className={inputCls} />
+                        <p className="mt-2 text-xs text-dim">Comparte teléfono o correo; si puedes, ambos.</p>
                       </div>
                       <div>
                         <label className={labelCls} htmlFor="interest">¿Qué deseas hacer? *</label>

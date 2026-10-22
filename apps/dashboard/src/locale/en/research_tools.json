@@ -21,7 +21,11 @@
     "from": "Input unit",
     "invalid": "Enter a finite area of zero or more.",
     "formula": "Exact conversion factors: 1 ft² = 0.09290304 m²; 1 hectare = 10,000 m². Displayed results are rounded.",
-    "units": { "m2": "Square metres (m²)", "sqft": "Square feet (ft²)", "hectares": "Hectares (ha)" }
+    "units": {
+      "m2": "Square metres (m²)",
+      "sqft": "Square feet (ft²)",
+      "hectares": "Hectares (ha)"
+    }
   },
   "directory": {
     "title": "Official services and research links",
@@ -46,7 +50,6 @@
   "checklist": {
     "title": "Property review checklist",
     "intro": "Use this as a working reminder while reviewing a property. Mark the tasks you completed and add short follow-up notes.",
-    "temporary": "Checks and notes stay on this page only. They are not saved to your account or cloud and clear when you leave or refresh. Print a copy if you want to keep them. Avoid entering personal IDs or sensitive client details.",
     "print": "Print summary",
     "progress": "{{done}} of {{total}} tasks checked",
     "note_label": "Optional notes — {{item}}",
@@ -62,5 +65,32 @@
       "rules": "Review association rules, rental conditions and the proposed contract",
       "followup": "Record the professional review and remaining follow-up tasks"
     }
+  },
+  "saved": {
+    "intro": "Save a separate checklist, notes and document links for each property review. Return to this account to continue later.",
+    "privacy": "Saved privately to your account. Other members cannot open your reviews. Save before leaving this page. Document links keep their existing sharing permissions; avoid public links to confidential records.",
+    "select": "Open a saved review",
+    "new": "New property review",
+    "title": "Review name (required)",
+    "reference": "Property reference or area (optional)",
+    "notes": "General notes (optional)",
+    "links": "Documents and resource links",
+    "links_help": "Keep up to 10 HTTPS links to documents or research. Files are not uploaded here; access is controlled by the original service.",
+    "link_title": "Link name",
+    "link_url": "HTTPS link",
+    "remove": "Remove link",
+    "open_link": "Open link",
+    "add_link": "Add document or resource link",
+    "save": "Save review",
+    "saving": "Saving...",
+    "loading": "Loading...",
+    "saved": "Saved to your account.",
+    "unsaved": "Unsaved changes. Save before switching pages.",
+    "start": "Name this review to save it.",
+    "saved_at": "Saved {{date}}",
+    "discard": "Discard unsaved edits and reload",
+    "load_error": "Your saved reviews could not be loaded. Check your sign-in and try again.",
+    "save_error": "The review was not saved. Check your sign-in, field limits and HTTPS links, then retry. Your edits remain on this page.",
+    "conflict": "The review changed in another tab or the account reached its saved-review limit. Your edits are still here. Copy any needed notes before discarding and reloading."
   }
 }

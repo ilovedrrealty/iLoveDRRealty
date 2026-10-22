@@ -39,6 +39,8 @@ import enRentals from './locales/en/rentals.json'
 import esRentals from './locales/es/rentals.json'
 import enProfessionals from './locales/en/professionals.json'
 import esProfessionals from './locales/es/professionals.json'
+import enTracking from './locales/en/tracking.json'
+import esTracking from './locales/es/tracking.json'
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -62,6 +64,7 @@ i18n.use(initReactI18next).init({
       rentals: enRentals,
       get_started: enGetStarted,
       professionals: enProfessionals,
+      tracking: enTracking,
     },
     es: {
       common: esCommon,
@@ -83,6 +86,7 @@ i18n.use(initReactI18next).init({
       rentals: esRentals,
       get_started: esGetStarted,
       professionals: esProfessionals,
+      tracking: esTracking,
     },
   },
   lng: 'en',

@@ -64,6 +64,12 @@ export function BulkImportListings() {
       <div className="bg-paper border border-line rounded-2xl px-6 py-5">
         <h2 className="text-[15px] font-bold text-ink mb-1">{t('bulk_import_page.upload_title')}</h2>
         <p className="text-[13px] text-ink2 mb-4">{t('bulk_import_page.upload_desc')}</p>
+        <div className="mb-4 rounded-xl border border-line-soft bg-line-soft/20 p-3 text-[12px] leading-relaxed text-ink2">
+          <a href="/templates/listing-import.csv" download className="font-semibold underline">{t('bulk_import_page.download_template')}</a>
+          <p className="mt-2 mb-0">{t('bulk_import_page.template_help')}</p>
+          <p className="mt-2 mb-0">{t('bulk_import_page.location_help')}</p>
+          <p className="mt-2 mb-0">{t('bulk_import_page.location_limits')}</p>
+        </div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <label className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-line cursor-pointer text-[13px] text-ink2">
             <Upload size={15} />

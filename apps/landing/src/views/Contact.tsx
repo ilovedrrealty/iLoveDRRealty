@@ -3,15 +3,13 @@ import { useWebsiteImage } from '../components/WebsiteSettingsProvider'
 import { useTranslation } from 'react-i18next'
 import { useNav } from '../hooks/useNav'
 import { useSearchParams } from 'next/navigation'
-import { useState, type ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { Home, TrendingUp } from 'lucide-react'
 import { I, CHANNELS } from '../data/contactData'
 import { PhoneInput } from 'react-international-phone'
 import 'react-international-phone/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import { submitContactLead } from '../api/inquiries'
-import { trackFormConversion } from '../lib/gtag'
-import { getTrackingReferenceLine } from '../lib/tracking'
+import { submitContactLead, type LeadSubmissionAttempt } from '../api/inquiries'
 
 function Icon({ d, size = 20 }: { d: string; size?: number }) {
   return (
@@ -41,7 +39,7 @@ export default function Contact() {
   const contactHero = useWebsiteImage('contact_hero', 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1600&q=80&auto=format&fit=crop')
   const contactStory = useWebsiteImage('contact_story', 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&q=80&auto=format&fit=crop')
   const go = useNav()
-  const { t } = useTranslation('contact')
+  const { t, i18n } = useTranslation('contact')
   const searchParams = useSearchParams()
   const channelsText = t('channels.items', { returnObjects: true }) as Array<{ title: string; desc: string; value: string }>
   const buyerInterestOptions = t('form.interest_options', { returnObjects: true }) as string[]
@@ -57,6 +55,8 @@ export default function Contact() {
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const submitting = useRef(false)
+  const attempt = useRef<LeadSubmissionAttempt>({})
 
   function switchTab(next: 'buyer' | 'seller') {
     setTab(next)
@@ -65,27 +65,32 @@ export default function Contact() {
   }
 
   async function handleSubmit() {
-    if (!agreed || loading) return
+    if (!agreed || submitting.current) return
+    const phoneDigits = form.phone.replace(/\D/g, '')
+    const phone = !phoneDigits || phoneDigits === phoneDialCode ? undefined : form.phone
+    if (!form.name.trim() || (!phone && !form.email.trim()) || (phone && !isValidPhoneNumber(phone))) {
+      setError(i18n.language.startsWith('es') ? 'Escribe tu nombre y un teléfono o correo válido.' : 'Enter your name and a valid phone number or email address.')
+      return
+    }
+    submitting.current = true
     setLoading(true)
     setError(null)
     try {
-      const trackingLine = getTrackingReferenceLine()
-      const message = [form.message || undefined, trackingLine].filter(Boolean).join('\n\n')
-      const phoneDigits = form.phone.replace(/\D/g, '')
-      const phone = !phoneDigits || phoneDigits === phoneDialCode ? undefined : form.phone
       await submitContactLead({
-        tab,
+        tab: tab === 'buyer' && form.interest === 'Renting a property' ? 'renter' : tab,
         name: form.name,
         email: form.email,
         phone,
         interest: form.interest,
-        message: message || undefined,
+        message: form.message || undefined, form: 'contact', locale: i18n.language.startsWith('es') ? 'es' : 'en',
+        conversionIntent: form.interest === 'General inquiry' ? 'general' : undefined,
+        contactConsent: agreed, attempt: attempt.current,
       })
-      trackFormConversion()
       setSent(true)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
+      submitting.current = false
       setLoading(false)
     }
   }

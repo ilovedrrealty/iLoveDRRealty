@@ -26,6 +26,23 @@ export interface Lead {
   closed_at: string | null
   ghl_contact_url: string | null
   booking_status: string | null
+  tracking_summary?: {
+    form: string; page_path: string; locale: string; contact_consent: boolean
+    intent: 'buy' | 'sell' | 'rent' | 'general' | 'unknown'
+    measurement_consent: 'granted' | 'denied' | 'unset'; internal_test: boolean
+    source: string | null; medium: string | null; campaign: string | null; has_ad_click_id: boolean
+    measurement: { eligible: boolean; reason: string }
+  } | null
+}
+
+export interface LeadTrackingSummary {
+  window_days: number; total: number; tracked_submissions: number; internal_tests: number
+  measurement_granted: number; with_ad_click_id: number; crm_linked: number; crm_errors: number
+  by_intent: Record<string, number>; note: string
+}
+
+export async function getLeadTrackingSummary(): Promise<LeadTrackingSummary> {
+  return (await client.get<LeadTrackingSummary>('/admin/leads/tracking-summary')).data
 }
 
 export interface LeadCreate {
