@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { isAxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
 import { canApproveProfessional, emptyProfessionalOptions, isAdminManagedProfessional, professionalOptionLabels, professionalServiceLabels, type AdminProfessional, type AdminProfessionalSummary, type ProfessionalOptions, type ProfessionalPage } from '../../../../../packages/professionals/src'
@@ -17,7 +17,7 @@ export function AdminProfessionals() {
   const [page, setPage] = useState<ProfessionalPage<AdminProfessionalSummary>>({ items: [], total: 0, limit: LIMIT, offset: 0 })
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState('')
-  const [review, setReview] = useState('pending')
+  const [review, setReview] = useState('')
   const [visibility, setVisibility] = useState('')
   const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -34,6 +34,7 @@ export function AdminProfessionals() {
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | 'suspend' | 'reinstate' | null>(null)
   const [managedEditor, setManagedEditor] = useState<{ initial: AdminProfessional | null } | null>(null)
   const detailRequest = useRef(0)
+  const fieldId = useId()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -62,6 +63,9 @@ export function AdminProfessionals() {
     setSelectedId(null); setDetail(null); setDetailLoading(false); setDetailError('')
     setNote(''); setConfirmAction(null); setStale(false); setMessage('')
     setManagedEditor({ initial: null })
+  }
+  function filterBy(reviewStatus: string, listingStatus: string) {
+    setReview(reviewStatus); setVisibility(listingStatus); setOffset(0)
   }
   function close() {
     if (busy) return
@@ -92,12 +96,22 @@ export function AdminProfessionals() {
     <div className="flex flex-wrap items-start justify-between gap-4"><p className="max-w-3xl text-sm leading-relaxed text-ink2">{t('admin_intro')}</p>
       <button type="button" className={professionalPrimary} disabled={loading || loadError} onClick={add}>{t('managed_add')}</button>
     </div>
+    <div className="flex flex-wrap gap-2" role="group" aria-label={t('admin_filters')}>
+      {[
+        { label: 'admin_all_profiles', review: '', visibility: '' },
+        { label: 'admin_private_drafts', review: 'draft', visibility: 'hidden' },
+        { label: 'admin_awaiting_review', review: 'pending', visibility: '' },
+      ].map(filter => <button key={filter.label} type="button" className={professionalButton}
+        aria-pressed={review === filter.review && visibility === filter.visibility}
+        onClick={() => filterBy(filter.review, filter.visibility)}>{t(filter.label)}</button>)}
+    </div>
+    <p className="text-xs text-dim">{t('admin_filter_help')}</p>
     <form className="grid sm:grid-cols-2 xl:grid-cols-[1fr_180px_180px_auto] gap-3 items-end" onSubmit={event => { event.preventDefault(); setSearch(query.trim()); setOffset(0) }}>
-      <label className="text-sm font-semibold min-w-0"><span className="block mb-1.5">{t('search')}</span><input maxLength={100} value={query} className={professionalInput} onChange={event => setQuery(event.target.value)} /></label>
-      <label className="text-sm font-semibold min-w-0"><span className="block mb-1.5">{t('status')}</span><select className={professionalInput} value={review} onChange={event => { setReview(event.target.value); setOffset(0) }}>
+      <label htmlFor={`${fieldId}-search`} className="text-sm font-semibold min-w-0"><span className="block mb-1.5">{t('search')}</span><input id={`${fieldId}-search`} type="search" maxLength={100} value={query} className={professionalInput} onChange={event => setQuery(event.target.value)} /></label>
+      <label htmlFor={`${fieldId}-status`} className="text-sm font-semibold min-w-0"><span className="block mb-1.5">{t('status')}</span><select id={`${fieldId}-status`} className={professionalInput} value={review} onChange={event => { setReview(event.target.value); setOffset(0) }}>
         <option value="">{t('all')}</option>{['draft', 'pending', 'approved', 'rejected'].map(value => <option key={value} value={value}>{t(`review.${value}`)}</option>)}
       </select></label>
-      <label className="text-sm font-semibold min-w-0"><span className="block mb-1.5">{t('visibility')}</span><select className={professionalInput} value={visibility} onChange={event => { setVisibility(event.target.value); setOffset(0) }}>
+      <label htmlFor={`${fieldId}-visibility`} className="text-sm font-semibold min-w-0"><span className="block mb-1.5">{t('visibility')}</span><select id={`${fieldId}-visibility`} className={professionalInput} value={visibility} onChange={event => { setVisibility(event.target.value); setOffset(0) }}>
         <option value="">{t('all')}</option>{['hidden', 'published', 'suspended'].map(value => <option key={value} value={value}>{t(`listing.${value}`)}</option>)}
       </select></label>
       <button className={professionalButton}>{t('search_apply')}</button>
@@ -130,7 +144,7 @@ export function AdminProfessionals() {
           <p className="text-xs text-dim">{t('review_warning')}</p>
           {detail.review_note && <p className="whitespace-pre-wrap break-words text-sm text-ink2">{t('review_note')}: {detail.review_note}</p>}
           <fieldset disabled={busy || stale} className="space-y-3 min-w-0">
-            <label className="block text-sm font-semibold"><span className="block mb-1.5">{t(isAdminManagedProfessional(detail) ? 'managed_reason' : 'reason')}</span><textarea value={note} maxLength={1000} rows={3} className={professionalInput} onChange={event => setNote(event.target.value)} /><span className="block mt-1 text-xs font-normal text-dim">{t(isAdminManagedProfessional(detail) ? 'managed_reason_help' : 'reason_help')}</span></label>
+            <label htmlFor={`${fieldId}-note`} className="block text-sm font-semibold"><span className="block mb-1.5">{t(isAdminManagedProfessional(detail) ? 'managed_reason' : 'reason')}</span><textarea id={`${fieldId}-note`} aria-describedby={`${fieldId}-note-help`} value={note} maxLength={1000} rows={3} className={professionalInput} onChange={event => setNote(event.target.value)} /></label><p id={`${fieldId}-note-help`} className="mt-1 text-xs font-normal text-dim">{t(isAdminManagedProfessional(detail) ? 'managed_reason_help' : 'reason_help')}</p>
             {detail.listing_status === 'suspended' && <p className="text-sm text-amber-900">{t('suspended_approval')}</p>}
             {detail.review_status !== 'pending' && <p className="text-xs text-dim">{t('not_pending')}</p>}
             <div className="flex flex-wrap gap-3">

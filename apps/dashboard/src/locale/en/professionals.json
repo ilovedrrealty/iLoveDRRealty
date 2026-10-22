@@ -49,6 +49,11 @@
   "conflict": "This profile changed in another window. Your draft is still here. Reload the latest version before saving again.",
   "action_error": "The change could not be saved. Your draft is still here. Please try again.",
   "status": "Review status",
+  "admin_filters": "Find professional profiles",
+  "admin_all_profiles": "All profiles",
+  "admin_private_drafts": "Private drafts",
+  "admin_awaiting_review": "Awaiting review",
+  "admin_filter_help": "These filters only change this Admin view. Hidden drafts stay private; selecting or opening a profile does not publish it.",
   "visibility": "Directory visibility",
   "version": "Saved version {{version}}",
   "review": {
