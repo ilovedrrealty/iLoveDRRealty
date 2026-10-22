@@ -101,7 +101,7 @@ export function AdminProfessionals() {
         { label: 'admin_all_profiles', review: '', visibility: '' },
         { label: 'admin_private_drafts', review: 'draft', visibility: 'hidden' },
         { label: 'admin_awaiting_review', review: 'pending', visibility: '' },
-      ].map(filter => <button key={filter.label} type="button" className={professionalButton}
+      ].map(filter => <button key={filter.label} type="button" className={review === filter.review && visibility === filter.visibility ? professionalPrimary : professionalButton}
         aria-pressed={review === filter.review && visibility === filter.visibility}
         onClick={() => filterBy(filter.review, filter.visibility)}>{t(filter.label)}</button>)}
     </div>
