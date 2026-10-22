@@ -593,6 +593,10 @@
   "bulk_import_page": {
     "upload_title":    "Upload CSV",
     "upload_desc":     "Upload a partner CSV file to create listings in bulk. Each row becomes a listing; photos are downloaded from the photo_urls column and re-hosted on our storage.",
+    "download_template": "Download CSV header template",
+    "template_help": "Add your property rows below the headers. Fill the required fields, including the assigned agent's user code. Existing CSV files still work; the new location columns are optional.",
+    "location_help": "Optional location columns: maps_url, latitude, longitude. Paste a Google Maps HTTPS share link into maps_url. Enter verified decimal latitude and longitude together, or leave both blank. A map link alone does not create an exact property pin.",
+    "location_limits": "Latitude must be between -90 and 90; longitude between -180 and 180. We do not geocode links or copy map viewport coordinates. A repeated source_ref is skipped and never overwrites an existing listing.",
     "choose_file":     "Choose CSV file…",
     "start_import":    "Start Import",
     "uploading":       "Uploading…",

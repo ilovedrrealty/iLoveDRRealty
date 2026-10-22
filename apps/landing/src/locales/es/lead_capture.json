@@ -8,7 +8,7 @@
   "close": "Cerrar",
   "ph_name": "Tu nombre",
   "ph_email": "Correo electrónico",
-  "ph_phone": "Teléfono (opcional)",
+  "ph_phone": "Teléfono / WhatsApp (preferido)",
   "ph_buyer_msg": "¿Qué estás buscando? (ubicación, presupuesto, tipo…)",
   "ph_seller_msg": "Cuéntanos sobre tu propiedad (ubicación, tipo, precio…)",
   "sending": "Enviando…",
@@ -18,5 +18,11 @@
   "ph_renter_msg": "Zona, presupuesto mensual y fecha de mudanza...",
   "error_submit": "No pudimos enviar tu solicitud. Tus respuestas se conservan. Intenta de nuevo.",
   "error_name": "Escribe tu nombre.",
-  "error_phone": "Escribe un numero de telefono completo o deja el campo vacio."
+  "error_phone": "Escribe un número de teléfono completo o deja el campo vacío.",
+  "error_contact": "Comparte un teléfono o correo electrónico.",
+  "error_consent": "Acepta que te contactemos sobre tu solicitud.",
+  "contact_help": "Comparte teléfono o correo; si puedes, ambos.",
+  "consent": "Acepto que iLoveDR Realty me contacte sobre esta solicitud.",
+  "privacy_link": "Política de privacidad",
+  "comments_label": "Comentarios (opcional)"
 }

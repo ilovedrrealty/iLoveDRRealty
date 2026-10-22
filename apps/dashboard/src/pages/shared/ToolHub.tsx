@@ -43,7 +43,7 @@ export function ToolHub({ workspace, user, go, compact = false }: { workspace: T
           <h2 className="text-sm font-bold text-ink mt-0">{t('start_title')}</h2>
           <p className="text-sm leading-relaxed text-ink2 mb-0 mt-2">{t(`workspaces.${workspace}.start`)}</p>
         </section>
-        <div className="grid gap-5 xl:grid-cols-2 items-start"><AreaConverter /><DueDiligenceChecklist /></div>
+        <AreaConverter /><DueDiligenceChecklist user={user} />
       </> : null}
     </div>
   )

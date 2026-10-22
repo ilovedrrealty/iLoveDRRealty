@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { isAxiosError } from 'axios'
-import { ArrowUpRight, Calculator, CheckSquare, ExternalLink, MapPin, Printer, Ruler, Search } from 'lucide-react'
+import { ArrowUpRight, Calculator, ExternalLink, MapPin, Ruler, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { localizedValue } from '../../../../../packages/website-settings/src'
 import type { UserInfo } from '../../lib/auth'
 import { getResearchTools } from '../../api/researchTools'
 import { ALL_REGIONS } from '../../data/regions'
-import { BUILT_IN_RESEARCH_TOOLS, CHECKLIST_ITEMS, convertArea, mergeResearchTools, type AreaUnit, type ResearchTool } from '../../data/researchTools'
+import { BUILT_IN_RESEARCH_TOOLS, convertArea, mergeResearchTools, type AreaUnit, type ResearchTool } from '../../data/researchTools'
 import { landingBaseUrl } from '../../lib/siteUrls'
+import { SavedResearchWorkspace } from './SavedResearchWorkspace'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 const FIELD = 'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-sea'
@@ -43,38 +44,8 @@ export function AreaConverter() {
   )
 }
 
-export function DueDiligenceChecklist() {
-  const { t } = useTranslation('research_tools')
-  const [checks, setChecks] = useState<Record<string, boolean>>({})
-  const [notes, setNotes] = useState<Record<string, string>>({})
-  const completed = CHECKLIST_ITEMS.filter(id => checks[id]).length
-  return (
-    <section className={CARD} aria-labelledby="due-diligence-heading">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 id="due-diligence-heading" className="text-[16px] font-bold text-ink flex items-center gap-2 m-0"><CheckSquare size={18} /> {t('checklist.title')}</h2>
-        <button onClick={() => window.print()} className="research-no-print inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-2 text-[12px] font-semibold cursor-pointer"><Printer size={14} />{t('checklist.print')}</button>
-      </div>
-      <p className="text-[12.5px] text-dim leading-relaxed mt-2 mb-3">{t('checklist.intro')}</p>
-      <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-[12px] text-amber-900 leading-relaxed">{t('checklist.temporary')}</p>
-      <p className="text-[12px] font-semibold text-ink2" aria-live="polite">{t('checklist.progress', { done: completed, total: CHECKLIST_ITEMS.length })}</p>
-      <div className="flex flex-col divide-y divide-line">
-        {CHECKLIST_ITEMS.map(id => (
-          <div key={id} className="py-3 research-tools-card">
-            <label className="flex items-start gap-2.5 text-[13px] font-semibold text-ink cursor-pointer">
-              <input type="checkbox" checked={!!checks[id]} onChange={event => setChecks(previous => ({ ...previous, [id]: event.target.checked }))} className="mt-0.5 h-4 w-4 accent-sea shrink-0" />
-              <span>{t(`checklist.items.${id}`)}</span>
-            </label>
-            <label className="block mt-2 ml-6.5 text-[11.5px] text-dim research-no-print">
-              {t('checklist.note_label', { item: t(`checklist.items.${id}`) })}
-              <textarea value={notes[id] ?? ''} onChange={event => setNotes(previous => ({ ...previous, [id]: event.target.value }))} maxLength={2000} rows={2} className={`${FIELD} mt-1 resize-y`} placeholder={t('checklist.note_placeholder')} />
-            </label>
-            {notes[id] && <p className="hidden print:block whitespace-pre-wrap text-[12px] ml-6.5">{notes[id]}</p>}
-          </div>
-        ))}
-      </div>
-      <p className="text-[11.5px] text-dim leading-relaxed mb-0">{t('checklist.limit')}</p>
-    </section>
-  )
+export function DueDiligenceChecklist({ user }: { user: UserInfo }) {
+  return <SavedResearchWorkspace key={user.id} />
 }
 
 export function ResearchTools({ user }: { user: UserInfo }) {
@@ -172,7 +143,7 @@ export function ResearchTools({ user }: { user: UserInfo }) {
         </div>
         {status !== 'loading' && filtered.length === 0 && <p className="text-[13px] text-dim py-5 text-center">{t('directory.empty')}</p>}
       </section>
-      <DueDiligenceChecklist />
+      <DueDiligenceChecklist user={user} />
     </div>
   )
 }

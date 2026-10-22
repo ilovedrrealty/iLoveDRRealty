@@ -1,0 +1,6 @@
+{
+  "heading": "Optional advertising measurement",
+  "description": "May we use Google advertising cookies and campaign identifiers to measure which ads bring inquiries? Your request works either way. This is separate from permission to contact you; we do not send your form answers to Google or enable personalized ads.",
+  "allow": "Allow measurement", "decline": "No thanks", "privacy": "Privacy policy",
+  "preferences": "Privacy choices", "close": "Close"
+}
