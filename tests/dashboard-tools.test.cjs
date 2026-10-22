@@ -14,7 +14,7 @@ function load(relativePath) {
   return state.exports
 }
 const { workspaceToolCards, canOpenToolWorkspace } = load('apps/dashboard/src/data/toolHubs.ts')
-const { landingBaseUrl } = load('apps/dashboard/src/lib/siteUrls.ts')
+const { landingBaseUrl, deactivationRedirectUrl } = load('apps/dashboard/src/lib/siteUrls.ts')
 const translations = ['en', 'es'].map(language => JSON.parse(fs.readFileSync(path.resolve(__dirname, `../apps/dashboard/src/locale/${language}/tool_hubs.json`), 'utf8')))
 
 test('tool workspaces follow the real account role, including all Admin views', () => {
@@ -63,4 +63,16 @@ test('member directory sign-in links retain their destination when the landing s
   assert.equal(login.pathname, '/login')
   assert.equal(login.searchParams.get('directory'), 'professionals')
   assert.equal(new URL('/login?join=professional', landingBaseUrl(undefined)).searchParams.get('join'), 'professional')
+})
+
+test('account deactivation returns to the public site without relying on the dashboard host name', () => {
+  for (const configured of [undefined, '', 'not a URL', 'javascript:alert(1)', 'https://user:pass@example.com']) {
+    const destination = new URL(deactivationRedirectUrl(configured))
+    assert.equal(destination.origin, 'https://ilovedrrealty.com')
+    assert.equal(destination.pathname, '/')
+    assert.equal(destination.searchParams.get('msg'), 'deactivated')
+    assert.equal(destination.searchParams.size, 1)
+  }
+  assert.equal(deactivationRedirectUrl('https://ilovedrrealty.com/some/path?ignored=value'), 'https://ilovedrrealty.com/?msg=deactivated')
+  assert.equal(deactivationRedirectUrl('http://127.0.0.1:3001/'), 'http://127.0.0.1:3001/?msg=deactivated')
 })

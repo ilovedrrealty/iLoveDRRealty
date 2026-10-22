@@ -11,6 +11,7 @@ import type { Role } from '../App'
 import { changePassword, deactivateAccount, linkGoogle, requestAccountDeletion, setPassword, unlinkGoogle, updateProfile, uploadAvatar } from '../api/auth'
 import { ConfirmModal } from '../components/shared/ConfirmModal'
 import { PAYPAL_ENABLED } from '../lib/features'
+import { deactivationRedirectUrl } from '../lib/siteUrls'
 import { SCHEDULING_COLOR, SCHEDULING_LABEL, SCHEDULING_PLACEHOLDER, SCHEDULING_PROVIDERS, schedulingProvider, validateSchedulingUrl, type SchedulingProvider } from '../lib/scheduling'
 
 const inp = 'w-full px-3 py-2.5 rounded-lg border border-line bg-white text-[13.5px] text-ink outline-none transition-colors focus:border-[#0d9488] disabled:bg-[#f4f5f7] disabled:text-dim'
@@ -291,7 +292,7 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
     setDeactivating(true)
     try {
       await deactivateAccount()
-      window.location.href = `${window.location.origin.replace('dashboard', 'ilovedrrealty.com') || '/'}?msg=deactivated`
+      window.location.href = deactivationRedirectUrl(import.meta.env.VITE_LANDING_URL)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t('security.danger_zone.err_deactivate'))
     } finally {
