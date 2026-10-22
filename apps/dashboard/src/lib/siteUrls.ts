@@ -8,3 +8,8 @@ export function landingBaseUrl(configured: string | undefined): string {
     return url.origin
   } catch { return DEFAULT_LANDING_URL }
 }
+
+/** Account completion pages belong on the public site, including app.* dashboards. */
+export function deactivationRedirectUrl(configured: string | undefined): string {
+  return new URL('/?msg=deactivated', landingBaseUrl(configured)).toString()
+}
