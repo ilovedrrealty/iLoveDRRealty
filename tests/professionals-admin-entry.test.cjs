@@ -133,6 +133,10 @@ for (const language of ['en', 'es']) {
     assert.doesNotMatch(html, /<option value="pending" selected="">/)
     assert.equal((html.match(/<form /g) ?? []).length, 1)
     assert.doesNotMatch(html, /Approve and publish|Aprobar y publicar/)
+    const labels = [...html.matchAll(/<label\b[^>]*>([\s\S]*?)<\/label>/g)].map(match => match[1])
+    assert.ok(labels.includes(translations.status), 'Review status needs its own exact accessible label')
+    assert.ok(labels.includes(translations.visibility), 'Visibility needs its own exact accessible label')
+    assert.ok(labels.every(label => !label.includes('<select')), 'A filter label must not include its option text')
   })
 
   test(`Professional editor text controls have unique native label targets (${language})`, () => {

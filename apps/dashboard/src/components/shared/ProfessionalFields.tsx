@@ -9,10 +9,10 @@ export const professionalPrimary = `${professionalButton} !bg-coral !text-white 
 
 export function ProfessionalField({ label, value, onChange, type = 'text', maxLength = 120 }: { label: string; value: string; onChange: (value: string) => void; type?: string; maxLength?: number }) {
   const id = useId()
-  return <label htmlFor={id} className="block min-w-0 text-sm font-semibold text-ink">
-    <span className="block mb-1.5">{label}</span>
+  return <div className="min-w-0 text-sm font-semibold text-ink">
+    <label htmlFor={id} className="block mb-1.5">{label}</label>
     <input id={id} className={professionalInput} type={type} value={value} maxLength={maxLength} onChange={event => onChange(event.target.value)} />
-  </label>
+  </div>
 }
 
 export function ProfessionalChoices({ title, values, options, max, onChange }: { title: string; values: string[]; options: ProfessionalOption[]; max: number; onChange: (values: string[]) => void }) {

@@ -24,10 +24,10 @@ export function ProfessionalDraftFields({ draft, options, onChange, onUpload, up
           <ProfessionalChoices title={t('areas')} values={draft.service_area_ids} options={options.areas} max={20} onChange={value => onChange('service_area_ids', value)} />
           <ProfessionalChoices title={t('languages')} values={draft.languages} options={options.languages} max={8} onChange={value => onChange('languages', value)} />
           <p className="text-xs text-dim">{t('description_help')}</p>
-          <div className="grid lg:grid-cols-2 gap-4">{(['en', 'es'] as const).map(language => <label key={language} htmlFor={`${fieldId}-description-${language}`} className="block min-w-0 text-sm font-semibold text-ink">
-            <span className="block mb-1.5">{t(`description_${language}`)}</span>
+          <div className="grid lg:grid-cols-2 gap-4">{(['en', 'es'] as const).map(language => <div key={language} className="min-w-0 text-sm font-semibold text-ink">
+            <label htmlFor={`${fieldId}-description-${language}`} className="block mb-1.5">{t(`description_${language}`)}</label>
             <textarea id={`${fieldId}-description-${language}`} rows={6} maxLength={4000} className={professionalInput} value={draft.descriptions[language]} onChange={event => onChange('descriptions', { ...draft.descriptions, [language]: event.target.value })} />
-          </label>)}</div>
+          </div>)}</div>
         </section>
         <section className="space-y-4 rounded-2xl border border-line bg-white p-4 sm:p-6">
           <h2 className="text-lg font-bold text-ink">{t('contacts_heading')}</h2>
