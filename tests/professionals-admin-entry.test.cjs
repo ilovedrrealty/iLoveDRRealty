@@ -120,6 +120,37 @@ for (const language of ['en', 'es']) {
     assert.doesNotMatch(html, /checked=""|type="password"/)
     assert.doesNotMatch(html, /<button[^>]*>Approve and publish<\/button>/)
   })
+
+  test(`Admin directory initially includes drafts and review requests with read-only quick filters (${language})`, () => {
+    const { load } = ui(language)
+    const { AdminProfessionals } = load('apps/dashboard/src/pages/admin/Professionals.tsx')
+    const html = renderToStaticMarkup(React.createElement(AdminProfessionals))
+    const translations = require(`../apps/dashboard/src/locale/${language}/professionals.json`)
+    assert.match(html, new RegExp(`aria-pressed="true"[^>]*>${translations.admin_all_profiles}<`))
+    assert.ok(html.includes(translations.admin_private_drafts))
+    assert.ok(html.includes(translations.admin_awaiting_review))
+    assert.equal((html.match(/<option value="" selected="">/g) ?? []).length, 2)
+    assert.doesNotMatch(html, /<option value="pending" selected="">/)
+    assert.equal((html.match(/<form /g) ?? []).length, 1)
+    assert.doesNotMatch(html, /Approve and publish|Aprobar y publicar/)
+    const labels = [...html.matchAll(/<label\b[^>]*>([\s\S]*?)<\/label>/g)].map(match => match[1])
+    assert.ok(labels.includes(translations.status), 'Review status needs its own exact accessible label')
+    assert.ok(labels.includes(translations.visibility), 'Visibility needs its own exact accessible label')
+    assert.ok(labels.every(label => !label.includes('<select')), 'A filter label must not include its option text')
+  })
+
+  test(`Professional editor text controls have unique native label targets (${language})`, () => {
+    const { load, options } = ui(language)
+    const { ProfessionalDraftFields } = load('apps/dashboard/src/components/shared/ProfessionalDraftFields.tsx')
+    const html = renderToStaticMarkup(React.createElement(ProfessionalDraftFields, {
+      draft: complete(), options, onChange() {}, onUpload() {}, uploading: false, adminManaged: true,
+    }))
+    const controls = [...html.matchAll(/<(input|textarea)\b([^>]*)>/g)].filter(([, , attributes]) => !attributes.includes('type="file"'))
+    const ids = controls.map(([, , attributes]) => attributes.match(/\bid="([^"]+)"/)?.[1])
+    assert.ok(ids.every(Boolean), 'Every text, checkbox and description control needs an id')
+    assert.equal(new Set(ids).size, ids.length, 'Different controls must not share a label target')
+    for (const id of ids) assert.ok(html.includes(`for="${id}"`), 'A native label must target each control')
+  })
 }
 
 test('Other controls are conditional and public preview renders custom names as escaped text', () => {

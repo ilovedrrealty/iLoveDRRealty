@@ -49,6 +49,11 @@
   "conflict": "Este perfil cambió en otra ventana. Tu borrador sigue aquí. Recarga la última versión antes de volver a guardar.",
   "action_error": "No se pudo guardar el cambio. Tu borrador sigue aquí. Inténtalo de nuevo.",
   "status": "Estado de revisión",
+  "admin_filters": "Buscar perfiles profesionales",
+  "admin_all_profiles": "Todos los perfiles",
+  "admin_private_drafts": "Borradores privados",
+  "admin_awaiting_review": "En revisión",
+  "admin_filter_help": "Estos filtros solo cambian esta vista de Admin. Los borradores ocultos siguen privados; seleccionar o abrir un perfil no lo publica.",
   "visibility": "Visibilidad en el directorio",
   "version": "Versión guardada {{version}}",
   "review": {

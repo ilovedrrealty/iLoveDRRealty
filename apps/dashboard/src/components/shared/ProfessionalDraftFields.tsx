@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProfessionalDraft, ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { ProfessionalChoices, ProfessionalField, professionalButton, professionalInput } from './ProfessionalFields'
@@ -10,6 +10,7 @@ export function ProfessionalDraftFields({ draft, options, onChange, onUpload, up
 }) {
   const { t } = useTranslation('professionals')
   const fileRef = useRef<HTMLInputElement>(null)
+  const fieldId = useId()
   return <>
         <section className="space-y-4 rounded-2xl border border-line bg-white p-4 sm:p-6">
           <h2 className="text-lg font-bold text-ink">{t('details_heading')}</h2>
@@ -23,10 +24,10 @@ export function ProfessionalDraftFields({ draft, options, onChange, onUpload, up
           <ProfessionalChoices title={t('areas')} values={draft.service_area_ids} options={options.areas} max={20} onChange={value => onChange('service_area_ids', value)} />
           <ProfessionalChoices title={t('languages')} values={draft.languages} options={options.languages} max={8} onChange={value => onChange('languages', value)} />
           <p className="text-xs text-dim">{t('description_help')}</p>
-          <div className="grid lg:grid-cols-2 gap-4">{(['en', 'es'] as const).map(language => <label key={language} className="block min-w-0 text-sm font-semibold text-ink">
-            <span className="block mb-1.5">{t(`description_${language}`)}</span>
-            <textarea rows={6} maxLength={4000} className={professionalInput} value={draft.descriptions[language]} onChange={event => onChange('descriptions', { ...draft.descriptions, [language]: event.target.value })} />
-          </label>)}</div>
+          <div className="grid lg:grid-cols-2 gap-4">{(['en', 'es'] as const).map(language => <div key={language} className="min-w-0 text-sm font-semibold text-ink">
+            <label htmlFor={`${fieldId}-description-${language}`} className="block mb-1.5">{t(`description_${language}`)}</label>
+            <textarea id={`${fieldId}-description-${language}`} rows={6} maxLength={4000} className={professionalInput} value={draft.descriptions[language]} onChange={event => onChange('descriptions', { ...draft.descriptions, [language]: event.target.value })} />
+          </div>)}</div>
         </section>
         <section className="space-y-4 rounded-2xl border border-line bg-white p-4 sm:p-6">
           <h2 className="text-lg font-bold text-ink">{t('contacts_heading')}</h2>
@@ -38,7 +39,7 @@ export function ProfessionalDraftFields({ draft, options, onChange, onUpload, up
             <ProfessionalField label={t('public_email')} type="email" value={draft.public_email} maxLength={254} onChange={value => onChange('public_email', value)} />
             <ProfessionalField label={t('website_url')} type="url" value={draft.website_url} maxLength={2048} onChange={value => onChange('website_url', value)} />
           </div>
-          <label className="flex items-start gap-3 text-sm text-ink2"><input className="mt-1 shrink-0 accent-coral" type="checkbox" checked={draft.public_contact_consent} onChange={event => onChange('public_contact_consent', event.target.checked)} /><span>{t(adminManaged ? 'managed_consent' : 'consent')}</span></label>
+          <label htmlFor={`${fieldId}-consent`} className="flex items-start gap-3 text-sm text-ink2"><input id={`${fieldId}-consent`} className="mt-1 shrink-0 accent-coral" type="checkbox" checked={draft.public_contact_consent} onChange={event => onChange('public_contact_consent', event.target.checked)} /><span>{t(adminManaged ? 'managed_consent' : 'consent')}</span></label>
           <p className="text-xs font-semibold text-amber-800">{t('revoke_help')}</p>
         </section>
         <section className="space-y-3 rounded-2xl border border-line bg-white p-4 sm:p-6">
