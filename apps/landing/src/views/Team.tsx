@@ -72,11 +72,12 @@ export default function Team() {
         <div className="grid grid-cols-[repeat(auto-fit,minmax(245px,1fr))] gap-5">
           {principalItems.map((p, i) => (
             <div key={i} className="bg-paper border border-line-soft rounded-2xl overflow-hidden shadow-[rgba(0,16,46,.25)_0px_8px_24px_-18px]">
-              <div className="relative h-55" style={{ backgroundImage: `url(${p.img})`, backgroundSize: 'cover', backgroundPosition: p.bgPos ?? 'center top' }}>
-                <div className="absolute inset-0"
-                  style={{ background: 'linear-gradient(0deg,rgba(0,16,46,.4),transparent 55%)' }} />
-                <div className="absolute top-3 left-3 bg-gold text-ink py-1 px-2.5 rounded-full text-2.5 font-extrabold tracking-[.12em] uppercase">
-                  {t('principals.badge')}
+              <div className="bg-[#F1F4F8]">
+                <div className="flex h-80 items-center justify-center p-3 sm:h-90">
+                  <img src={p.img} alt={p.name} loading="lazy" decoding="async" className="h-full w-full object-contain object-center" />
+                </div>
+                <div className="px-5 pb-3">
+                  <span className="inline-block bg-gold text-ink py-1 px-2.5 rounded-full text-2.5 font-extrabold tracking-[.12em] uppercase">{t('principals.badge')}</span>
                 </div>
               </div>
               <div className="py-4.5 px-5 font-sans">
@@ -102,11 +103,12 @@ export default function Team() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {realtorItems.map((r, i) => (
             <div key={r.id} className="bg-paper border border-line-soft rounded-2xl overflow-hidden shadow-[rgba(0,16,46,.25)_0px_8px_24px_-18px]">
-              <div className="relative h-55" style={{ backgroundImage: `url(${r.img})`, backgroundSize: 'cover', backgroundPosition: r.bgPos ?? 'center top' }}>
-                <div className="absolute inset-0"
-                  style={{ background: 'linear-gradient(0deg,rgba(0,16,46,.4),transparent 55%)' }} />
-                <div className="absolute top-3 left-3 bg-coral text-white py-1 px-2.5 rounded-full text-2.5 font-extrabold tracking-[.12em] uppercase">
-                  {t('realtors.badge')}
+              <div className="bg-[#F1F4F8]">
+                <div className="flex h-80 items-center justify-center p-3 sm:h-90">
+                  <img src={r.img} alt={r.name} loading="lazy" decoding="async" className="h-full w-full object-contain object-center" />
+                </div>
+                <div className="px-5 pb-3">
+                  <span className="inline-block bg-coral text-white py-1 px-2.5 rounded-full text-2.5 font-extrabold tracking-[.12em] uppercase">{t('realtors.badge')}</span>
                 </div>
               </div>
               <div className="py-4.5 px-5 font-sans">
