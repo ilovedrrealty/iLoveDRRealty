@@ -7,6 +7,7 @@ import { TONE } from '../../pages/admin/shared'
 import { parsePhone } from '../../utils/phone'
 import { ConfirmModal } from '../shared/ConfirmModal'
 import { RealtorCombobox } from './RealtorCombobox'
+import { LeadTrackingDetails } from './LeadTrackingOverview'
 
 const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
 
@@ -293,6 +294,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
               </div>
             </div>
 
+            <LeadTrackingDetails lead={lead} />
             {/* Timeline */}
             <div>
               <div className="text-[10.5px] font-bold uppercase tracking-widest text-dim mb-4">{t('lead_panel.section_timeline')}</div>

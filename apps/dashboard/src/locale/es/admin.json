@@ -593,6 +593,10 @@
   "bulk_import_page": {
     "upload_title":    "Subir CSV",
     "upload_desc":     "Sube un archivo CSV de un socio para crear propiedades en masa. Cada fila se convierte en una propiedad; las fotos se descargan de la columna photo_urls y se alojan en nuestro almacenamiento.",
+    "download_template": "Descargar plantilla de encabezados CSV",
+    "template_help": "Añade las filas de tus propiedades debajo de los encabezados. Completa los campos obligatorios, incluido el código de usuario del agente asignado. Los CSV anteriores siguen funcionando; las columnas de ubicación son opcionales.",
+    "location_help": "Columnas de ubicación opcionales: maps_url, latitude, longitude. Pega un enlace HTTPS compartido de Google Maps en maps_url. Introduce la latitud y longitud decimales verificadas juntas, o deja ambas vacías. Un enlace del mapa por sí solo no crea un punto exacto de la propiedad.",
+    "location_limits": "La latitud debe estar entre -90 y 90; la longitud entre -180 y 180. No geocodificamos enlaces ni copiamos coordenadas de la vista del mapa. Un source_ref repetido se omite y nunca sobrescribe una propiedad existente.",
     "choose_file":     "Elegir archivo CSV…",
     "start_import":    "Iniciar importación",
     "uploading":       "Subiendo…",

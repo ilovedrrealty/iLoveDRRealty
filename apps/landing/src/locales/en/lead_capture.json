@@ -8,7 +8,7 @@
   "close": "Close",
   "ph_name": "Your name",
   "ph_email": "Email",
-  "ph_phone": "Phone (optional)",
+  "ph_phone": "Phone / WhatsApp (preferred)",
   "ph_buyer_msg": "What are you looking for? (location, budget, type…)",
   "ph_seller_msg": "Tell us about your property (location, type, asking price…)",
   "sending": "Sending…",
@@ -18,5 +18,11 @@
   "ph_renter_msg": "Where would you like to rent? (location, monthly budget, move-in date...)",
   "error_submit": "We could not send your request. Please try again; your answers are still here.",
   "error_name": "Please enter your name.",
-  "error_phone": "Enter a complete phone number, or leave it blank."
+  "error_phone": "Enter a complete phone number, or leave it blank.",
+  "error_contact": "Provide a phone number or email address.",
+  "error_consent": "Please agree that we may contact you about your request.",
+  "contact_help": "Share a phone number or email; both are welcome.",
+  "consent": "I agree that iLoveDR Realty may contact me about this request.",
+  "privacy_link": "Privacy policy",
+  "comments_label": "Comments (optional)"
 }

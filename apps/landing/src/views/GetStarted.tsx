@@ -8,15 +8,13 @@ import { CheckCircle2, Home, KeyRound, TrendingUp } from 'lucide-react'
 import { PhoneInput } from 'react-international-phone'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import 'react-international-phone/style.css'
-import { submitContactLead } from '../api/inquiries'
-import { trackFormConversion } from '../lib/gtag'
-import { captureTrackingParams, getTrackingReferenceLine } from '../lib/tracking'
+import { submitContactLead, type LeadSubmissionAttempt } from '../api/inquiries'
 
 type Intent = 'buy' | 'sell' | 'rent'
 const INTENTS = [{ value: 'buy', Icon: Home }, { value: 'sell', Icon: TrendingUp }, { value: 'rent', Icon: KeyRound }] as const
 
 export default function GetStarted() {
-  const { t } = useTranslation('get_started')
+  const { t, i18n } = useTranslation('get_started')
   const params = useSearchParams()
   const preset = params.get('intent')
   const [selectedIntent, setSelectedIntent] = useState<Intent | null>(null)
@@ -28,6 +26,7 @@ export default function GetStarted() {
   const [followUp, setFollowUp] = useState<'phone' | 'email'>('phone')
   const [error, setError] = useState('')
   const submitting = useRef(false)
+  const attempt = useRef<LeadSubmissionAttempt>({})
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -43,23 +42,20 @@ export default function GetStarted() {
     submitting.current = true
     setSending(true)
     try {
-      captureTrackingParams()
       const notes = [
         '[Get Started inquiry]',
-        `Contact consent: ${new Date().toISOString()} | /privacy-policy/ | form v2026-10-14`,
         form.message.trim(),
       ].filter(Boolean).join('\n\n')
-      const tracking = getTrackingReferenceLine()?.slice(0, Math.max(0, 1900 - notes.length - 2))
-      const lead = await submitContactLead({
+      await submitContactLead({
         tab: intent === 'sell' ? 'seller' : intent === 'rent' ? 'renter' : 'buyer',
         name: form.name.trim(), email, phone,
         interest: intent === 'sell' ? 'Selling a property' : intent === 'rent' ? 'Renting a property' : 'Buying a property',
-        message: [notes, tracking].filter(Boolean).join('\n\n'),
+        message: notes, form: 'get_started', locale: i18n.language.startsWith('es') ? 'es' : 'en',
+        contactConsent: consent, attempt: attempt.current,
       })
       setFollowUp(phone ? 'phone' : 'email')
       setSent(true)
       // Tracking or browser storage failure must not turn an accepted lead into an error.
-      try { trackFormConversion(lead.id) } catch { /* best-effort advertising measurement */ }
       try { sessionStorage.setItem('lead_modal_dismissed', '1') } catch { /* storage unavailable */ }
     } catch {
       setError(t('errors.send'))

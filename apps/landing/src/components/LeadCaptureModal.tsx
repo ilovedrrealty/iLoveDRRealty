@@ -1,11 +1,12 @@
 'use client'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { X, Home, TrendingUp, KeyRound, CheckCircle2 } from 'lucide-react'
 import { PhoneInput } from 'react-international-phone'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import 'react-international-phone/style.css'
-import client from '../api/axios'
+import { submitContactLead, type LeadSubmissionAttempt } from '../api/inquiries'
 
 const STORAGE_KEY = 'lead_modal_dismissed'
 
@@ -16,13 +17,16 @@ interface LeadCaptureModalProps {
 }
 
 export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }: LeadCaptureModalProps) {
-  const { t } = useTranslation('lead_capture')
+  const { t, i18n } = useTranslation('lead_capture')
   const [tab, setTab] = useState<'buyer' | 'seller' | 'renter'>('buyer')
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
   const [dialCode, setDialCode] = useState('1')
+  const [consent, setConsent] = useState(false)
+  const submitting = useRef(false)
+  const attempt = useRef<LeadSubmissionAttempt>({})
   useEffect(() => { if (open) setTab(initialTab) }, [open, initialTab])
 
   function handleClose() {
@@ -32,27 +36,33 @@ export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (sending) return
+    if (submitting.current) return
     setError('')
     if (!form.name.trim()) { setError(t('error_name')); return }
     const digits = form.phone.replace(/\D/g, '')
     const phone = digits && digits !== dialCode ? form.phone : undefined
+    if (!phone && !form.email.trim()) { setError(t('error_contact')); return }
     if (phone && !isValidPhoneNumber(phone)) { setError(t('error_phone')); return }
+    if (!consent) { setError(t('error_consent')); return }
+    submitting.current = true
     setSending(true)
     try {
-      await client.post('/leads', {
-        type: tab === 'buyer' ? 'buyer_interest' : tab === 'renter' ? 'rental_interest' : 'seller_interest',
+      await submitContactLead({
+        tab, interest: tab === 'buyer' ? 'Buying a property' : tab === 'renter' ? 'Renting a property' : 'Selling a property',
         name: form.name.trim(),
         email: form.email.trim(),
         phone,
         message: form.message || undefined,
+        form: 'lead_popup', locale: i18n.language.startsWith('es') ? 'es' : 'en',
+        contactConsent: consent, attempt: attempt.current,
       })
       setSent(true)
       setForm({ name: '', email: '', phone: '', message: '' })
-      sessionStorage.setItem(STORAGE_KEY, '1')
+      try { sessionStorage.setItem(STORAGE_KEY, '1') } catch { /* accepted inquiry stays successful */ }
     } catch {
       setError(t('error_submit'))
     } finally {
+      submitting.current = false
       setSending(false)
     }
   }
@@ -60,7 +70,8 @@ export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-200 flex items-end sm:items-center justify-center p-4">
+    // Tidio uses z-index 999999999; the inquiry must remain clickable above it.
+    <div className="fixed inset-0 flex items-end sm:items-center justify-center p-4" style={{ zIndex: 1000000000 }}>
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -69,7 +80,10 @@ export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lead-capture-title"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md rounded-2xl shadow-2xl overflow-y-auto"
         style={{ background: '#fff' }}
       >
         {/* Close */}
@@ -87,7 +101,7 @@ export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }
           <div className="text-[11px] font-bold tracking-[.12em] uppercase mb-2" style={{ color: '#e10f1f' }}>
             I Love DR Realty
           </div>
-          <h2 className="text-[20px] font-extrabold text-white tracking-tight leading-snug mb-1">
+          <h2 id="lead-capture-title" className="text-[20px] font-extrabold text-white tracking-tight leading-snug mb-1">
             {t('heading')}
           </h2>
           <p className="text-[13px]" style={{ color: 'rgba(255,255,255,.6)' }}>
@@ -141,6 +155,8 @@ export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }
               <div className="grid grid-cols-2 gap-3">
                 <input
                   required
+                  maxLength={200}
+                  aria-label={t('ph_name')}
                   placeholder={t('ph_name')}
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -148,8 +164,9 @@ export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }
                   style={{ '--tw-border-opacity': 1 } as React.CSSProperties}
                 />
                 <input
-                  required
                   type="email"
+                  maxLength={254}
+                  aria-label={t('ph_email')}
                   placeholder={t('ph_email')}
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
@@ -166,11 +183,15 @@ export default function LeadCaptureModal({ open, onClose, initialTab = 'buyer' }
               />
               <textarea
                 rows={3}
+                maxLength={1500}
+                aria-label={t('comments_label')}
                 placeholder={tab === 'buyer' ? t('ph_buyer_msg') : tab === 'renter' ? t('ph_renter_msg') : t('ph_seller_msg')}
                 value={form.message}
                 onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
                 className="w-full text-[13px] border border-line rounded-xl px-3 py-2.5 font-sans outline-none resize-none"
               />
+              <p className="text-xs text-dim">{t('contact_help')}</p>
+              <label className="flex items-start gap-2 text-xs leading-relaxed text-ink2"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-0.5 shrink-0 accent-coral" /><span>{t('consent')} <Link className="underline" href="/privacy-policy/">{t('privacy_link')}</Link></span></label>
               {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
               <button
                 type="submit"

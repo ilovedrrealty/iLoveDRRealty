@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Script from 'next/script'
 import './globals.css'
 import Navbar from '../components/Navbar'
@@ -9,7 +10,7 @@ import LeadCaptureProvider from '../components/LeadCaptureProvider'
 import I18nProvider from '../components/I18nProvider'
 import WebsiteSettingsProvider from '../components/WebsiteSettingsProvider'
 import TrackingCapture from '../components/TrackingCapture'
-import { GTAG_ID } from '../lib/gtag'
+import MeasurementPreferences from '../components/MeasurementPreferences'
 
 export const metadata: Metadata = {
   title: {
@@ -40,18 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        {/* Google tag (gtag.js) — installed once sitewide per Website-Developer-Only-Instructions.md */}
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GTAG_ID}`} strategy="afterInteractive" />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GTAG_ID}');
-          `}
-        </Script>
-        <TrackingCapture />
+        <Suspense fallback={null}><TrackingCapture /></Suspense>
         <I18nProvider>
+        <MeasurementPreferences />
         <WebsiteSettingsProvider>
         <GoogleAuthProvider>
           <LeadCaptureProvider>
