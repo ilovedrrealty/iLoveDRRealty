@@ -47,9 +47,10 @@ interface Props {
   allowedStatuses?: readonly string[]
   updateStatusFn?: (leadId: string, status: string) => Promise<void>
   calendlyUrl?: string
+  onOpenDelivery?: (leadId: string) => void
 }
 
-export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl }: Props) {
+export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, onOpenDelivery }: Props) {
   const { t } = useTranslation('admin')
 
   const TYPE_LABEL: Record<string, string> = {
@@ -295,6 +296,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
             </div>
 
             <LeadTrackingDetails lead={lead} />
+            {onOpenDelivery ? <button type="button" onClick={() => onOpenDelivery(lead.id)} className="min-h-10 rounded-lg border border-line px-4 py-2 text-sm font-semibold text-sea">{t('leads_page.open_delivery')}</button> : null}
             {/* Timeline */}
             <div>
               <div className="text-[10.5px] font-bold uppercase tracking-widest text-dim mb-4">{t('lead_panel.section_timeline')}</div>

@@ -32,6 +32,7 @@ import { ResearchTools } from './shared/ResearchTools'
 import { ProfessionalProfile } from './shared/ProfessionalProfile'
 import ProfessionalDirectory from './shared/ProfessionalDirectory'
 import { ToolHub } from './shared/ToolHub'
+import { PropertyManagement } from './shared/PropertyManagement'
 import { TOOL_WORKSPACE_VIEW, type ToolWorkspace } from '../data/toolHubs'
 
 const ROLE_ORDER: Role[] = ['Buyer', 'Owner', 'Realtor']
@@ -73,7 +74,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function getPageTitle(v: string): string {
-    if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools'].includes(v)) return tNav(v)
+    if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'property-management'].includes(v)) return tNav(v)
     const key = `pages.${v}`
     if (role === 'Buyer')   return tBuyer(key,   { defaultValue: tBuyer('pages.home') })
     if (role === 'Owner')   return tOwner(key,   { defaultValue: tOwner('pages.home') })
@@ -125,6 +126,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
       case 'owner-tools': return <ToolHub workspace="Owner" user={user} go={goToTool} />
       case 'realtor-tools': return <ToolHub workspace="Realtor" user={user} go={goToTool} />
       case 'tools': return <ToolHub workspace={role === 'Owner' || role === 'Realtor' ? role : 'Buyer'} user={user} go={goToTool} />
+      case 'property-management': return <PropertyManagement user={user} />
       // Owner
       case 'earnings':   return <Earnings tone={tone} go={go} />
       // Realtor
@@ -139,7 +141,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
       case 'bookings':        return role === 'Admin' ? <AdminBookings /> : <BuyerBookings />
       case 'owner-bookings':    return <OwnerBookings go={go} />
       case 'realtor-bookings':  return <RealtorBookings />
-      case 'leads':      return role === 'Owner' ? <OwnerLeads tone={tone} go={go} /> : <RealtorLeads go={go} user={user} />
+      case 'leads':      return role === 'Owner' ? <OwnerLeads tone={tone} go={go} isAdmin={user.role === 'admin'} /> : <RealtorLeads go={go} user={user} />
       case 'settings':
       case 'settings:connections':
         return <UserSettings user={user} role={role} tone={tone} onUserUpdate={onUserUpdate} initialTab={view === 'settings:connections' ? 'connections' : undefined} />

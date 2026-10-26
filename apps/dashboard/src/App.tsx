@@ -66,8 +66,8 @@ function DashboardPage() {
   return (
     <DashLayout role={role} view={view} go={go} onLogout={handleLogout} user={user} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined}>
       {role === 'Admin'
-        ? <AdminDash go={go} view={view} user={user} onUserUpdate={updateUser} />
-        : <Dashboard key={role} go={go} view={view} role={role} user={user} onUserUpdate={updateUser} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined} />
+        ? <AdminDash key={`${user.id}:${user.role}`} go={go} view={view} user={user} onUserUpdate={updateUser} />
+        : <Dashboard key={`${user.id}:${user.role}:${role}`} go={go} view={view} role={role} user={user} onUserUpdate={updateUser} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined} />
       }
     </DashLayout>
   )

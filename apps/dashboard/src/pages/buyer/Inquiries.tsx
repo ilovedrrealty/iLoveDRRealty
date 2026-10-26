@@ -2,103 +2,37 @@ import { useEffect, useState } from 'react'
 import { MessageCircle, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '../../components/dashboard/shared'
+import { InquiryHistory } from '../../components/dashboard/InquiryHistory'
 import { getMyLeads, type Lead } from '../../api/leads'
+import { currentBuyerInquiries, inquiryDate, inquiryStatus } from '../../utils/inquiryFeeds'
+import { landingBaseUrl } from '../../lib/siteUrls'
 
-const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
-
-const STATUS_COLOR: Record<string, string> = {
-  new: '#64748b',
-  assigned: '#0d9488',
-  contacted: '#1f7a3d',
-  closed: '#94a3b8',
-}
-
-function fmtRelative(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const m = Math.floor(diff / 60_000)
-  if (m < 1) return t('rel.just_now')
-  if (m < 60) return t('rel.mins_ago', { count: m })
-  const h = Math.floor(m / 60)
-  if (h < 24) return t('rel.hrs_ago', { count: h })
-  const d = Math.floor(h / 24)
-  if (d < 30) return t('rel.days_ago', { count: d })
-  return t('rel.months_ago', { count: Math.floor(d / 30) })
-}
+const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 
 export function Inquiries() {
-  const { t } = useTranslation('buyer')
-  const [inquiries, setInquiries] = useState<Lead[]>([])
-  const [loading, setLoading] = useState(true)
-
+  const { t, i18n } = useTranslation('inquiry_feeds')
+  const [inquiries, setInquiries] = useState<Lead[] | null>(null)
+  const [busy, setBusy] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [refresh, setRefresh] = useState(0)
+  const [visible, setVisible] = useState(20)
   useEffect(() => {
-    getMyLeads()
-      .then(data => setInquiries(data.filter(l => l.type === 'property_inquiry')))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
-
-  return (
-    <Card title={<><MessageCircle size={14} />{t('inquiries_page.title')}</>} padded={false}>
-      {loading ? (
-        <div className="px-5 py-8 text-[13px] text-dim text-center">{t('inquiries_page.loading')}</div>
-      ) : inquiries.length === 0 ? (
-        <div className="py-10 flex flex-col items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: '#e10f1f18' }}>
-            <MessageCircle size={20} style={{ color: '#e10f1f' }} />
-          </div>
-          <div className="text-center">
-            <div className="text-[13.5px] font-semibold text-ink mb-0.5">{t('inquiries_page.empty_title')}</div>
-            <div className="text-[11.5px] text-dim">{t('inquiries_page.empty_sub')}</div>
-          </div>
-          <a
-            href={`${LANDING_URL}/search`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 py-1.75 px-4 rounded-full text-[12.5px] font-bold cursor-pointer border-0 text-white"
-            style={{ background: '#e10f1f' }}
-          >
-            <Search size={13} strokeWidth={2.5} /> {t('inquiries.browse')}
-          </a>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr>
-                {[t('inquiries_page.table_property'), t('inquiries_page.table_message'), t('inquiries_page.table_sent'), t('inquiries_page.table_status')].map((h, i) => (
-                  <th key={i} className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-[.07em] text-dim text-left border-b border-line">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {inquiries.map((inq, i) => (
-                <tr key={inq.id}>
-                  <td className={`px-5 py-3 text-[13px] text-ink font-semibold max-w-45 truncate ${i < inquiries.length - 1 ? 'border-b border-line' : ''}`}>
-                    {inq.property_title ?? t('inquiries.general_inquiry')}
-                  </td>
-                  <td className={`px-5 py-3 text-[13px] text-ink2 max-w-55 truncate ${i < inquiries.length - 1 ? 'border-b border-line' : ''}`}>
-                    {inq.message ?? '—'}
-                  </td>
-                  <td className={`px-5 py-3 text-[13px] text-dim whitespace-nowrap ${i < inquiries.length - 1 ? 'border-b border-line' : ''}`}>
-                    {fmtRelative(inq.created_at, t)}
-                  </td>
-                  <td className={`px-5 py-3 ${i < inquiries.length - 1 ? 'border-b border-line' : ''}`}>
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.75 rounded-full text-[11.5px] font-semibold capitalize"
-                      style={{
-                        background: `${STATUS_COLOR[inq.status] ?? '#64748b'}15`,
-                        color: STATUS_COLOR[inq.status] ?? '#64748b',
-                      }}
-                    >
-                      {inq.status === 'new' ? t('inquiries_page.status_pending') : inq.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+    const controller = new AbortController()
+    setInquiries(null); setBusy(true); setFailed(false); setVisible(20)
+    getMyLeads(controller.signal).then(result => { if (!controller.signal.aborted) setInquiries(currentBuyerInquiries(result)) })
+      .catch(() => { if (!controller.signal.aborted) setFailed(true) })
+      .finally(() => { if (!controller.signal.aborted) setBusy(false) })
+    return () => controller.abort()
+  }, [refresh])
+  return <div className="space-y-5">
+    <Card title={<><MessageCircle size={15} />{t('buyer_title')}</>}>
+      <p className="mb-4 text-sm leading-relaxed text-ink2">{t('buyer_explanation')}</p>
+      {busy ? <p role="status" className="py-6 text-sm text-dim">{t('loading')}</p> : failed ? <div role="alert"><p className="text-sm text-red-900">{t('current_error')}</p><button type="button" onClick={() => setRefresh(value => value + 1)} className="mt-2 min-h-10 text-sm font-semibold text-sea underline">{t('retry')}</button></div> : inquiries ? <>
+        <p className="mb-3 text-xs text-dim">{t('buyer_count', { count: inquiries.length })}</p>
+        {!inquiries.length ? <div className="space-y-3 py-5"><p className="text-sm text-ink2">{t('buyer_empty')}</p><a href={`${LANDING_URL}/search/`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-sea px-3 text-sm font-semibold text-white no-underline"><Search size={15} aria-hidden="true" />{t('browse')}</a></div> : <ul className="divide-y divide-line">{inquiries.slice(0, visible).map(lead => <li key={`lead:${lead.id}`} className="space-y-2 py-4 first:pt-0"><div className="flex flex-wrap justify-between gap-2"><h3 className="break-words text-sm font-bold text-ink">{lead.property_title || t('property_unavailable')}</h3><span className="rounded-full bg-line-soft px-2.5 py-1 text-xs font-semibold text-ink">{t(`statuses.${inquiryStatus(lead.status)}`)}</span></div><p className="whitespace-pre-wrap break-words text-sm text-ink2">{lead.message || t('no_message')}</p><p className="text-xs text-dim">{inquiryDate(lead.created_at, i18n.language)}</p></li>)}</ul>}
+        {visible < inquiries.length ? <button type="button" onClick={() => setVisible(value => value + 20)} className="mt-3 min-h-10 text-sm font-semibold text-sea underline">{t('show_more')}</button> : null}
+      </> : null}
     </Card>
-  )
+    <InquiryHistory scope="buyer" />
+  </div>
 }

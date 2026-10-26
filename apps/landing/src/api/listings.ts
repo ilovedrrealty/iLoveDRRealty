@@ -71,6 +71,8 @@ export interface ApiListingDetail {
   maps_url: string | null
   latitude: number | null
   longitude: number | null
+  location_precision?: 'exact' | 'area' | 'hidden'
+  location_verified?: boolean
   tag: string | null
   tags: string[]
   video_links: string[]
@@ -114,6 +116,8 @@ export async function fetchDealListings(): Promise<ApiDealListing[]> {
 }
 
 export async function fetchListingById(id: string): Promise<ApiListingDetail> {
+  // The API response is no-store. A custom Cache-Control request header would
+  // trigger a preflight outside the API's established allowed-header contract.
   const res = await client.get<ApiListingDetail>(`/listings/${id}`)
   return res.data
 }
