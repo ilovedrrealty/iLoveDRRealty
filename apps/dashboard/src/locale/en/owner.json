@@ -13,14 +13,14 @@
     "active_listings":  "Active Listings",
     "upcoming_bookings":"Upcoming Bookings",
     "open_leads":       "Open Leads",
-    "revenue_month":    "Revenue This Month",
+    "arrivals_month":   "Confirmed Bookings This Month",
     "active_one":       "1 active",
     "active_many":      "{{count}} active",
     "bookings_next":    "Next: {{date}}",
     "bookings_none":    "None scheduled",
     "leads_count":      "{{count}} total",
     "leads_none":       "No leads yet",
-    "revenue_sub":      "This month (confirmed)"
+    "arrivals_sub":     "Scheduled check-ins through {{date}} · Dominican Republic time"
   },
   "listings": {
     "title":            "Active Listings",
@@ -33,10 +33,12 @@
     "views":            "views",
     "leads":            "leads"
   },
-  "revenue": {
-    "title":          "Revenue",
-    "sub":            "Last 6 months (confirmed bookings)",
-    "view_breakdown": "View full breakdown →"
+  "arrival_activity": {
+    "title":          "Confirmed Booking Activity",
+    "sub":            "6 calendar months through {{date}} · Dominican Republic time",
+    "definition":     "Counts confirmed bookings by scheduled check-in date, through today. It does not confirm guest arrival or payment.",
+    "month_count":    "{{month}}: {{count}} confirmed bookings by scheduled check-in date",
+    "view_bookings":  "View guest bookings →"
   },
   "agent": {
     "title":          "Your Agent",
@@ -56,7 +58,10 @@
     "all":            "All →",
     "empty_heading":  "No upcoming bookings",
     "empty_sub":      "Bookings from guests will appear here.",
-    "guest_fallback": "Guest"
+    "guest_fallback": "Guest",
+    "loading":        "Loading booking activity…",
+    "load_error":     "Bookings could not be loaded. Counts are unavailable.",
+    "retry":          "Retry loading bookings"
   },
   "leads_card": {
     "title":         "Recent Leads",

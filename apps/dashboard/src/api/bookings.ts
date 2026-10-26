@@ -39,8 +39,8 @@ export async function getMyBookings(): Promise<Booking[]> {
   return res.data
 }
 
-export async function getOwnerBookings(): Promise<Booking[]> {
-  const res = await client.get<Booking[]>('/bookings/for-owner')
+export async function getOwnerBookings(signal?: AbortSignal): Promise<Booking[]> {
+  const res = await client.get<Booking[]>('/bookings/for-owner', { signal })
   return res.data
 }
 

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Home, Calendar, DollarSign, Bell, MessageCircle, Clock, Star, Pencil, UserCircle, CalendarCheck } from 'lucide-react'
+import { Home, Calendar, Bell, MessageCircle, Clock, Star, Pencil, UserCircle, CalendarCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Card, StatusPill, RoleKpiCard, fmtPrice } from './shared'
 import { getMyListings, type Listing } from '../../api/listings'
 import { getOwnerBookings, type Booking } from '../../api/bookings'
 import { getOwnerLeads, type OwnerLead, type OwnerLeadPage } from '../../api/ownerLeads'
 import { inquiryDate } from '../../utils/inquiryFeeds'
+import { buildOwnerArrivalActivity, isBookingCalendarDate } from '../../utils/ownerArrivalActivity'
 import { getMyAgent } from '../../api/auth'
 import type { UserInfo } from '../../lib/auth'
 import { SetupBanners, useListingSetup } from './SetupBanners'
@@ -14,28 +15,17 @@ export const OWNER_KPIS: { label: string; value: string; sub: string; accent?: s
   { label: 'Active Listings',    value: '—', sub: '' },
   { label: 'Upcoming Bookings',  value: '—', sub: '' },
   { label: 'Open Leads',         value: '—', sub: '' },
-  { label: 'Revenue This Month', value: '—', sub: '', accent: '#f0a800' },
+  { label: 'Confirmed Bookings This Month', value: '—', sub: '', accent: '#f0a800' },
 ]
 
 const STATUS_TONE_MAP: Record<string, string> = {
   active: '#1f7a3d', pending_approval: '#f0a800', rejected: '#e10f1f', archived: '#9ca3af',
 }
 
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-function buildRevenueBar(bookings: Booking[]) {
-  const now = new Date()
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
-    return { month: MONTH_SHORT[d.getMonth()], year: d.getFullYear(), monthIdx: d.getMonth(), rev: 0 }
-  })
-  for (const b of bookings) {
-    if (b.status !== 'confirmed' || !b.total_price) continue
-    const d = new Date(b.check_in)
-    const slot = months.find(m => m.monthIdx === d.getMonth() && m.year === d.getFullYear())
-    if (slot) slot.rev += b.total_price
-  }
-  return months
+interface BookingFeed {
+  identity: string
+  status: 'loading' | 'ready' | 'error'
+  items: Booking[]
 }
 
 function avatarTone(name: string): string {
@@ -51,24 +41,38 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
   const { t: tFeed, i18n } = useTranslation('inquiry_feeds')
 
   const [myListings, setMyListings]   = useState<Listing[]>([])
-  const [bookings, setBookings]       = useState<Booking[]>([])
+  const bookingIdentity = `${user.id}:${user.role}`
+  const [bookingFeed, setBookingFeed] = useState<BookingFeed>({ identity: bookingIdentity, status: 'loading', items: [] })
+  const [bookingRefresh, setBookingRefresh] = useState(0)
   const [inquiries, setInquiries]     = useState<OwnerLead[]>([])
   const [inquiryPage, setInquiryPage] = useState<OwnerLeadPage | null>(null)
   const [inquiryError, setInquiryError] = useState(false)
   const [inquiryRefresh, setInquiryRefresh] = useState(0)
   const [agent, setAgent] = useState<{ name: string; email: string; phone: string | null; calendly_url: string | null } | null>(null)
   const [loadingListings, setLoadingListings] = useState(true)
-  const [loadingBookings, setLoadingBookings] = useState(true)
   const [loadingInquiries, setLoadingInquiries] = useState(true)
   const [loadingAgent, setLoadingAgent] = useState(true)
 
   useEffect(() => {
     getMyListings().then(setMyListings).catch(() => {}).finally(() => setLoadingListings(false))
-    getOwnerBookings().then(setBookings).catch(() => {}).finally(() => setLoadingBookings(false))
     getMyAgent().then(d => {
       if (d.realtor_name) setAgent({ name: d.realtor_name, email: d.realtor_email ?? '', phone: d.realtor_phone ?? null, calendly_url: d.realtor_calendly_url ?? null })
     }).catch(() => {}).finally(() => setLoadingAgent(false))
   }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setBookingFeed({ identity: bookingIdentity, status: 'loading', items: [] })
+    getOwnerBookings(controller.signal).then(items => {
+      if (!Array.isArray(items) || items.some(item => !item || typeof item.id !== 'string' || typeof item.status !== 'string' || typeof item.check_in !== 'string' || typeof item.check_out !== 'string')) {
+        throw new Error('Booking activity is unavailable')
+      }
+      if (!controller.signal.aborted) setBookingFeed({ identity: bookingIdentity, status: 'ready', items })
+    }).catch(() => {
+      if (!controller.signal.aborted) setBookingFeed({ identity: bookingIdentity, status: 'error', items: [] })
+    })
+    return () => controller.abort()
+  }, [bookingIdentity, bookingRefresh])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -81,23 +85,25 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
   }, [user.id, user.role, inquiryRefresh])
 
   const activeCount = myListings.filter(l => l.status === 'active').length
-  const today = new Date().toISOString().slice(0, 10)
-  const upcomingBookings = bookings.filter(b => b.check_in >= today && b.status !== 'cancelled')
-  const revenueBar = buildRevenueBar(bookings)
-  const maxRev = Math.max(...revenueBar.map(d => d.rev), 1)
-  const thisMonthRev = revenueBar[revenueBar.length - 1].rev
-
-  const loading = loadingListings || loadingBookings || loadingInquiries
+  // Identity gating also hides the old account's data before the new effect runs.
+  const currentBookingFeed = bookingFeed.identity === bookingIdentity
+  const loadingBookings = !currentBookingFeed || bookingFeed.status === 'loading'
+  const bookingError = currentBookingFeed && bookingFeed.status === 'error'
+  const bookings = currentBookingFeed && bookingFeed.status === 'ready' ? bookingFeed.items : []
+  const arrivalActivity = buildOwnerArrivalActivity(bookings, new Date(), i18n.language)
+  const upcomingBookings = bookings.filter(b => isBookingCalendarDate(b.check_in) && b.check_in >= arrivalActivity.today && (b.status === 'confirmed' || b.status === 'pending'))
+    .sort((a, b) => a.check_in.localeCompare(b.check_in))
+  const maxArrivals = Math.max(...arrivalActivity.months.map(month => month.count), 1)
   const kpis = [
     {
       label: t('kpis.active_listings'),
-      value: loading ? '…' : String(activeCount),
-      sub:   loading ? '' : activeCount === 1 ? t('kpis.active_one') : t('kpis.active_many', { count: activeCount }),
+      value: loadingListings ? '…' : String(activeCount),
+      sub:   loadingListings ? '' : activeCount === 1 ? t('kpis.active_one') : t('kpis.active_many', { count: activeCount }),
     },
     {
       label: t('kpis.upcoming_bookings'),
-      value: loading ? '…' : String(upcomingBookings.length),
-      sub:   loading ? '' : upcomingBookings.length ? t('kpis.bookings_next', { date: upcomingBookings[0].check_in }) : t('kpis.bookings_none'),
+      value: loadingBookings ? '…' : bookingError ? '—' : String(upcomingBookings.length),
+      sub:   loadingBookings ? t('bookings.loading') : bookingError ? t('bookings.load_error') : upcomingBookings.length ? t('kpis.bookings_next', { date: upcomingBookings[0].check_in }) : t('kpis.bookings_none'),
     },
     {
       label: t('kpis.open_leads'),
@@ -105,9 +111,9 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
       sub: loadingInquiries ? '' : inquiryError ? tFeed('home_error') : tFeed('open_definition'),
     },
     {
-      label: t('kpis.revenue_month'),
-      value: loading ? '…' : thisMonthRev ? `$${thisMonthRev.toLocaleString()}` : '$0',
-      sub:   loading ? '' : t('kpis.revenue_sub'),
+      label: t('kpis.arrivals_month'),
+      value: loadingBookings ? '…' : bookingError ? '—' : String(arrivalActivity.thisMonthCount),
+      sub:   loadingBookings ? t('bookings.loading') : bookingError ? t('bookings.load_error') : t('kpis.arrivals_sub', { date: arrivalActivity.today }),
       accent: '#f0a800',
     },
   ]
@@ -195,36 +201,32 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
             )}
           </Card>
 
-          <Card title={<><DollarSign size={14} /> {t('revenue.title')}</>} sub={t('revenue.sub')}>
+          <Card title={<><CalendarCheck size={14} /> {t('arrival_activity.title')}</>} sub={t('arrival_activity.sub', { date: arrivalActivity.today })}>
             {loadingBookings ? (
-              <div className="flex items-end gap-2 h-27.5 animate-pulse">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                    <div className="h-3 w-full bg-line-soft rounded" />
-                    <div className="w-full rounded-t-lg bg-line-soft" style={{ height: 40 }} />
-                    <div className="h-3 w-4 bg-line-soft rounded" />
-                  </div>
-                ))}
+              <div role="status" className="py-6 text-[12px] text-dim">{t('bookings.loading')}</div>
+            ) : bookingError ? (
+              <div role="alert" className="py-3 text-[12px] text-ink">
+                <p>{t('bookings.load_error')}</p>
+                <button type="button" onClick={() => setBookingRefresh(value => value + 1)} className="mt-2 font-semibold underline" style={{ color: tone }}>{t('bookings.retry')}</button>
               </div>
             ) : (
-              <div className="flex items-end gap-2 h-27.5">
-                {revenueBar.map((d, i) => {
-                  const h = Math.max((d.rev / maxRev) * 80, d.rev > 0 ? 4 : 2)
-                  const isLast = i === revenueBar.length - 1
+              <ul className="flex items-end gap-2 min-h-27.5" aria-label={t('arrival_activity.title')}>
+                {arrivalActivity.months.map((month, index) => {
+                  const height = Math.max((month.count / maxArrivals) * 80, month.count > 0 ? 4 : 2)
+                  const isLast = index === arrivalActivity.months.length - 1
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                      <div className={`text-[10px] ${isLast ? 'text-ink font-bold' : 'text-dim'}`}>
-                        {d.rev > 0 ? `$${(d.rev / 1000).toFixed(1)}K` : '—'}
-                      </div>
-                      <div className="w-full rounded-t-lg" style={{ height: h, background: isLast ? tone : `${tone}50` }} />
-                      <div className="text-[10px] text-dim">{d.month}</div>
-                    </div>
+                    <li key={month.key} className="flex-1 min-w-0 flex flex-col items-center gap-1.5" aria-label={t('arrival_activity.month_count', { month: month.label, count: month.count })}>
+                      <div className={`text-[10px] ${isLast ? 'text-ink font-bold' : 'text-dim'}`}>{month.count}</div>
+                      <div aria-hidden="true" className="w-full rounded-t-lg" style={{ height, background: isLast ? tone : `${tone}50` }} />
+                      <div className="text-[10px] text-dim text-center">{month.label}</div>
+                    </li>
                   )
                 })}
-              </div>
+              </ul>
             )}
-            <button onClick={() => go('earnings')} className="mt-3 text-[12.5px] font-semibold bg-transparent border-none cursor-pointer p-0" style={{ color: tone }}>
-              {t('revenue.view_breakdown')}
+            <p className="mt-3 text-[11.5px] text-dim">{t('arrival_activity.definition')}</p>
+            <button onClick={() => go('owner-bookings')} className="mt-3 text-[12.5px] font-semibold bg-transparent border-none cursor-pointer p-0" style={{ color: tone }}>
+              {t('arrival_activity.view_bookings')}
             </button>
           </Card>
         </div>
@@ -305,7 +307,7 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
           )}
 
           <Card title={<><Bell size={14} /> {t('bookings.title')}</>} sub={t('bookings.sub')}
-            action={<button onClick={() => go('bookings')} className="text-xs font-bold bg-transparent border-none cursor-pointer" style={{ color: tone }}>{t('bookings.all')}</button>}>
+            action={<button onClick={() => go('owner-bookings')} className="text-xs font-bold bg-transparent border-none cursor-pointer" style={{ color: tone }}>{t('bookings.all')}</button>}>
             {loadingBookings ? (
               <div className="flex flex-col gap-2.5">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -314,6 +316,11 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
                     <div className="h-3 bg-line-soft rounded w-1/2" />
                   </div>
                 ))}
+              </div>
+            ) : bookingError ? (
+              <div role="alert" className="py-3 text-[12px] text-ink">
+                <p>{t('bookings.load_error')}</p>
+                <button type="button" onClick={() => setBookingRefresh(value => value + 1)} className="mt-2 font-semibold underline" style={{ color: tone }}>{t('bookings.retry')}</button>
               </div>
             ) : upcomingBookings.length === 0 ? (
               <div className="py-8 flex flex-col items-center gap-2 text-center">
