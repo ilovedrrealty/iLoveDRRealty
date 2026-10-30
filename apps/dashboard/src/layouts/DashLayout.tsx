@@ -47,6 +47,7 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
   ],
   Owner: [
     { Icon: Home,          view: 'listings'        },
+    { Icon: ClipboardList, view: 'property-management' },
     { Icon: CalendarDays,  view: 'calendar'        },
     { Icon: Bell,          view: 'owner-bookings'  },
     { Icon: MessageCircle, view: 'leads'           },
@@ -54,6 +55,7 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
   ],
   Realtor: [
     { Icon: Building2,     view: 'listings'          },
+    { Icon: ClipboardList, view: 'property-management' },
     { Icon: ClipboardList, view: 'leads'             },
     { Icon: Bell,          view: 'realtor-bookings'  },
     { Icon: GitBranch,     view: 'pipeline'          },
@@ -68,7 +70,11 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Users,           view: 'professionals' },
   { Icon: Users,           view: 'professional-profile' },
   { Icon: Building2,       view: 'listings'  },
+  { Icon: Search,          view: 'location-review' },
+  { Icon: ClipboardList,   view: 'property-management' },
   { Icon: Inbox,           view: 'leads'     },
+  { Icon: Inbox,           view: 'lead-delivery' },
+  { Icon: LayoutDashboard, view: 'analytics' },
   { Icon: Upload,          view: 'bulk-import' },
   { Icon: Bell,            view: 'bookings'  },
   { Icon: BookOpen,        view: 'resources' },

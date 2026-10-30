@@ -1,0 +1,114 @@
+{
+  "intro": "Revisa los pasos del CRM y de las notificaciones de cada consulta nueva. Abre una consulta para ver los resultados registrados.",
+  "manual_policy": "Las solicitudes fallidas no se reenvían automáticamente. Un administrador puede aprobar un solo intento seguro cuando termine el plazo de espera; los resultados inciertos quedan retenidos para revisión.",
+  "accepted_note": "Aceptado por el proveedor significa que el proveedor confirmó la solicitud. No demuestra que un correo llegó a la bandeja de entrada ni que alguien contactó al interesado.",
+  "refresh": "Actualizar estado",
+  "loading": "Cargando los estados de envío registrados…",
+  "load_error": "No se pudo cargar el estado de los envíos. Actualiza para intentarlo de nuevo. Los valores que faltan no se han sustituido por ceros.",
+  "not_yet": "Aún no registrado",
+  "updated": "Informe actualizado",
+  "previous": "Anterior",
+  "next": "Siguiente",
+  "retry": "Aprobar un reintento seguro",
+  "inspect": "Ver pasos",
+  "cancel": "Cancelar",
+  "next_attempt": "Reintento manual no antes de: {{date}}",
+  "waiting_for_contact": "Espera a que se confirme el contacto en el CRM para ejecutar este paso.",
+  "legacy_note": "Solo las consultas recibidas después de activar el seguimiento tienen estos registros. Los contactos anteriores no se ponen en cola ni se vuelven a enviar.",
+  "summary_scope": "Estos totales incluyen todas las consultas con seguimiento, independientemente de los filtros de la tabla. Los totales de pasos cuentan solicitudes, no contactos únicos. Actualiza para ver el estado más reciente.",
+  "counts": {
+    "tracked_leads": "Consultas con seguimiento",
+    "accepted": "Pasos aceptados por proveedor",
+    "waiting": "Pasos en cola",
+    "failed": "Pasos fallidos",
+    "needs_review": "Pasos que requieren revisión"
+  },
+  "worker": {
+    "title": "Proceso de notificaciones",
+    "paused": "Seguimiento en pausa",
+    "paused_help": "El proceso de envíos persistentes está desactivado. Las consultas nuevas usan el envío inmediato existente; los pasos en cola no se ejecutarán hasta activar el proceso.",
+    "error": "El proceso requiere atención",
+    "error_help": "La última comprobación registró un error interno. Pide a un administrador que revise la configuración y el proceso antes de esperar que se ejecuten los pasos en cola.",
+    "awaiting": "Esperando la primera comprobación",
+    "awaiting_help": "El seguimiento está activado, pero aún no hay una comprobación registrada. Actualiza después de iniciar el servicio.",
+    "stale": "La comprobación está atrasada",
+    "stale_help": "No había una comprobación reciente al generar este informe. Los pasos en cola pueden estar demorados; revisa el servicio antes de reprogramar tareas.",
+    "polling": "Comprobación reciente registrada",
+    "polling_help": "Se registró una comprobación reciente. Cada paso tiene su propio resultado; una comprobación del proceso no demuestra el envío por sí sola.",
+    "last_poll": "Última comprobación",
+    "last_completed": "Último lote completado"
+  },
+  "statuses": {
+    "pending": "En cola",
+    "processing": "Procesando",
+    "retry_wait": "Reintento anterior retenido — requiere acción manual",
+    "accepted": "Aceptado por proveedor",
+    "failed": "Fallido",
+    "needs_review": "Requiere revisión",
+    "skipped": "Omitido"
+  },
+  "steps": {
+    "crm_contact": "Contacto en CRM",
+    "crm_tags": "Etiquetas del CRM",
+    "crm_note": "Nota del CRM",
+    "crm_task": "Tarea de seguimiento en CRM",
+    "email": "Destinatario de notificación {{number}}",
+    "email_configuration": "Configuración de notificaciones"
+  },
+  "providers": { "ghl": "GoHighLevel", "resend": "Proveedor de correo" },
+  "queue": {
+    "title": "Pasos de envío",
+    "status_filter": "Estado del paso",
+    "all_statuses": "Todos los estados",
+    "lead_filter": "Filtrar por ID de consulta (opcional)",
+    "lead_placeholder": "Pega el UUID de una consulta",
+    "apply": "Aplicar filtro",
+    "clear": "Quitar filtro de consulta",
+    "invalid_id": "Introduce el UUID completo de una consulta o deja este filtro vacío.",
+    "caption": "Pasos de envío registrados para los filtros seleccionados",
+    "empty": "Ningún paso de envío coincide con estos filtros.",
+    "total": "{{count}} paso coincidente",
+    "total_one": "{{count}} paso coincidente",
+    "total_other": "{{count}} pasos coincidentes"
+  },
+  "table": {
+    "lead": "Consulta",
+    "step": "Paso",
+    "status": "Resultado registrado",
+    "attempts": "Intentos",
+    "updated": "Último intento o creación",
+    "actions": "Acciones"
+  },
+  "errors": {
+    "http": "{{provider}} rechazó la solicitud (HTTP {{status}}).",
+    "configuration": "Falta configuración necesaria para el envío. Corrígela antes de realizar un reintento seguro.",
+    "destination_changed": "El destino configurado cambió. Revisa la solicitud original; no se redirigirá automáticamente.",
+    "payload_review": "La solicitud guardada requiere revisión. No se enviará con contenido modificado.",
+    "expired_window": "Venció el plazo de protección contra duplicados del proveedor. Revisa sus registros antes de tomar otra medida.",
+    "not_connected": "No se estableció una conexión. Un administrador debe aprobar cualquier otro intento cuando termine el plazo de espera.",
+    "disabled": "Esta integración estaba desactivada al comprobar el paso.",
+    "no_note": "No había contenido para la nota de este paso.",
+    "uncertain": "Es posible que el proveedor haya aceptado la solicitud. Hay que revisarla para evitar un duplicado.",
+    "review": "Este paso requiere la revisión de un administrador. Aquí no se muestran datos del cliente ni respuestas del proveedor."
+  },
+  "confirm": {
+    "title": "¿Aprobar un solo intento para este paso?",
+    "body": "Aprueba únicamente {{step}}, para un solo intento. El servidor vuelve a comprobar el fallo conocido, el plazo de espera y el límite de intentos. Esta acción pone la tarea en cola; no contacta al proveedor inmediatamente. Otro fallo requiere una nueva acción del administrador. Los pasos aceptados o con resultado incierto no se repiten.",
+    "queue": "Aprobar un reintento",
+    "queuing": "Programando…"
+  },
+  "notices": {
+    "queued": "Se aprobó y puso en cola un solo reintento seguro. Si vuelve a fallar, esperará otra acción del administrador. Actualiza para seguir el resultado registrado.",
+    "not_retryable": "Este paso cambió, sigue en el plazo de espera o ya no es seguro reintentarlo. Se actualizó el estado; esta solicitud no programó un reintento.",
+    "retry_unconfirmed": "No se pudo confirmar la respuesta. Revisa el estado actualizado antes de intentarlo de nuevo; el servidor impide volver a programar un paso que ya está en cola."
+  },
+  "detail": {
+    "title": "Detalles de envío de la consulta",
+    "open_lead": "Abrir registro de consulta",
+    "close": "Cerrar detalles de envío",
+    "error": "No se pudieron cargar los detalles de envío de esta consulta. Actualiza para intentarlo de nuevo.",
+    "attempts": "{{count}} de {{max}} intentos permitidos",
+    "accepted_at": "Confirmado por el proveedor: {{date}}",
+    "review_note": "No se permite el reenvío automático cuando el resultado es incierto. Revisa los registros del proveedor antes de decidir el próximo paso."
+  }
+}

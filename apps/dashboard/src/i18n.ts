@@ -24,6 +24,14 @@ import enProfessionals from './locale/en/professionals.json'
 import esProfessionals from './locale/es/professionals.json'
 import enToolHubs from './locale/en/tool_hubs.json'
 import esToolHubs from './locale/es/tool_hubs.json'
+import enLeadDelivery from './locale/en/lead_delivery.json'
+import esLeadDelivery from './locale/es/lead_delivery.json'
+import enLocationReview from './locale/en/location_review.json'
+import esLocationReview from './locale/es/location_review.json'
+import enManagement from './locale/en/management.json'
+import esManagement from './locale/es/management.json'
+import enInquiryFeeds from './locale/en/inquiry_feeds.json'
+import esInquiryFeeds from './locale/es/inquiry_feeds.json'
 
 const savedLang = (localStorage.getItem('ildr_lang') as 'en' | 'es') ?? 'en'
 
@@ -41,6 +49,10 @@ i18n.use(initReactI18next).init({
       research_tools: enResearchTools,
       professionals: enProfessionals,
       tool_hubs: enToolHubs,
+      lead_delivery: enLeadDelivery,
+      location_review: enLocationReview,
+      management: enManagement,
+      inquiry_feeds: enInquiryFeeds,
     },
     es: {
       nav:      esNav,
@@ -54,11 +66,15 @@ i18n.use(initReactI18next).init({
       research_tools: esResearchTools,
       professionals: esProfessionals,
       tool_hubs: esToolHubs,
+      lead_delivery: esLeadDelivery,
+      location_review: esLocationReview,
+      management: esManagement,
+      inquiry_feeds: esInquiryFeeds,
     },
   },
   lng: savedLang,
   fallbackLng: 'en',
-  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'research_tools', 'professionals', 'tool_hubs'],
+  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'research_tools', 'professionals', 'tool_hubs', 'lead_delivery', 'location_review', 'management', 'inquiry_feeds'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })

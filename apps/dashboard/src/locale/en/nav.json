@@ -24,7 +24,7 @@
   "portal_eyebrow": "{{role}} Portal · {{name}}",
   "lang_toggle": "Language",
   "workspace_label": "Open workspace",
-  "workspace_identity": "You stay signed in as yourself with Admin access. Personal views show your own activity.",
+  "workspace_identity": "You remain signed in as yourself with Admin access. Management tools may include all authorized properties; saved homes and personal activity remain linked to your account.",
   "return_admin": "Return to Admin tools",
   "research": "GIS, title & official sources",
   "buyer-tools": "Buyer tools",
@@ -45,5 +45,8 @@
     "Owner": "Owner",
     "Realtor": "Realtor",
     "Admin": "Admin"
-  }
+  },
+  "lead-delivery": "Lead delivery",
+  "location-review": "Property locations",
+  "property-management": "Property management"
 }

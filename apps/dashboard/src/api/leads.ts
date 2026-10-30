@@ -80,8 +80,8 @@ export async function getRealtorLeads(): Promise<Lead[]> {
   return res.data
 }
 
-export async function getMyLeads(): Promise<Lead[]> {
-  const res = await client.get<Lead[]>('/leads/mine')
+export async function getMyLeads(signal?: AbortSignal): Promise<Lead[]> {
+  const res = await client.get<Lead[]>('/leads/mine', { signal })
   return res.data
 }
 

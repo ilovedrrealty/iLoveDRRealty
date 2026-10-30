@@ -24,7 +24,7 @@
   "portal_eyebrow": "Portal {{role}} · {{name}}",
   "lang_toggle": "Idioma",
   "workspace_label": "Abrir espacio de trabajo",
-  "workspace_identity": "Sigues conectado con tu propia cuenta y acceso de administrador. Las vistas personales muestran tu actividad.",
+  "workspace_identity": "Sigues conectado con tu propia cuenta y acceso de Admin. Las herramientas de administración pueden incluir todas las propiedades autorizadas; tus favoritos y tu actividad personal siguen vinculados a tu cuenta.",
   "return_admin": "Volver a herramientas de Admin",
   "research": "SIG, títulos y fuentes oficiales",
   "buyer-tools": "Herramientas de comprador",
@@ -45,5 +45,8 @@
     "Owner": "Propietario",
     "Realtor": "Agente",
     "Admin": "Admin"
-  }
+  },
+  "lead-delivery": "Entrega de contactos",
+  "location-review": "Ubicaciones de propiedades",
+  "property-management": "Administración de propiedades"
 }

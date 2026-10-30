@@ -2,18 +2,17 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
-// Used on the dedicated /es/* routes: switches the client UI (Navbar, Footer,
-// any client-i18n pages) to Spanish and persists the choice, so a visitor who
-// lands on a Spanish article stays in Spanish as they navigate.
-export default function EsLangSync() {
+// Dedicated language routes keep the client UI and stored preference aligned.
+// Existing Spanish routes default to es; the English article route passes en.
+export default function EsLangSync({ lang = 'es' }: { lang?: 'en' | 'es' }) {
   const { i18n } = useTranslation()
   useEffect(() => {
-    if (!i18n.language.startsWith('es')) i18n.changeLanguage('es')
+    if (!i18n.language.startsWith(lang)) i18n.changeLanguage(lang)
     try {
-      localStorage.setItem('ildr_lang', 'es')
+      localStorage.setItem('ildr_lang', lang)
     } catch {
       /* ignore */
     }
-  }, [i18n])
+  }, [i18n, lang])
   return null
 }

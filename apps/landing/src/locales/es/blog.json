@@ -4,19 +4,19 @@
     "heading_pre": "Tu guía para",
     "heading_em": "vivir e invertir",
     "heading_post": "en la RD",
-    "sub": "Guías curadas por expertos, inteligencia de mercado y sabiduría comunitaria — para visitantes por primera vez, futuros residentes e inversores serios.",
+    "sub": "Guías prácticas para investigar inmuebles, planificar una mudanza y comparar gastos en la República Dominicana.",
     "search_placeholder": "Buscar guías, temas o preguntas…",
     "search_cta": "Buscar"
   },
   "stats": [
-    "Expatriados en la RD",
-    "Impuesto sobre la renta (primeros 20 años)",
-    "Crecimiento anual del valor inmobiliario",
-    "A 12+ países",
-    "Costo mensual promedio"
+    "Artículos en la biblioteca",
+    "Idiomas de los artículos",
+    "Etapas para planificar la compra",
+    "Temas de guías seleccionadas",
+    "Edición fechada de las guías"
   ],
   "featured": {
-    "eyebrow": "★ Destacado esta semana",
+    "eyebrow": "★ Guía destacada",
     "heading": "Por dónde empezar tu viaje dominicano",
     "read_cta": "Leer la guía →"
   },
@@ -35,80 +35,80 @@
   "guides": {
     "all_label": "Todas las guías",
     "count_suffix": "guías",
-    "sorted": "Ordenadas por favoritos de los lectores",
+    "sorted": "Guías seleccionadas",
     "read_cta": "Leer guía →",
     "read_suffix": "lectura"
   },
   "process": {
     "eyebrow": "Paso a paso",
     "heading": "El proceso de compra dominicano",
-    "sub": "Desde la búsqueda hasta las llaves en mano — una guía clara y honesta para comprar propiedad en la RD como extranjero.",
+    "sub": "Usa estas etapas para organizar preguntas y documentos; el plazo real depende de tu operación.",
     "step_label": "PASO",
     "steps": [
       {
         "title": "Buscar y descubrir",
-        "desc": "Define tus objetivos, presupuesto y regiones."
+        "desc": "Define objetivos, presupuesto y regiones."
       },
       {
         "title": "Hacer una oferta",
-        "desc": "Carta de intención, negociación, términos acordados."
+        "desc": "Revisa oferta, reserva y condiciones del depósito."
       },
       {
         "title": "Debida diligencia",
-        "desc": "Búsqueda de título, peritajes, ~30 días."
+        "desc": "Revisa título, mensura, facultades, permisos y estado."
       },
       {
         "title": "Promesa de venta",
-        "desc": "Promesa de venta, 10–30% en custodia."
+        "desc": "Acuerda precio, fechas, custodia y desembolsos."
       },
       {
         "title": "Financiamiento",
-        "desc": "Banco local, internacional o todo en efectivo."
+        "desc": "Confirma fondos, moneda y aprobación bancaria necesaria."
       },
       {
         "title": "Cierre y transferencia",
-        "desc": "Notario, 3% impuesto de transferencia, título registrado."
+        "desc": "Confirma impuestos, documentos e inscripción."
       }
     ]
   },
   "faq": {
     "eyebrow": "❓ Preguntas frecuentes",
     "heading": "Tus preguntas, respondidas",
-    "sub": "Las seis preguntas que más nos hacen los compradores, con respuestas honestas de nuestro equipo.",
+    "sub": "Preguntas que resolver antes de comprometerte con un inmueble.",
     "items": [
       {
         "q": "¿Pueden los extranjeros poseer propiedades en la República Dominicana?",
-        "a": "Sí. Los extranjeros tienen los mismos derechos de propiedad que los ciudadanos dominicanos y pueden ser dueños de tierras e inmuebles a su nombre — sin necesidad de residencia."
+        "a": "Los extranjeros generalmente pueden adquirir inmuebles sin residencia bajo el marco de trato nacional. Un abogado independiente debe confirmar título, estructura y restricciones costeras o de dominio público, ambientales y de uso del caso."
       },
       {
         "q": "¿Qué impuestos pago al comprar una propiedad?",
-        "a": "Un impuesto único de transferencia del 3% (Impuesto de Transferencia) al cierre, más un impuesto anual del 1% sobre el patrimonio inmobiliario (IPI) sobre el valor superior al umbral de exención. Los proyectos aprobados por CONFOTUR pueden eliminarlos."
+        "a": "La tasa general de transferencia es del 3%, sujeta a la base real de DGII y al beneficio autorizado. El IPI de personas físicas generalmente grava al 1% el exceso del patrimonio gravado conjunto tasado sobre la exención anual. Verifica año, estructura y autorizaciones; la etiqueta CONFOTUR no da exención automática."
       },
       {
         "q": "¿Cuánto tiempo lleva el proceso de compra?",
-        "a": "Generalmente de 30 a 60 días desde la oferta aceptada hasta la transferencia de título, siendo la debida diligencia la fase más larga con aproximadamente 30 días."
+        "a": "El plazo depende de documentos, título, mensura, financiamiento, autorizaciones e inscripción. Acuerda hitos sustentados en pruebas; aquí no se promete una fecha fija de terminación."
       },
       {
         "q": "¿Necesito un abogado dominicano?",
-        "a": "Muy recomendable. Un abogado inmobiliario local gestiona las búsquedas de título, la debida diligencia y el cierre — protegiéndote de disputas limítrofes y defectos de título."
+        "a": "Contrata abogado dominicano independiente, verifica habilitación y conflictos y acuerda alcance escrito. Pregunta quién revisa título, mensura, facultades, contrato, custodia e inscripción; la revisión no garantiza eliminar todos los riesgos."
       },
       {
         "q": "¿Qué es la residencia y la necesito para comprar una propiedad?",
-        "a": "NO necesitas residencia para comprar. La residencia (incluida la vía de inversor/jubilado de la Ley 171-07) ofrece beneficios fiscales y el derecho a vivir en la RD a largo plazo, pero la propiedad está abierta a todos los extranjeros."
+        "a": "Comprar y obtener residencia son trámites separados. La compra no concede por sí sola residencia, prórroga de visitante ni beneficio fiscal general. Confirma requisitos vigentes y beneficios autorizados por separado para tu situación."
       },
       {
         "q": "¿Puedo alquilar mi propiedad cuando no la uso?",
-        "a": "Sí. Los alquileres a corto y largo plazo son comunes, y las herramientas de reserva de I♥DR Realty permiten a los propietarios gestionar disponibilidad y pagos directamente."
+        "a": "Confirma uso legal de alquiler, reglas de la comunidad, permisos, impuestos, seguros y administración antes de ofrecerlo. Un anuncio o herramienta de reservas no demuestra permiso de alquiler ni capacidad para procesar pagos."
       }
     ]
   },
   "newsletter": {
-    "tag": "✉️ Boletín semanal",
-    "heading": "Inteligencia inmobiliaria de la RD, cada viernes",
-    "sub": "Actualizaciones del mercado, nuevos listados e historias de la comunidad — curadas para compradores, inversores y lectores interesados en la RD. Gratis.",
+    "tag": "✉️ Novedades inmobiliarias",
+    "heading": "Guías y novedades de propiedades",
+    "sub": "Investigación inmobiliaria, nuevos anuncios e información práctica para quienes consideran la RD.",
     "placeholder": "tu@correo.com",
     "cta": "Suscribirse gratis",
-    "disclaimer": "Únete a más de 14,000 suscriptores · Cancela en cualquier momento"
+    "disclaimer": "Revisa las condiciones de suscripción antes de enviar tu correo."
   },
   "article": {
     "back": "← Volver a Recursos",
@@ -117,12 +117,12 @@
     "reads_label": "lecturas",
     "key_facts": "Datos clave",
     "keep_reading": "Seguir leyendo",
-    "expert_tip": "Consejo de experto",
+    "expert_tip": "Consejo práctico",
     "faq_heading": "Preguntas frecuentes",
     "talk": "Habla con nuestro equipo →",
     "more_guides": "← Más guías",
     "cta_title": "¿Listo para dar el paso?",
-    "cta_body": "Nuestro equipo bilingüe ayuda a compradores e inversores a navegar el mercado de la RD.",
+    "cta_body": "Conversa sobre tu búsqueda de propiedad y las preguntas que resolver antes del próximo paso.",
     "cta_button": "Contáctanos →"
   },
   "custom_resources": "Recursos y servicios inmobiliarios",

@@ -57,6 +57,10 @@
   },
   "location": {
     "exact": "Exact location shared after inquiry.",
+    "reviewed": "Property coordinates reviewed against a recorded source.",
+    "saved": "Saved property coordinates. Source review is pending.",
+    "approximate": "Approximate recorded area, not an individual property position.",
+    "hidden": "Map location is not publicly displayed.",
     "open_maps": "Open in Google Maps"
   },
   "sidebar": {
@@ -111,8 +115,26 @@
   },
   "inquiry": {
     "name": "Your name",
-    "email": "Email",
-    "phone": "Phone (optional)",
-    "message": "Your message…"
+    "email": "Email (optional when a phone is provided)",
+    "phone": "Phone (preferred)",
+    "message": "Comments or description (optional)",
+    "contact_help": "Share a valid phone number or email. Both are welcome; phone is our preferred way to follow up.",
+    "contact_consent": "I agree that iLoveDR Realty may contact me about this property inquiry.",
+    "follow_up_phone": "We will use your phone number to follow up about this property.",
+    "follow_up_email": "We will use your email to follow up about this property.",
+    "reference": "Reference: {{id}}",
+    "errors": {
+      "name": "Enter your name (up to 200 characters).",
+      "contact": "Enter a valid phone number or email address.",
+      "phone": "Enter a valid phone number, including the country code.",
+      "email": "Enter a valid email address, or leave it blank if you provided a valid phone number.",
+      "message": "Keep comments to 2,000 characters or fewer.",
+      "consent": "Please agree to be contacted about this property.",
+      "validation": "Check your contact details and contact consent, then try again.",
+      "unavailable": "This property is not available for inquiries. Please return to the property search or contact our team.",
+      "conflict": "This request reference was already used with different details. Refresh this page before starting a new inquiry.",
+      "rate": "Please wait a moment before trying again.",
+      "send": "We could not confirm your inquiry. Try again without changing the details to avoid a duplicate."
+    }
   }
 }

@@ -2,101 +2,48 @@ import { useEffect, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '../../components/dashboard/shared'
-import { getOwnerInquiries, type Inquiry } from '../../api/inquiries'
+import { InquiryContactActions, InquiryHistory } from '../../components/dashboard/InquiryHistory'
+import { getOwnerLeads, type InquiryState, type OwnerLeadPage } from '../../api/ownerLeads'
+import { inquiryDate } from '../../utils/inquiryFeeds'
 
-const TONE = '#f0a800'
-
-const AVATAR_TONES = ['#e10f1f', '#0b63ab', '#f0a800', '#7884a0', '#1f7a3d', '#9333ea']
-function avatarTone(name: string): string {
-  let h = 0
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff
-  return AVATAR_TONES[h % AVATAR_TONES.length]
-}
-
-function fmtRelative(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const m = Math.floor(diff / 60_000)
-  if (m < 1) return t('rel.just_now')
-  if (m < 60) return t('rel.mins_ago', { count: m })
-  const h = Math.floor(m / 60)
-  if (h < 24) return t('rel.hrs_ago', { count: h })
-  const d = Math.floor(h / 24)
-  if (d < 30) return t('rel.days_ago', { count: d })
-  return t('rel.months_ago', { count: Math.floor(d / 30) })
-}
-
-export function OwnerLeads({ tone, go }: { tone: string; go?: (v: string) => void }) {
-  const { t } = useTranslation('owner')
-  const [leads, setLeads] = useState<Inquiry[]>([])
-  const [loading, setLoading] = useState(true)
-
+export function OwnerLeads({ tone, isAdmin = false }: { tone: string; go?: (view: string) => void; isAdmin?: boolean }) {
+  const { t, i18n } = useTranslation('inquiry_feeds')
+  const [page, setPage] = useState(1)
+  const [state, setState] = useState<InquiryState>('all')
+  const [data, setData] = useState<OwnerLeadPage | null>(null)
+  const [busy, setBusy] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [refresh, setRefresh] = useState(0)
   useEffect(() => {
-    getOwnerInquiries()
-      .then(data => setLeads(data.sort((a, b) => b.created_at.localeCompare(a.created_at))))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
-
-  return (
-    <Card
-      title={<><MessageCircle size={14} /> {t('leads_page.title')}{!loading && leads.length > 0 && ` (${leads.length})`}</>}
-      padded={false}
-    >
-      {loading ? (
-        <div className="divide-y divide-line">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-start gap-3 py-3.5 px-5.5 animate-pulse">
-              <div className="w-9.5 h-9.5 rounded-full bg-line-soft shrink-0" />
-              <div className="flex-1 space-y-2 py-0.5">
-                <div className="h-3.5 bg-line-soft rounded w-1/3" />
-                <div className="h-3 bg-line-soft rounded w-3/4" />
-                <div className="h-3 bg-line-soft rounded w-1/4" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : leads.length === 0 ? (
-        <div className="py-12 flex flex-col items-center gap-3 text-center px-6">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: `${TONE}18` }}>
-            <MessageCircle size={20} style={{ color: TONE }} />
-          </div>
-          <div>
-            <div className="text-[13.5px] font-semibold text-ink mb-0.5">{t('leads_page.empty_title')}</div>
-            <div className="text-[11.5px] text-dim">{t('leads_page.empty_sub')}</div>
-          </div>
-        </div>
-      ) : (
-        <div className="divide-y divide-line">
-          {leads.map((l) => (
-            <div key={l.id} className="flex items-start gap-3 py-3.5 px-5.5">
-              <div
-                className="w-9.5 h-9.5 rounded-full shrink-0 grid place-items-center font-bold text-sm text-white"
-                style={{ background: avatarTone(l.name) }}
-              >
-                {l.name[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start gap-3">
-                  <div className="min-w-0">
-                    <div className="text-[13.5px] font-bold text-ink">{l.name}</div>
-                    <div className="text-[12.5px] text-ink2 leading-[1.35] my-0.75 line-clamp-2">{l.message}</div>
-                    <div className="text-[11.5px] text-dim truncate">
-                      {l.listing_title ?? t('leads_page.general_inquiry')} · {fmtRelative(l.created_at, t)}
-                    </div>
-                  </div>
-                  <a
-                    href={`mailto:${l.email}`}
-                    className="text-xs font-bold py-1.5 px-3.5 rounded-lg border-none text-white cursor-pointer shrink-0 no-underline"
-                    style={{ background: tone }}
-                  >
-                    {t('leads_page.reply')}
-                  </a>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+    const controller = new AbortController()
+    setData(null); setBusy(true); setFailed(false)
+    getOwnerLeads(page, state, controller.signal).then(result => { if (!controller.signal.aborted) setData(result) })
+      .catch(() => { if (!controller.signal.aborted) setFailed(true) })
+      .finally(() => { if (!controller.signal.aborted) setBusy(false) })
+    return () => controller.abort()
+  }, [page, state, refresh])
+  return <div className="space-y-5">
+    <Card title={<><MessageCircle size={15} />{t('owner_title')}</>}>
+      <p className="mb-4 text-sm leading-relaxed text-ink2">{t('current_explanation')}</p>
+      {isAdmin ? <p className="mb-4 rounded-lg bg-line-soft p-3 text-xs text-ink2">{t('admin_scope')}</p> : null}
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div><label htmlFor="owner-inquiry-state" className="mb-1 block text-xs font-semibold text-ink2">{t('filter')}</label><select id="owner-inquiry-state" value={state} onChange={event => { setState(event.target.value as InquiryState); setPage(1) }} className="min-h-10 rounded-lg border border-line bg-paper px-3 text-sm text-ink">{(['all', 'open', 'closed'] as const).map(value => <option key={value} value={value}>{t(`filters.${value}`)}</option>)}</select></div>
+        <button type="button" disabled={busy} onClick={() => setRefresh(value => value + 1)} className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold text-ink disabled:opacity-50">{t('refresh')}</button>
+      </div>
+      {busy ? <p role="status" className="py-6 text-sm text-dim">{t('loading')}</p> : failed ? <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4"><p className="text-sm text-red-900">{t('current_error')}</p><button type="button" className="mt-2 min-h-10 text-sm font-semibold text-sea underline" onClick={() => setRefresh(value => value + 1)}>{t('retry')}</button></div> : data ? <>
+        <dl className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{(['all_total', 'open_total', 'closed_total'] as const).map(key => <div key={key} className="rounded-lg bg-line-soft p-3"><dt className="text-xs text-dim">{t(`counts.${key}`)}</dt><dd className="mt-1 text-xl font-bold text-ink">{data.summary[key].toLocaleString(i18n.language.startsWith('es') ? 'es-DO' : 'en-US')}</dd></div>)}</dl>
+        <p className="mb-4 text-xs text-dim">{t('open_definition')}</p>
+        {data.summary.unknown_total > 0 ? <p className="mb-4 text-xs text-dim">{t('unknown_explanation', { count: data.summary.unknown_total })}</p> : null}
+        {!data.items.length ? <p className="rounded-lg bg-line-soft p-5 text-sm text-ink2">{t(data.total ? 'empty_page' : 'current_empty')}</p> : <ul className="divide-y divide-line">{data.items.map(lead => <li key={`lead:${lead.id}`} className="space-y-3 py-4 first:pt-0">
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 className="break-words text-sm font-bold text-ink">{lead.name}</h3><p className="mt-1 break-words text-xs text-dim">{lead.property_title}</p></div><span className="rounded-full bg-line-soft px-2.5 py-1 text-xs font-semibold text-ink">{t(`statuses.${lead.status}`)}</span></div>
+          <p className="whitespace-pre-wrap break-words text-sm text-ink2">{lead.message || t('no_message')}</p>
+          <p className="break-words text-xs text-ink2">{[lead.phone, lead.email].filter(Boolean).join(' · ') || t('no_contact_action')}</p>
+          <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-dim">{inquiryDate(lead.created_at, i18n.language)}</p><InquiryContactActions phone={lead.phone} email={lead.email} tone={tone} /></div>
+          {lead.assigned_realtor_name ? <p className="text-xs text-dim">{t('assigned_agent', { name: lead.assigned_realtor_name })}</p> : null}
+        </li>)}</ul>}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4"><button type="button" disabled={page <= 1} onClick={() => setPage(value => value - 1)} className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold disabled:opacity-50">{t('previous')}</button><span className="text-xs text-dim">{t('page', { page, pages: Math.max(1, Math.ceil(data.total / data.page_size)), count: data.total })}</span><button type="button" disabled={page * data.page_size >= data.total || page >= 10000} onClick={() => setPage(value => value + 1)} className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold disabled:opacity-50">{t('next')}</button></div>
+      </> : null}
     </Card>
-  )
+    <InquiryHistory scope="owner" />
+  </div>
 }

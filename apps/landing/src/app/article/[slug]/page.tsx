@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import ArticleDetail from '../../../views/ArticleDetail'
+import EsLangSync from '../../../components/EsLangSync'
 import { ARTICLES } from '../../../data/blogData'
 import { ARTICLES_ES } from '../../../data/blogData.es'
 
@@ -72,7 +73,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
         />
       ))}
-      <ArticleDetail slug={slug} />
+      <EsLangSync lang="en" />
+      <ArticleDetail slug={slug} lang="en" />
     </>
   )
 }

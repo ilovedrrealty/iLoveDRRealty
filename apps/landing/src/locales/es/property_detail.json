@@ -57,6 +57,10 @@
   },
   "location": {
     "exact": "Ubicación exacta compartida tras la consulta.",
+    "reviewed": "Coordenadas de la propiedad revisadas con una fuente registrada.",
+    "saved": "Coordenadas guardadas. La fuente aún no se ha revisado.",
+    "approximate": "Zona registrada aproximada, no la posición individual de la propiedad.",
+    "hidden": "La ubicación no se muestra públicamente en el mapa.",
     "open_maps": "Abrir en Google Maps"
   },
   "sidebar": {
@@ -111,8 +115,26 @@
   },
   "inquiry": {
     "name": "Tu nombre",
-    "email": "Correo electrónico",
-    "phone": "Teléfono (opcional)",
-    "message": "Tu mensaje…"
+    "email": "Correo electrónico (opcional si indicas un teléfono)",
+    "phone": "Teléfono (preferido)",
+    "message": "Comentarios o descripción (opcional)",
+    "contact_help": "Comparte un teléfono o correo válido. Puedes indicar ambos; preferimos contactarte por teléfono.",
+    "contact_consent": "Acepto que iLoveDR Realty me contacte sobre esta consulta de propiedad.",
+    "follow_up_phone": "Usaremos tu teléfono para dar seguimiento sobre esta propiedad.",
+    "follow_up_email": "Usaremos tu correo para dar seguimiento sobre esta propiedad.",
+    "reference": "Referencia: {{id}}",
+    "errors": {
+      "name": "Escribe tu nombre (hasta 200 caracteres).",
+      "contact": "Indica un teléfono o correo electrónico válido.",
+      "phone": "Indica un teléfono válido, incluyendo el código de país.",
+      "email": "Indica un correo válido o déjalo vacío si proporcionaste un teléfono válido.",
+      "message": "Limita los comentarios a 2,000 caracteres.",
+      "consent": "Acepta que te contactemos sobre esta propiedad.",
+      "validation": "Revisa tus datos de contacto y la autorización para contactarte e inténtalo de nuevo.",
+      "unavailable": "Esta propiedad no está disponible para consultas. Vuelve a la búsqueda de propiedades o contacta a nuestro equipo.",
+      "conflict": "Esta referencia ya se utilizó con otros datos. Actualiza la página antes de iniciar una nueva consulta.",
+      "rate": "Espera un momento antes de intentarlo de nuevo.",
+      "send": "No pudimos confirmar tu consulta. Inténtalo de nuevo sin cambiar los datos para evitar un duplicado."
+    }
   }
 }
