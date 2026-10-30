@@ -53,7 +53,7 @@ export function isDeliveryJob(value: unknown): value is DeliveryJob {
     || typeof value.outcome_uncertain !== 'boolean' || typeof value.can_retry !== 'boolean') return false
   if ((value.step.startsWith('crm_')) !== (value.provider === 'ghl')) return false
   if (value.status === 'accepted' && (!time(value.accepted_at) || value.attempts < 1 || value.can_retry || value.outcome_uncertain)) return false
-  if (value.can_retry && (value.status !== 'failed' || value.outcome_uncertain || value.attempts >= value.max_attempts)) return false
+  if (value.can_retry && (!['failed', 'retry_wait'].includes(value.status) || value.outcome_uncertain || value.attempts >= value.max_attempts)) return false
   if (value.blocked_by && !['pending', 'retry_wait'].includes(value.status)) return false
   return !['payload', 'payload_sha256', 'recipient', 'email', 'phone', 'message'].some(key => key in value)
 }
@@ -127,7 +127,7 @@ export async function retryDelivery(jobId: string): Promise<void> {
   if (!isDeliveryId(jobId)) throw new DeliveryRetryError('unavailable')
   try {
     const data: unknown = (await client.post(`/admin/lead-deliveries/${jobId.toLowerCase()}/retry`, {})).data
-    if (!record(data) || data.id !== jobId.toLowerCase() || data.status !== 'retry_wait' || typeof data.enabled !== 'boolean') throw new DeliveryRetryError('unavailable')
+    if (!record(data) || data.id !== jobId.toLowerCase() || data.status !== 'pending' || typeof data.enabled !== 'boolean') throw new DeliveryRetryError('unavailable')
   } catch (error) {
     if (record(error) && record(error.response) && error.response.status === 409) throw new DeliveryRetryError('not_retryable')
     if (error instanceof DeliveryRetryError) throw error

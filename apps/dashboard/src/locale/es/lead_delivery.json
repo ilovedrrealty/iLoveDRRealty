@@ -1,5 +1,6 @@
 {
   "intro": "Revisa los pasos del CRM y de las notificaciones de cada consulta nueva. Abre una consulta para ver los resultados registrados.",
+  "manual_policy": "Las solicitudes fallidas no se reenvían automáticamente. Un administrador puede aprobar un solo intento seguro cuando termine el plazo de espera; los resultados inciertos quedan retenidos para revisión.",
   "accepted_note": "Aceptado por el proveedor significa que el proveedor confirmó la solicitud. No demuestra que un correo llegó a la bandeja de entrada ni que alguien contactó al interesado.",
   "refresh": "Actualizar estado",
   "loading": "Cargando los estados de envío registrados…",
@@ -8,17 +9,17 @@
   "updated": "Informe actualizado",
   "previous": "Anterior",
   "next": "Siguiente",
-  "retry": "Programar reintento seguro",
+  "retry": "Aprobar un reintento seguro",
   "inspect": "Ver pasos",
   "cancel": "Cancelar",
-  "next_attempt": "Próximo intento: {{date}}",
+  "next_attempt": "Reintento manual no antes de: {{date}}",
   "waiting_for_contact": "Espera a que se confirme el contacto en el CRM para ejecutar este paso.",
   "legacy_note": "Solo las consultas recibidas después de activar el seguimiento tienen estos registros. Los contactos anteriores no se ponen en cola ni se vuelven a enviar.",
   "summary_scope": "Estos totales incluyen todas las consultas con seguimiento, independientemente de los filtros de la tabla. Los totales de pasos cuentan solicitudes, no contactos únicos. Actualiza para ver el estado más reciente.",
   "counts": {
     "tracked_leads": "Consultas con seguimiento",
     "accepted": "Pasos aceptados por proveedor",
-    "waiting": "Pasos en espera",
+    "waiting": "Pasos en cola",
     "failed": "Pasos fallidos",
     "needs_review": "Pasos que requieren revisión"
   },
@@ -38,9 +39,9 @@
     "last_completed": "Último lote completado"
   },
   "statuses": {
-    "pending": "Pendiente",
+    "pending": "En cola",
     "processing": "Procesando",
-    "retry_wait": "Esperando reintento",
+    "retry_wait": "Reintento anterior retenido — requiere acción manual",
     "accepted": "Aceptado por proveedor",
     "failed": "Fallido",
     "needs_review": "Requiere revisión",
@@ -84,21 +85,21 @@
     "destination_changed": "El destino configurado cambió. Revisa la solicitud original; no se redirigirá automáticamente.",
     "payload_review": "La solicitud guardada requiere revisión. No se enviará con contenido modificado.",
     "expired_window": "Venció el plazo de protección contra duplicados del proveedor. Revisa sus registros antes de tomar otra medida.",
-    "not_connected": "No se estableció una conexión. Puede realizarse un reintento limitado cuando esté programado.",
+    "not_connected": "No se estableció una conexión. Un administrador debe aprobar cualquier otro intento cuando termine el plazo de espera.",
     "disabled": "Esta integración estaba desactivada al comprobar el paso.",
     "no_note": "No había contenido para la nota de este paso.",
     "uncertain": "Es posible que el proveedor haya aceptado la solicitud. Hay que revisarla para evitar un duplicado.",
     "review": "Este paso requiere la revisión de un administrador. Aquí no se muestran datos del cliente ni respuestas del proveedor."
   },
   "confirm": {
-    "title": "¿Programar este paso fallido?",
-    "body": "Programa únicamente {{step}}. El servidor vuelve a comprobar que sea un fallo conocido con reintentos seguros disponibles. Esta acción pone la tarea en cola; no contacta al proveedor inmediatamente. Los pasos aceptados o con resultado incierto no se repiten.",
-    "queue": "Programar reintento",
+    "title": "¿Aprobar un solo intento para este paso?",
+    "body": "Aprueba únicamente {{step}}, para un solo intento. El servidor vuelve a comprobar el fallo conocido, el plazo de espera y el límite de intentos. Esta acción pone la tarea en cola; no contacta al proveedor inmediatamente. Otro fallo requiere una nueva acción del administrador. Los pasos aceptados o con resultado incierto no se repiten.",
+    "queue": "Aprobar un reintento",
     "queuing": "Programando…"
   },
   "notices": {
-    "queued": "Se programó el reintento seguro. Actualiza para seguir el resultado registrado por el proceso.",
-    "not_retryable": "Este paso cambió o ya no es seguro reintentarlo. Se actualizó el estado; esta solicitud no programó un reintento.",
+    "queued": "Se aprobó y puso en cola un solo reintento seguro. Si vuelve a fallar, esperará otra acción del administrador. Actualiza para seguir el resultado registrado.",
+    "not_retryable": "Este paso cambió, sigue en el plazo de espera o ya no es seguro reintentarlo. Se actualizó el estado; esta solicitud no programó un reintento.",
     "retry_unconfirmed": "No se pudo confirmar la respuesta. Revisa el estado actualizado antes de intentarlo de nuevo; el servidor impide volver a programar un paso que ya está en cola."
   },
   "detail": {

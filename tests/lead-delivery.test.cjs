@@ -157,8 +157,8 @@ test('per-lead details use GET only and explicitly accept historical leads with 
   assert.equal(invalid.calls.length, 0)
 })
 
-test('safe requeue sends explicit JSON only to the private retry endpoint', async () => {
-  const loaded = load({ id: jobId, status: 'retry_wait', enabled: true })
+test('one manual retry queues pending work with explicit JSON only to the private retry endpoint', async () => {
+  const loaded = load({ id: jobId, status: 'pending', enabled: true })
   await loaded.retryDelivery(jobId.toUpperCase())
   assert.deepEqual(clone(loaded.calls), [['post', `/admin/lead-deliveries/${jobId}/retry`, {}]])
   const invalid = load()
@@ -173,11 +173,21 @@ test('changed and uncertain requeue outcomes are controlled without automatic re
   const unavailable = load(null, new Error('synthetic private error'))
   await assert.rejects(unavailable.retryDelivery(jobId), error => error.code === 'unavailable' && !error.message.includes('private'))
   assert.equal(unavailable.calls.length, 1)
-  for (const data of [{ id: jobId, status: 'accepted', enabled: true }, { id: leadId, status: 'retry_wait', enabled: true }, {}]) {
+  for (const data of [{ id: jobId, status: 'accepted', enabled: true }, { id: jobId, status: 'retry_wait', enabled: true }, { id: leadId, status: 'pending', enabled: true }, {}]) {
     const loaded = load(data)
     await assert.rejects(loaded.retryDelivery(jobId), error => error.code === 'unavailable')
     assert.equal(loaded.calls.length, 1)
   }
+})
+
+test('held legacy retries may offer one safe manual action, never an uncertain or exhausted resend', async () => {
+  const legacy = job({ status: 'retry_wait', attempts: 1, first_attempt_at: timestamp, last_attempt_at: timestamp, can_retry: true })
+  const data = queue([legacy])
+  assert.equal(await load(data).getDeliveryQueue({ status: 'retry_wait' }), data)
+  for (const changes of [
+    { outcome_uncertain: true }, { attempts: 4 }, { status: 'pending' },
+    { status: 'processing' }, { status: 'needs_review' }, { status: 'accepted', accepted_at: timestamp },
+  ]) assert.equal(load().isDeliveryJob({ ...legacy, ...changes }), false)
 })
 
 test('English and Spanish explain worker status, provider acceptance and historical non-replay equally', () => {

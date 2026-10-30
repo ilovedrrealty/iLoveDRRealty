@@ -89,6 +89,7 @@ export function LeadDelivery({ initialLeadId = '', onOpenLead }: {
   }, [confirmJob])
 
   function errorLabel(job: DeliveryJob) {
+    if (job.outcome_uncertain) return t('errors.uncertain')
     const code = job.error_code
     if (!code) return null
     const http = /^(ghl|resend)_http_(\d{3})$/.exec(code)
@@ -100,7 +101,7 @@ export function LeadDelivery({ initialLeadId = '', onOpenLead }: {
     if (code.includes('connection_not_established')) return t('errors.not_connected')
     if (code.includes('integration_disabled')) return t('errors.disabled')
     if (code === 'no_note_content') return t('errors.no_note')
-    if (job.outcome_uncertain || code.includes('unknown') || code.includes('conflict')) return t('errors.uncertain')
+    if (code.includes('unknown') || code.includes('conflict')) return t('errors.uncertain')
     return t('errors.review')
   }
 
@@ -128,7 +129,7 @@ export function LeadDelivery({ initialLeadId = '', onOpenLead }: {
 
   return <div className="space-y-5" aria-busy={loading}>
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="max-w-3xl"><p className="text-sm leading-relaxed text-ink2">{t('intro')}</p><p className="mt-2 text-xs leading-relaxed text-dim">{t('accepted_note')}</p></div>
+      <div className="max-w-3xl"><p className="text-sm leading-relaxed text-ink2">{t('intro')}</p><p className="mt-2 text-xs leading-relaxed text-ink2">{t('manual_policy')}</p><p className="mt-2 text-xs leading-relaxed text-dim">{t('accepted_note')}</p></div>
       <button type="button" disabled={loading || retrying} onClick={() => { setNotice(null); setRefresh(value => value + 1) }} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-paper px-3 text-sm font-semibold text-ink disabled:opacity-50"><RefreshCw size={15} aria-hidden="true" />{t('refresh')}</button>
     </div>
     {notice ? <div role={notice === 'queued' ? 'status' : 'alert'} className={`rounded-xl border p-4 text-sm ${notice === 'queued' ? 'border-green-200 bg-green-50 text-green-950' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>{t(`notices.${notice}`)}</div> : null}
@@ -148,7 +149,7 @@ export function LeadDelivery({ initialLeadId = '', onOpenLead }: {
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
         {[
           ['tracked_leads', summary.tracked_leads], ['accepted', summary.status_counts.accepted],
-          ['waiting', summary.status_counts.pending + summary.status_counts.retry_wait],
+          ['waiting', summary.status_counts.pending],
           ['failed', summary.status_counts.failed], ['needs_review', summary.status_counts.needs_review],
         ].map(([key, value]) => <section key={key} className="rounded-xl border border-line bg-paper p-4"><div className="text-2xl font-bold tabular-nums text-ink">{format(value as number)}</div><h2 className="mt-1 text-xs font-semibold text-ink2">{t(`counts.${key}`)}</h2></section>)}
       </div>
@@ -174,7 +175,7 @@ export function LeadDelivery({ initialLeadId = '', onOpenLead }: {
           <td className="px-2 py-3 align-top"><div className="font-semibold text-ink">{stepLabel(job.step)}</div><div className="mt-1 text-xs text-dim">{t(`providers.${job.provider}`)}</div></td>
           <td className="px-2 py-3 align-top">{statusBadge(job)}{job.blocked_by ? <p className="mt-2 max-w-60 text-xs text-ink2">{t('waiting_for_contact')}</p> : null}{errorLabel(job) ? <p className="mt-2 max-w-64 text-xs leading-relaxed text-ink2">{errorLabel(job)}</p> : null}</td>
           <td className="px-2 py-3 align-top tabular-nums text-ink2">{job.attempts}/{job.max_attempts}</td>
-          <td className="px-2 py-3 align-top text-xs text-ink2">{dateTime(job.last_attempt_at || job.created_at)}{job.status === 'retry_wait' ? <p className="mt-2 flex max-w-56 items-start gap-1"><Clock3 size={12} className="mt-0.5 shrink-0" aria-hidden="true" />{t('next_attempt', { date: dateTime(job.next_attempt_at) })}</p> : null}</td>
+          <td className="px-2 py-3 align-top text-xs text-ink2">{dateTime(job.last_attempt_at || job.created_at)}{['failed', 'retry_wait'].includes(job.status) && !job.outcome_uncertain && job.attempts < job.max_attempts ? <p className="mt-2 flex max-w-56 items-start gap-1"><Clock3 size={12} className="mt-0.5 shrink-0" aria-hidden="true" />{t('next_attempt', { date: dateTime(job.next_attempt_at) })}</p> : null}</td>
           <td className="px-2 py-3 align-top">{job.can_retry ? <button type="button" disabled={retrying} onClick={() => { setNotice(null); setConfirmJob(job) }} className="min-h-10 rounded-lg border border-line bg-paper px-3 text-xs font-semibold text-ink disabled:opacity-50">{t('retry')}</button> : <button type="button" onClick={() => setSelectedLead(job.lead_id)} className="min-h-10 rounded-lg border border-line px-3 text-xs font-semibold text-ink">{t('inspect')}</button>}</td>
         </tr>)}</tbody></table></div> : <div className="mt-4 rounded-xl bg-line-soft p-5 text-sm text-ink2"><p>{t('queue.empty')}</p><p className="mt-2 text-xs leading-relaxed">{t('legacy_note')}</p></div>}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-ink2"><p>{t('queue.total', { count: queue.total })}</p><div className="flex items-center gap-2"><button type="button" disabled={offset === 0 || loading} onClick={() => setOffset(value => Math.max(0, value - PAGE_SIZE))} className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-line px-3 font-semibold disabled:opacity-40"><ChevronLeft size={14} aria-hidden="true" />{t('previous')}</button><button type="button" disabled={offset + PAGE_SIZE >= queue.total || offset + PAGE_SIZE > 10000 || loading} onClick={() => setOffset(value => value + PAGE_SIZE)} className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-line px-3 font-semibold disabled:opacity-40">{t('next')}<ChevronRight size={14} aria-hidden="true" /></button></div></div>
@@ -186,7 +187,7 @@ export function LeadDelivery({ initialLeadId = '', onOpenLead }: {
     {selectedLead ? <Panel title={t('detail.title')}><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="break-all font-mono text-xs text-ink2">{selectedLead}</p>{onOpenLead ? <button type="button" onClick={() => onOpenLead(selectedLead)} className="mt-2 min-h-10 text-sm font-semibold text-[#0b63ab] underline underline-offset-2">{t('detail.open_lead')}</button> : null}</div><button type="button" onClick={() => setSelectedLead(null)} aria-label={t('detail.close')} className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-line"><X size={16} aria-hidden="true" /></button></div>
       {detailLoading ? <p role="status" className="mt-4 text-sm text-ink2">{t('loading')}</p> : null}
       {detailFailed ? <p role="alert" className="mt-4 text-sm text-red-800">{t('detail.error')}</p> : null}
-      {detail ? detail.tracked ? <ul className="mt-4 grid gap-3 md:grid-cols-2">{detail.jobs.map(job => <li key={job.id} className="rounded-xl border border-line p-4"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-ink">{stepLabel(job.step)}</h3>{statusBadge(job)}</div><p className="mt-2 text-xs text-ink2">{t('detail.attempts', { count: job.attempts, max: job.max_attempts })}</p>{job.accepted_at ? <p className="mt-1 text-xs text-ink2">{t('detail.accepted_at', { date: dateTime(job.accepted_at) })}</p> : null}{errorLabel(job) ? <p className="mt-2 text-xs leading-relaxed text-ink2">{errorLabel(job)}</p> : null}{job.blocked_by ? <p className="mt-2 text-xs text-ink2">{t('waiting_for_contact')}</p> : null}{job.status === 'needs_review' ? <p className="mt-2 text-xs font-semibold leading-relaxed text-orange-900">{t('detail.review_note')}</p> : null}{job.can_retry ? <button type="button" disabled={retrying} onClick={() => { setNotice(null); setConfirmJob(job) }} className="mt-3 min-h-10 rounded-lg border border-line px-3 text-xs font-semibold text-ink disabled:opacity-50">{t('retry')}</button> : null}</li>)}</ul> : <p className="mt-4 rounded-xl bg-line-soft p-4 text-sm leading-relaxed text-ink2">{t('legacy_note')}</p> : null}
+      {detail ? detail.tracked ? <ul className="mt-4 grid gap-3 md:grid-cols-2">{detail.jobs.map(job => <li key={job.id} className="rounded-xl border border-line p-4"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-ink">{stepLabel(job.step)}</h3>{statusBadge(job)}</div><p className="mt-2 text-xs text-ink2">{t('detail.attempts', { count: job.attempts, max: job.max_attempts })}</p>{job.accepted_at ? <p className="mt-1 text-xs text-ink2">{t('detail.accepted_at', { date: dateTime(job.accepted_at) })}</p> : null}{errorLabel(job) ? <p className="mt-2 text-xs leading-relaxed text-ink2">{errorLabel(job)}</p> : null}{job.blocked_by ? <p className="mt-2 text-xs text-ink2">{t('waiting_for_contact')}</p> : null}{['failed', 'retry_wait'].includes(job.status) && !job.outcome_uncertain && job.attempts < job.max_attempts ? <p className="mt-2 text-xs text-ink2">{t('next_attempt', { date: dateTime(job.next_attempt_at) })}</p> : null}{job.status === 'needs_review' ? <p className="mt-2 text-xs font-semibold leading-relaxed text-orange-900">{t('detail.review_note')}</p> : null}{job.can_retry ? <button type="button" disabled={retrying} onClick={() => { setNotice(null); setConfirmJob(job) }} className="mt-3 min-h-10 rounded-lg border border-line px-3 text-xs font-semibold text-ink disabled:opacity-50">{t('retry')}</button> : null}</li>)}</ul> : <p className="mt-4 rounded-xl bg-line-soft p-4 text-sm leading-relaxed text-ink2">{t('legacy_note')}</p> : null}
     </Panel> : null}
   </div>
 }
