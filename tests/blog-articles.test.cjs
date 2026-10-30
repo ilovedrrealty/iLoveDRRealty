@@ -27,7 +27,7 @@ const locales = Object.fromEntries(['en', 'es'].map(lang => [lang,
 
 // Same TypeScript/CommonJS/VM approach as the existing Node regression suite.
 // Only explicit imports below are allowed; no recursive app loader or network.
-function sourceModule(file, imports = {}) {
+function sourceModule(file, imports = {}, globals = {}) {
   const module = { exports: {} }
   const output = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: {
     target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS,
@@ -41,7 +41,7 @@ function sourceModule(file, imports = {}) {
       throw new Error(`Unexpected application import: ${name}`)
     },
     fetch: () => { throw new Error('Network is forbidden in article regressions') },
-    URL, console,
+    URL, console, ...globals,
   }, { filename: file, timeout: 3000 })
   return module.exports
 }
@@ -165,8 +165,8 @@ test('actual Blog SSR uses the selected locale for statistics, process, FAQs, ca
   }
 })
 
-function routes(lang) {
-  const { ArticleDetail } = consumer('en')
+function routes(lang, activeLanguage = 'en') {
+  const { ArticleDetail } = consumer(activeLanguage)
   const prefix = lang === 'es' ? '../../../../' : '../../../'
   return sourceModule(path.join(app, lang === 'es' ? 'app/es/article/[slug]/page.tsx' : 'app/article/[slug]/page.tsx'), {
     [prefix + 'views/ArticleDetail']: { __esModule: true, default: ArticleDetail },
@@ -177,7 +177,7 @@ function routes(lang) {
 }
 test('actual route functions agree on static paths, localized metadata, canonicals and Article/FAQ JSON-LD', async () => {
   for (const lang of ['en', 'es']) {
-    const route = routes(lang)
+    const route = routes(lang, lang === 'en' ? 'es' : 'en')
     assert.deepEqual(plain(route.generateStaticParams()).map(p => p.slug).sort(), [...slugs].sort())
     for (const slug of slugs) {
       const a = lang === 'es' ? esData.ARTICLES_ES[slug] : enData.ARTICLES[slug]
@@ -213,9 +213,55 @@ test('actual route functions agree on static paths, localized metadata, canonica
       if (lang === 'es') assert.equal(faq.inLanguage, 'es')
       const html = renderToStaticMarkup(page)
       assert.ok(html.includes('application/ld+json'))
-      // For English routes, English active preference; Spanish routes pass lang=es.
+      // Both dedicated routes must override the opposite stored preference.
       assert.ok(html.includes(escapedText(a.title)))
     }
+  }
+})
+
+test('the actual language toggle navigates article URLs to the selected language and preserves ordinary-page behavior', () => {
+  for (const pathname of ['/article/can-canadians-buy/', '/es/article/living-cabarete-sosua/', '/team/']) {
+    for (const selected of ['en', 'es']) {
+      for (const storageAvailable of [true, false]) {
+        const pushed = [], changed = [], saved = []
+        const nav = sourceModule(path.join(app, 'hooks/useNav.ts'), {
+          'next/navigation': { useRouter: () => ({ push: value => pushed.push(value) }) },
+        })
+        const Navbar = sourceModule(path.join(app, 'components/Navbar.tsx'), {
+          './WebsiteSettingsProvider': { useWebsiteSettings: () => ({}) },
+          '../../../../packages/website-settings/src': { localizedValue: () => '' },
+          'next/link': { __esModule: true, default: () => null },
+          'next/navigation': { usePathname: () => pathname },
+          '../hooks/useNav': nav, '../design': design, react: React,
+          'lucide-react': {}, '../api/auth': {}, '../lib/constants': {},
+          'react-i18next': { useTranslation: () => ({ i18n: { language: selected === 'en' ? 'es' : 'en', changeLanguage: value => changed.push(value) } }) },
+        }, { process: { env: {} }, localStorage: { setItem: (...args) => {
+          saved.push(args)
+          if (!storageAvailable) throw new Error('Synthetic unavailable preference storage')
+        } } })
+        const toggle = Navbar.LanguageToggle()
+        const button = nodes(toggle).find(n => n.type === 'button' && visibleText(n) === selected.toUpperCase())
+        assert.ok(button)
+        button.props.onClick()
+        assert.deepEqual(changed, [selected])
+        assert.deepEqual(saved, [['ildr_lang', selected]])
+        const match = pathname.match(/^\/(?:es\/)?article\/([^/]+)\/?$/)
+        assert.deepEqual(pushed, match ? [`/${selected === 'es' ? 'es/article' : 'article'}/${match[1]}`] : [])
+      }
+    }
+  }
+})
+
+test('the actual route-language synchronizer aligns navigation labels with an explicit English or default Spanish article', () => {
+  for (const lang of ['en', 'es']) {
+    const changed = [], saved = []
+    const Sync = sourceModule(path.join(app, 'components/EsLangSync.tsx'), {
+      react: { useEffect: effect => effect() },
+      'react-i18next': { useTranslation: () => ({ i18n: { language: lang === 'en' ? 'es' : 'en', changeLanguage: value => changed.push(value) } }) },
+    }, { localStorage: { setItem: (...args) => saved.push(args) } }).default
+    assert.equal(Sync(lang === 'en' ? { lang } : {}), null)
+    assert.deepEqual(changed, [lang])
+    assert.deepEqual(saved, [['ildr_lang', lang]])
   }
 })
 
