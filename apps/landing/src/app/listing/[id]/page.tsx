@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import PropertyDetail from '../../../views/PropertyDetail'
+import { listingsForStaticExport } from '../../../lib/listingExport'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -32,20 +33,8 @@ async function getListing(id: string): Promise<RawListing | null> {
 }
 
 export async function generateStaticParams(): Promise<{ id: string }[]> {
-  const ids: { id: string }[] = []
-  const pageSize = 60
-  try {
-    for (let page = 1; ; page++) {
-      const res = await fetch(`${API_URL}/listings?page=${page}&page_size=${pageSize}&include_aggregates=false`)
-      if (!res.ok) break
-      const data = (await res.json()) as { items: { id: string }[]; total: number }
-      ids.push(...data.items.map(l => ({ id: l.id })))
-      if (ids.length >= data.total || data.items.length < pageSize) break
-    }
-  } catch {
-    return ids
-  }
-  return ids
+  const listings = await listingsForStaticExport(process.env.NEXT_PUBLIC_API_URL)
+  return listings.map(({ id }) => ({ id }))
 }
 
 export async function generateMetadata({

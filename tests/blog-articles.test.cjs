@@ -8,7 +8,7 @@ const { createRequire } = require('node:module')
 // Run from the existing application repository; use only its installed packages.
 // While staged beside final-candidates, load those four files. Once reviewed and
 // copied into repository/tests, load the integrated application content instead.
-const repo = path.resolve(process.env.REALTY_REPO_ROOT || process.cwd())
+const repo = path.resolve(process.env.REALTY_REPO_ROOT || path.join(__dirname, '..'))
 const app = path.join(repo, 'apps/landing/src')
 const fromRepo = createRequire(path.join(repo, 'apps/landing/package.json'))
 const ts = fromRepo('typescript')
