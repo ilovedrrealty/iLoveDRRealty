@@ -15,6 +15,7 @@ export function canOpenToolWorkspace(accountRole: string, workspace: ToolWorkspa
 const SHARED: ToolCard[] = [
   { id: 'calculator', icon: 'calculator', view: 'calculator' },
   { id: 'professionals', icon: 'users', view: 'professional-directory' },
+  { id: 'network', icon: 'users', view: 'property-network' },
   { id: 'resources', icon: 'book', view: 'resources' },
 ]
 

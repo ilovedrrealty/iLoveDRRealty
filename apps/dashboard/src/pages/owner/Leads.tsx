@@ -5,6 +5,7 @@ import { Card } from '../../components/dashboard/shared'
 import { InquiryContactActions, InquiryHistory } from '../../components/dashboard/InquiryHistory'
 import { getOwnerLeads, type InquiryState, type OwnerLeadPage } from '../../api/ownerLeads'
 import { inquiryDate } from '../../utils/inquiryFeeds'
+import { ShareContactButton } from '../../components/shared/ShareContactDialog'
 
 export function OwnerLeads({ tone, isAdmin = false }: { tone: string; go?: (view: string) => void; isAdmin?: boolean }) {
   const { t, i18n } = useTranslation('inquiry_feeds')
@@ -39,6 +40,7 @@ export function OwnerLeads({ tone, isAdmin = false }: { tone: string; go?: (view
           <p className="whitespace-pre-wrap break-words text-sm text-ink2">{lead.message || t('no_message')}</p>
           <p className="break-words text-xs text-ink2">{[lead.phone, lead.email].filter(Boolean).join(' · ') || t('no_contact_action')}</p>
           <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-dim">{inquiryDate(lead.created_at, i18n.language)}</p><InquiryContactActions phone={lead.phone} email={lead.email} tone={tone} /></div>
+          <ShareContactButton key={lead.id} contact={{ name: lead.name, email: lead.email, phone: lead.phone }} />
           {lead.assigned_realtor_name ? <p className="text-xs text-dim">{t('assigned_agent', { name: lead.assigned_realtor_name })}</p> : null}
         </li>)}</ul>}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4"><button type="button" disabled={page <= 1} onClick={() => setPage(value => value - 1)} className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold disabled:opacity-50">{t('previous')}</button><span className="text-xs text-dim">{t('page', { page, pages: Math.max(1, Math.ceil(data.total / data.page_size)), count: data.total })}</span><button type="button" disabled={page * data.page_size >= data.total || page >= 10000} onClick={() => setPage(value => value + 1)} className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold disabled:opacity-50">{t('next')}</button></div>

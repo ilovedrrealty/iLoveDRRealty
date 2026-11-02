@@ -8,8 +8,10 @@ import { AdminLeads } from './admin/Leads'
 import { AdminBookings } from './admin/Bookings'
 import { Analytics } from './admin/Analytics'
 import { LeadDelivery } from './admin/LeadDelivery'
+import { Communications } from './admin/Communications'
 import { AdminLocationReview } from './admin/LocationReview'
 import { PropertyManagement } from './shared/PropertyManagement'
+import { PropertyNetwork } from './shared/PropertyNetwork'
 import { AdminSettings } from './admin/Settings'
 import { BulkImportListings } from './admin/BulkImportListings'
 import { ResearchTools } from './shared/ResearchTools'
@@ -29,7 +31,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
   const [searchParams] = useSearchParams()
 
   const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'professional-profile'].includes(view) ? view : 'home'
-  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'location-review', 'property-management'].includes(view)
+  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network'].includes(view)
   const title = sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
   const sub = sharedTitle ? '' : t(`pages.${pageKey}.sub`)
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
@@ -40,8 +42,10 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
       case 'listings': return <AdminListings />
       case 'leads':    return <AdminLeads onOpenDelivery={(leadId) => go('lead-delivery', leadId)} />
       case 'lead-delivery': return <LeadDelivery initialLeadId={searchParams.get('openId') ?? ''} onOpenLead={(leadId) => go('leads', leadId)} />
+      case 'communications': return <Communications user={user} workspace="Admin" />
       case 'location-review': return <AdminLocationReview />
       case 'property-management': return <PropertyManagement user={user} />
+      case 'property-network': return <PropertyNetwork user={user} />
       case 'bookings': return <AdminBookings />
       case 'analytics': return <Analytics />
       case 'settings': return <AdminSettings user={user} onUserUpdate={onUserUpdate} />

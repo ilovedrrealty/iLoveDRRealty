@@ -32,6 +32,12 @@ import enManagement from './locale/en/management.json'
 import esManagement from './locale/es/management.json'
 import enInquiryFeeds from './locale/en/inquiry_feeds.json'
 import esInquiryFeeds from './locale/es/inquiry_feeds.json'
+import enContactShare from './locale/en/contact_share.json'
+import esContactShare from './locale/es/contact_share.json'
+import enPropertyNetwork from './locale/en/property_network.json'
+import esPropertyNetwork from './locale/es/property_network.json'
+import enCommunications from './locale/en/communications.json'
+import esCommunications from './locale/es/communications.json'
 
 const savedLang = (localStorage.getItem('ildr_lang') as 'en' | 'es') ?? 'en'
 
@@ -53,6 +59,9 @@ i18n.use(initReactI18next).init({
       location_review: enLocationReview,
       management: enManagement,
       inquiry_feeds: enInquiryFeeds,
+      contact_share: enContactShare,
+      property_network: enPropertyNetwork,
+      communications: enCommunications,
     },
     es: {
       nav:      esNav,
@@ -70,11 +79,14 @@ i18n.use(initReactI18next).init({
       location_review: esLocationReview,
       management: esManagement,
       inquiry_feeds: esInquiryFeeds,
+      contact_share: esContactShare,
+      property_network: esPropertyNetwork,
+      communications: esCommunications,
     },
   },
   lng: savedLang,
   fallbackLng: 'en',
-  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'research_tools', 'professionals', 'tool_hubs', 'lead_delivery', 'location_review', 'management', 'inquiry_feeds'],
+  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'research_tools', 'professionals', 'tool_hubs', 'lead_delivery', 'location_review', 'management', 'inquiry_feeds', 'contact_share', 'property_network', 'communications'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })

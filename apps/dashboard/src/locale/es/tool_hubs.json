@@ -27,6 +27,7 @@
     }
   },
   "cards": {
+    "network": { "title": "Proyectos y comunidad de miembros", "description": "Sigue el trabajo privado de propiedades, comparte avances con el equipo asignado y administra tu perfil de miembro." },
     "buy": {
       "title": "Propiedades en venta y mapa",
       "description": "Busca por zona, precio, tipo de propiedad y características."

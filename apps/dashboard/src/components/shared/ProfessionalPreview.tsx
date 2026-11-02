@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { professionalContactHref, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalDraft, type ProfessionalOptions } from '../../../../../packages/professionals/src'
+import { ShareContactButton } from './ShareContactDialog'
 
-export function ProfessionalPreview({ profile, options }: { profile: Omit<ProfessionalDraft, 'public_contact_consent'>; options: ProfessionalOptions }) {
+export function ProfessionalPreview({ profile, options, shareableBusiness = false }: { profile: Omit<ProfessionalDraft, 'public_contact_consent'>; options: ProfessionalOptions; shareableBusiness?: boolean }) {
   const { t, i18n } = useTranslation('professionals')
   const name = profile.business_name || profile.contact_name
   return <article className="min-w-0 rounded-2xl border border-line bg-white p-5 space-y-4 break-words">
@@ -26,5 +27,6 @@ export function ProfessionalPreview({ profile, options }: { profile: Omit<Profes
           className="max-w-full rounded-lg border border-line px-3 py-2 text-sm font-semibold text-coral">{t(key)}<span className="block break-all text-xs font-normal text-ink2">{value}</span></a> : null
       })}
     </div>
+    {shareableBusiness ? <ShareContactButton contact={{ name, email: profile.public_email, phone: profile.public_phone || profile.public_whatsapp }} privateContact={false} /> : null}
   </article>
 }

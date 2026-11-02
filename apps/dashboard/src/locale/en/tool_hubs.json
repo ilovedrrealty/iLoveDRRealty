@@ -27,6 +27,7 @@
     }
   },
   "cards": {
+    "network": { "title": "Property projects & member community", "description": "Follow private property work, share progress with an assigned team and manage your member profile." },
     "buy": {
       "title": "Homes for sale & map",
       "description": "Search by area, price, property type and features."

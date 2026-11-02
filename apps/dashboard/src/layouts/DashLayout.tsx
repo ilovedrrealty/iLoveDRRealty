@@ -12,6 +12,7 @@ import type { UserInfo } from '../lib/auth'
 import logo from '../assets/iLoveDRRealty_White.png'
 import { TOOL_WORKSPACE_VIEW, type ToolWorkspace } from '../data/toolHubs'
 import { landingBaseUrl } from '../lib/siteUrls'
+import { ManagementNavigation } from '../components/shared/ManagementNavigation'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 
@@ -35,6 +36,7 @@ const GENERAL_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Users,           view: 'professional-profile' },
   { Icon: BookOpen,        view: 'resources' },
   { Icon: Users,           view: 'professional-directory' },
+  { Icon: GitBranch,       view: 'property-network' },
   { Icon: Settings,        view: 'settings' },
 ]
 
@@ -72,8 +74,10 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Building2,       view: 'listings'  },
   { Icon: Search,          view: 'location-review' },
   { Icon: ClipboardList,   view: 'property-management' },
+  { Icon: GitBranch,       view: 'property-network' },
   { Icon: Inbox,           view: 'leads'     },
   { Icon: Inbox,           view: 'lead-delivery' },
+  { Icon: Inbox,           view: 'communications' },
   { Icon: LayoutDashboard, view: 'analytics' },
   { Icon: Upload,          view: 'bulk-import' },
   { Icon: Bell,            view: 'bookings'  },
@@ -287,6 +291,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
         {/* Nav — scrollable */}
         <nav className="flex-1 px-2 flex flex-col overflow-y-auto min-h-0 pb-2">
           {navContent}
+          <ManagementNavigation accountRole={user.role} workspace={role} onNavigate={closeNav} />
         </nav>
 
         {/* Bottom — language + user + logout */}

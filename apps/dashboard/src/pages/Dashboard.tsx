@@ -33,6 +33,7 @@ import { ProfessionalProfile } from './shared/ProfessionalProfile'
 import ProfessionalDirectory from './shared/ProfessionalDirectory'
 import { ToolHub } from './shared/ToolHub'
 import { PropertyManagement } from './shared/PropertyManagement'
+import { PropertyNetwork } from './shared/PropertyNetwork'
 import { TOOL_WORKSPACE_VIEW, type ToolWorkspace } from '../data/toolHubs'
 
 const ROLE_ORDER: Role[] = ['Buyer', 'Owner', 'Realtor']
@@ -74,7 +75,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function getPageTitle(v: string): string {
-    if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'property-management'].includes(v)) return tNav(v)
+    if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'property-management', 'property-network'].includes(v)) return tNav(v)
     const key = `pages.${v}`
     if (role === 'Buyer')   return tBuyer(key,   { defaultValue: tBuyer('pages.home') })
     if (role === 'Owner')   return tOwner(key,   { defaultValue: tOwner('pages.home') })
@@ -127,6 +128,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
       case 'realtor-tools': return <ToolHub workspace="Realtor" user={user} go={goToTool} />
       case 'tools': return <ToolHub workspace={role === 'Owner' || role === 'Realtor' ? role : 'Buyer'} user={user} go={goToTool} />
       case 'property-management': return <PropertyManagement user={user} />
+      case 'property-network': return <PropertyNetwork user={user} />
       // Owner
       case 'earnings':   return <Earnings tone={tone} go={go} />
       // Realtor

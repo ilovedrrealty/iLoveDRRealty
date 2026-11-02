@@ -30,7 +30,7 @@ export default function ProfessionalDirectory() {
   const filters = useMemo(() => {
     const parsed = new URLSearchParams(paramsString)
     const rawOffset = Number(parsed.get('offset') ?? 0)
-    return { q: (parsed.get('q') ?? '').slice(0, 100), category: [...new Set(parsed.getAll('category'))], area: [...new Set(parsed.getAll('area'))],
+    return { q: (parsed.get('q') ?? '').slice(0, 100), language: (parsed.get('language') ?? '').slice(0, 40), category: [...new Set(parsed.getAll('category'))], area: [...new Set(parsed.getAll('area'))],
       offset: Number.isFinite(rawOffset) && rawOffset >= 0 ? Math.min(9984, Math.floor(rawOffset / LIMIT) * LIMIT) : 0 }
   }, [paramsString])
   const filterKey = JSON.stringify(filters)
@@ -38,6 +38,7 @@ export default function ProfessionalDirectory() {
   const [query, setQuery] = useState(filters.q)
   const [categories, setCategories] = useState(filters.category)
   const [areas, setAreas] = useState(filters.area)
+  const [language, setLanguage] = useState(filters.language)
   const [options, setOptions] = useState<ProfessionalOptions>(emptyProfessionalOptions)
   const [page, setPage] = useState(emptyPage)
   const [loading, setLoading] = useState(true)
@@ -50,13 +51,13 @@ export default function ProfessionalDirectory() {
 
   useEffect(() => {
     const requested = JSON.parse(filterKey) as typeof filters
-    setQuery(requested.q); setCategories(requested.category); setAreas(requested.area)
+    setQuery(requested.q); setCategories(requested.category); setAreas(requested.area); setLanguage(requested.language)
   }, [filterKey])
   useEffect(() => {
     const controller = new AbortController()
     const requested = JSON.parse(filterKey) as typeof filters
     setLoading(true); setError(false); setAuthError(false); setPage(emptyPage)
-    Promise.all([getProfessionalOptions(controller.signal), getProfessionals({ ...requested, limit: LIMIT }, controller.signal)])
+    Promise.all([getProfessionalOptions(controller.signal), getProfessionals({ ...requested, language: requested.language || undefined, limit: LIMIT }, controller.signal)])
       .then(([nextOptions, next]) => { if (!controller.signal.aborted) { setOptions(nextOptions); setPage(next) } })
       .catch(cause => { if (!controller.signal.aborted) { setError(true); setAuthError(isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)); setDetail(null) } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
@@ -75,8 +76,8 @@ export default function ProfessionalDirectory() {
   }, [selectedId, authError])
   function apply(clear = false) {
     const next = new URLSearchParams(paramsString)
-    for (const key of ['q', 'category', 'area', 'offset', 'profile']) next.delete(key)
-    if (!clear) { if (query.trim()) next.set('q', query.trim()); categories.forEach(id => next.append('category', id)); areas.forEach(id => next.append('area', id)) }
+    for (const key of ['q', 'category', 'area', 'language', 'offset', 'profile']) next.delete(key)
+    if (!clear) { if (query.trim()) next.set('q', query.trim()); if (language) next.set('language', language); categories.forEach(id => next.append('category', id)); areas.forEach(id => next.append('area', id)) }
     setParams(next, { replace: true })
   }
   function select(id?: string) { const next = new URLSearchParams(paramsString); id ? next.set('profile', id) : next.delete('profile'); setParams(next, { replace: true }) }
@@ -86,8 +87,9 @@ export default function ProfessionalDirectory() {
     <form onSubmit={event => { event.preventDefault(); apply() }} className="rounded-2xl border border-line bg-white p-4 sm:p-6 space-y-4">
       <label className="block text-sm font-bold text-ink"><span className="block mb-2">{t('directory_search.search')}</span><input maxLength={100} value={query} onChange={event => setQuery(event.target.value)} placeholder={t('directory_search.search_placeholder')} className={professionalInput} /></label>
       <div className="grid sm:grid-cols-2 gap-3 items-start"><FilterChoices title={t('categories')} options={options.categories} values={categories} change={setCategories} max={8} /><FilterChoices title={t('areas')} options={options.areas} values={areas} change={setAreas} max={20} /></div>
+      <label className="block text-sm font-semibold text-ink"><span className="mb-2 block">{t('languages')}</span><select className={professionalInput} value={language} onChange={event => setLanguage(event.target.value)}><option value="">{t('directory_language_any')}</option>{options.languages.map(option => <option key={option.id} value={option.id}>{professionalLabel(option.label, i18n.language)}</option>)}</select></label>
       <p className="text-xs text-dim">{t('directory_search.filter_help')}</p>
-      <div className="flex flex-wrap gap-3"><button type="submit" className={professionalPrimary}>{t('directory_search.apply')}</button><button type="button" className={professionalButton} onClick={() => { setQuery(''); setCategories([]); setAreas([]); apply(true) }}>{t('directory_search.clear')}</button></div>
+      <div className="flex flex-wrap gap-3"><button type="submit" className={professionalPrimary}>{t('directory_search.apply')}</button><button type="button" className={professionalButton} onClick={() => { setQuery(''); setCategories([]); setAreas([]); setLanguage(''); apply(true) }}>{t('directory_search.clear')}</button></div>
     </form>
     {authError ? <div role="alert" className="rounded-xl border border-line bg-white p-5 space-y-3"><p>{t('directory_search.auth_error')}</p><a className={professionalPrimary} href={`${LANDING_URL.replace(/\/$/, '')}/login/?directory=professionals`}>{t('directory_search.login')}</a></div> : loading ? <p role="status" className="text-sm text-ink2">{t('directory_search.loading')}</p> : error ? <div role="alert" className="rounded-xl border border-line p-5 space-y-3"><p>{t('directory_search.error')}</p><button className={professionalButton} onClick={() => setRefresh(value => value + 1)}>{t('retry')}</button></div> : <>
       <p role="status" className="text-sm text-dim">{t('directory_search.results', { count: page.total })}</p>
@@ -104,7 +106,7 @@ export default function ProfessionalDirectory() {
     </>}
     <p className="text-xs leading-relaxed text-dim">{t('directory_search.review_note')}</p>
     {selectedId && !authError && <ProfessionalDialog title={detail?.business_name || detail?.contact_name || t('directory_search.title')} closeLabel={t('directory_search.close')} onClose={() => select()}>
-      {detailError ? <p role="alert">{t('directory_search.unavailable')}</p> : detailLoading || !detail ? <p role="status">{t('directory_search.loading')}</p> : <ProfessionalPreview profile={detail} options={options} />}
+      {detailError ? <p role="alert">{t('directory_search.unavailable')}</p> : detailLoading || !detail ? <p role="status">{t('directory_search.loading')}</p> : <ProfessionalPreview key={detail.id} profile={detail} options={options} shareableBusiness />}
     </ProfessionalDialog>}
   </div>
 }

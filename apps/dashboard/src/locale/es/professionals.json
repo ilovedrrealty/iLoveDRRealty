@@ -1,4 +1,5 @@
 {
+  "directory_language_any": "Cualquier idioma de servicio",
   "custom_services": "Otros servicios / especialidades",
   "custom_services_help": "Al seleccionar Otros servicios inmobiliarios, agrega hasta 8 especialidades de 2 a 80 caracteres. Se necesita al menos una para enviar el perfil. Los servicios habituales siguen seleccionados.",
   "custom_service_number": "Especialidad {{number}}",
