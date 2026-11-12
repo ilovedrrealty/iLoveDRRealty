@@ -231,6 +231,12 @@
   "conversation": {
     "heading": "Conversación privada",
     "privacy": "Los mensajes son visibles para la persona propietaria y el profesional adjudicado.",
+    "negotiation_heading": "Conversación privada antes de la adjudicación",
+    "negotiation_with": "Conversación privada con {{provider}}",
+    "negotiation_privacy": "Solo la persona propietaria y este profesional pueden leer estos mensajes mientras la solicitud está abierta.",
+    "negotiation_provider": "Profesional de servicios",
+    "open_negotiation": "Abrir conversación privada",
+    "close_negotiation": "Cerrar conversación privada",
     "sender": { "owner": "Persona propietaria", "provider": "Profesional adjudicado" },
     "message": "Mensaje",
     "limit": "Usa hasta {{limit, number}} caracteres de texto sin formato.",

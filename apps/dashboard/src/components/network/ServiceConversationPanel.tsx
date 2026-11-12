@@ -16,8 +16,10 @@ const transport = {
   resolve: resolveConversationMessage,
 }
 
-export function ServiceConversationPanel({ requestId, sender, parentFresh }: {
+export function ServiceConversationPanel({ requestId, recipientId, providerName, sender, parentFresh }: {
   requestId: string
+  recipientId?: string
+  providerName?: string
   sender: ConversationSender
   parentFresh: boolean
 }) {
@@ -26,9 +28,10 @@ export function ServiceConversationPanel({ requestId, sender, parentFresh }: {
   const helpId = useId()
   const [page, setPage] = useState(1)
   const [draft, setDraft] = useState('')
-  const read = useNetworkRead(`service-conversation:${sender}:${requestId}:${page}`, signal => getServiceConversation(requestId, page, signal))
+  const load = (signal: AbortSignal) => getServiceConversation(requestId, page, signal, recipientId)
+  const read = useNetworkRead(`service-conversation:${sender}:${requestId}:${recipientId ?? 'awarded'}:${page}`, load)
   const readError = read.error ? networkError(read.error) : ''
-  const mutation = useServiceAttempt(transport, signal => getServiceConversation(requestId, page, signal), () => {
+  const mutation = useServiceAttempt(transport, load, () => {
     setDraft('')
     if (page === 1) read.refresh()
     else setPage(1)
@@ -39,27 +42,31 @@ export function ServiceConversationPanel({ requestId, sender, parentFresh }: {
   const locked = mutation.busy || mutation.pending !== null
   const body = conversationBody(draft)
   const invalidDraft = !!draft.trim() && body === null
+  const beforeAward = recipientId !== undefined
+  const title = !beforeAward ? t('conversation.heading') : providerName
+    ? t('conversation.negotiation_with', { provider: providerName }) : t('conversation.negotiation_heading')
   useNetworkDraftGuard(!denied && (!!draft || mutation.pending !== null), !denied && mutation.busy)
 
   function send() {
     if (!fresh || locked || !body) return
-    mutation.send({ requestId, sender, payload: { submission_id: crypto.randomUUID(), body } })
+    mutation.send({ requestId, recipientId, sender, payload: { submission_id: crypto.randomUUID(), body } })
   }
 
-  if (denied) return <NetworkPanel title={t('conversation.heading')}><p role="alert">{t('error_access')}</p></NetworkPanel>
+  if (denied) return <NetworkPanel title={title}><p role="alert">{t('error_access')}</p></NetworkPanel>
 
   const dateTime = new Intl.DateTimeFormat(i18n.language.startsWith('es') ? 'es-DO' : 'en-US', {
     dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Santo_Domingo',
   })
-  return <NetworkPanel title={t('conversation.heading')}>
+  return <NetworkPanel title={title}>
     <NetworkFreshness read={read} />
-    <p className="mb-4 text-sm text-dim">{t('conversation.privacy')}</p>
+    <p className="mb-4 text-sm text-dim">{t(beforeAward ? 'conversation.negotiation_privacy' : 'conversation.privacy')}</p>
     {readError ? <p role="alert" className="text-sm text-red-800">{t(readError)}</p> : null}
     {read.data ? <>
       {read.data.items.length ? <ol className="space-y-3">
         {read.data.items.map(item => <li key={item.id} className="min-w-0 rounded-xl border border-line bg-white p-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <p className="text-sm font-semibold text-ink">{t(`conversation.sender.${item.sender}`)}</p>
+            <p className="text-sm font-semibold text-ink">{t(beforeAward && item.sender === 'provider'
+              ? 'conversation.negotiation_provider' : `conversation.sender.${item.sender}`)}</p>
             <time className="text-xs text-dim" dateTime={item.created_at}>{dateTime.format(new Date(item.created_at))}</time>
           </div>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink2">{item.body}</p>

@@ -231,6 +231,12 @@
   "conversation": {
     "heading": "Private conversation",
     "privacy": "Messages are visible to the property owner and the awarded provider.",
+    "negotiation_heading": "Private conversation before award",
+    "negotiation_with": "Private conversation with {{provider}}",
+    "negotiation_privacy": "Only the property owner and this provider can read these messages while the request is open.",
+    "negotiation_provider": "Service provider",
+    "open_negotiation": "Open private conversation",
+    "close_negotiation": "Close private conversation",
     "sender": { "owner": "Property owner", "provider": "Awarded provider" },
     "message": "Message",
     "limit": "Use up to {{limit, number}} characters of plain text.",

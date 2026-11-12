@@ -1,4 +1,4 @@
-import type { AxiosResponse } from 'axios'
+import { isAxiosError, type AxiosResponse } from 'axios'
 import client from './axios'
 import { ServiceContractError, ServiceInputError } from './serviceWorkflow'
 
@@ -20,6 +20,7 @@ export type ServiceMessage = {
 
 type ConversationPage = {
   request_id: string
+  recipient_id?: string
   items: ServiceMessage[]
   total: number
   page: number
@@ -28,6 +29,7 @@ type ConversationPage = {
 
 export type ConversationSubmission = {
   requestId: string
+  recipientId?: string
   sender: ConversationSender
   payload: { submission_id: string; body: string }
 }
@@ -71,25 +73,49 @@ function privateData(response: AxiosResponse<unknown>): unknown {
   return response.data
 }
 
-const conversationPath = (requestId: string) => `/property-network/service-requests/${identifier(requestId)}/conversation`
+function conversationPath(requestId: string, recipientId?: string) {
+  const request = `/property-network/service-requests/${identifier(requestId)}`
+  const recipient = recipientId === undefined ? '' : `/recipients/${identifier(recipientId)}`
+  return `${request}${recipient}/conversation`
+}
 const requestOptions = (signal?: AbortSignal) => ({ signal, withCredentials: true, timeout: 15000 })
 
-export async function getServiceConversation(requestId: string, page: number, signal?: AbortSignal): Promise<ConversationPage> {
+export async function getServiceNegotiationAccess(requestId: string, recipientId: string, signal?: AbortSignal): Promise<boolean> {
+  const id = identifier(requestId), recipient = identifier(recipientId)
+  try {
+    const response = await client.get(`${conversationPath(id, recipient)}/access`, requestOptions(signal))
+    const row = exactObject(privateData(response), ['request_id', 'recipient_id', 'can_open_conversation'])
+    if (identifier(row.request_id) !== id || identifier(row.recipient_id) !== recipient || row.can_open_conversation !== true) invalid()
+    return true
+  } catch (error) {
+    // Both denied access and a backend without negotiation hide the entry point.
+    if (isAxiosError(error) && error.response?.status === 404) return false
+    throw error
+  }
+}
+
+export async function getServiceConversation(requestId: string, page: number, signal?: AbortSignal, recipientId?: string): Promise<ConversationPage> {
   const id = identifier(requestId)
+  const recipient = recipientId === undefined ? undefined : identifier(recipientId)
   if (!Number.isInteger(page) || page < 1 || page > MAX_PAGE) invalid()
-  const response = await client.get(conversationPath(id), { ...requestOptions(signal), params: { page } })
-  const row = exactObject(privateData(response), ['request_id', 'items', 'total', 'page', 'page_size'])
-  if (identifier(row.request_id) !== id || row.page !== page || row.page_size !== CONVERSATION_PAGE_SIZE
+  const response = await client.get(conversationPath(id, recipient), { ...requestOptions(signal), params: { page } })
+  const fields = ['request_id', 'items', 'total', 'page', 'page_size']
+  if (recipient !== undefined) fields.push('recipient_id')
+  const row = exactObject(privateData(response), fields)
+  if (identifier(row.request_id) !== id || (recipient !== undefined && identifier(row.recipient_id) !== recipient)
+    || row.page !== page || row.page_size !== CONVERSATION_PAGE_SIZE
     || !Array.isArray(row.items) || row.items.length > CONVERSATION_PAGE_SIZE || typeof row.total !== 'number'
     || !Number.isSafeInteger(row.total) || row.total < 0) invalid()
   const items = row.items.map(message)
   if (new Set(items.map(item => item.id)).size !== items.length) invalid()
-  return { request_id: id, items, total: row.total, page, page_size: CONVERSATION_PAGE_SIZE }
+  return { request_id: id, ...(recipient !== undefined ? { recipient_id: recipient } : {}), items,
+    total: row.total, page, page_size: CONVERSATION_PAGE_SIZE }
 }
 
 export function prepareConversationSubmission(submission: ConversationSubmission) {
   try {
     identifier(submission.requestId)
+    if (submission.recipientId !== undefined) identifier(submission.recipientId)
     sender(submission.sender)
     const row = exactObject(submission.payload, ['submission_id', 'body'])
     if (typeof row.body !== 'string' || conversationBody(row.body) !== row.body) invalid()
@@ -108,12 +134,12 @@ function appliedMessage(response: AxiosResponse<unknown>, submission: Conversati
 
 export async function sendConversationMessage(submission: ConversationSubmission, signal?: AbortSignal) {
   const payload = prepareConversationSubmission(submission)
-  const response = await client.post(conversationPath(submission.requestId), payload, requestOptions(signal))
+  const response = await client.post(conversationPath(submission.requestId, submission.recipientId), payload, requestOptions(signal))
   return appliedMessage(response, submission)
 }
 
 export async function resolveConversationMessage(submission: ConversationSubmission, signal?: AbortSignal) {
   const { submission_id } = prepareConversationSubmission(submission)
-  const response = await client.get(`${conversationPath(submission.requestId)}/submissions/${submission_id}`, requestOptions(signal))
+  const response = await client.get(`${conversationPath(submission.requestId, submission.recipientId)}/submissions/${submission_id}`, requestOptions(signal))
   return appliedMessage(response, submission)
 }

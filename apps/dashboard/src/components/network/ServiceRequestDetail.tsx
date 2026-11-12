@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getProject } from '../../api/propertyNetwork'
+import { getServiceNegotiationAccess } from '../../api/serviceConversation'
 import { SERVICE_OPERATIONS, getServiceComparison, getServiceEvents, getServiceProposals, getServiceRequest, type ManagedRecipient, type ServiceAction, type ServiceOperation, type ServiceRequest, type ServiceProposal } from '../../api/serviceWorkflow'
 import { professionalLabel, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
@@ -20,10 +21,11 @@ function reviewedEditor(editor:Editor,row:ServiceRequest):Editor {
   const current=thread(row,editor.recipientId)
   return current?{...editor,requestVersion:row.view==='managed'?row.version:null,recipientVersion:current.version,proposalId:current.proposal?.id??null,proposalVersion:current.proposal?.version??null,ack:false}:editor
 }
-export function ServiceRequestDetail({id,view,options,onBack,onProject}:{id:string;view:'managed'|'received';options:ProfessionalOptions;onBack:()=>void;onProject:(id:string)=>void}) {
+export function ServiceRequestDetail({id,view,role,options,onBack,onProject}:{id:string;view:'managed'|'received';role:string;options:ProfessionalOptions;onBack:()=>void;onProject:(id:string)=>void}) {
   const {t,i18n}=useTranslation('property_network')
   const read=useNetworkRead('service-detail:'+view+':'+id,signal=>getServiceRequest(id,view,signal))
   const [editor,setEditor]=useState<Editor|null>(null),[historyRecipient,setHistoryRecipient]=useState(''),[historyPage,setHistoryPage]=useState(1),[eventPage,setEventPage]=useState(1)
+  const [openRecipient, setOpenRecipient] = useState('')
   const [reviewed,setReviewed]=useState<{row:ServiceRequest;previous:ServiceRequest|null}|null>(null)
   const row=reviewed?.row??read.data
   useEffect(()=>{if(reviewed&&read.data!==reviewed.previous&&!read.stale&&!read.error)setReviewed(null)},[reviewed,read.data,read.stale,read.error])
@@ -45,6 +47,10 @@ export function ServiceRequestDetail({id,view,options,onBack,onProject}:{id:stri
   function begin(operation:Editor['operation'],recipientId:string) {
     if(!row||!fresh||locked||editor)return
     const current=thread(row,recipientId);if(!current)return
+    if (operation === 'request_award' && openRecipient) {
+      if (!allowNetworkNavigation()) return
+      setOpenRecipient('')
+    }
     setEditor({operation,recipientId,requestVersion:row.view==='managed'?row.version:null,recipientVersion:current.version,proposalId:current.proposal?.id??null,proposalVersion:current.proposal?.version??null,terms:termsDraft(current.proposal,row.brief),projectTitle:row.title,projectSummary:current.proposal?.scope_text??row.brief,ack:false})
   }
   function action(operation:ServiceOperation,recipientId?:string,proposal?:ServiceProposal|null) {
@@ -84,13 +90,32 @@ export function ServiceRequestDetail({id,view,options,onBack,onProject}:{id:stri
   const conversationSender=projectRole==='owner'&&view==='managed'?'owner'
     :projectRole==='professional'&&view==='received'?'provider':null
   const workAccessFresh=!projectAccess.stale&&!projectAccess.error&&!projectAccess.checking
-  return <div className="min-w-0 break-words space-y-5"><button className={NETWORK_BUTTON} onClick={()=>{if(allowNetworkNavigation())onBack()}}>{t('service.back')}</button><NetworkFreshness read={{...read,refresh:()=>{read.refresh();comparison.refresh();events.refresh();history.refresh()}}}/>
+  const candidates = role === 'admin' || !row || denied || mutation.conflicted ? [] : row.view === 'managed'
+    ? row.status === 'open' ? row.recipients.filter(recipient => recipient.status === 'accepted').map(recipient => recipient.id).sort() : []
+    : row.recipient.status === 'accepted' && row.project_id === null ? [row.recipient.id] : []
+  const negotiationAccess = useNetworkRead(`service-negotiation-access:${view}:${id}:${candidates.join(',')}`, async signal => {
+    const allowed = await Promise.all(candidates.map(recipientId => getServiceNegotiationAccess(id, recipientId, signal)))
+    return candidates.filter((_recipientId, index) => allowed[index])
+  }, candidates.length > 0)
+  const accessFresh = !negotiationAccess.stale && !negotiationAccess.checking && !negotiationAccess.error
+  const negotiationFresh = fresh && accessFresh && !locked && !editor
+  const canOpenNegotiation = (recipientId: string) => candidates.includes(recipientId) && negotiationAccess.data?.includes(recipientId) === true
+  const selectedRecipient = row?.view === 'managed' && canOpenNegotiation(openRecipient)
+    ? row.recipients.find(recipient => recipient.id === openRecipient) : undefined
+  const selectedCandidate = candidates.includes(openRecipient)
+  const selectedAccess = negotiationAccess.data?.includes(openRecipient) === true
+  useEffect(() => {
+    if (openRecipient && (!selectedCandidate || (accessFresh && !selectedAccess))) setOpenRecipient('')
+  }, [openRecipient, selectedCandidate, selectedAccess, accessFresh])
+  return <div className="min-w-0 break-words space-y-5"><button className={NETWORK_BUTTON} onClick={()=>{if(allowNetworkNavigation())onBack()}}>{t('service.back')}</button><NetworkFreshness read={{...read,refresh:()=>{read.refresh();comparison.refresh();events.refresh();history.refresh();negotiationAccess.refresh()}}}/>
     {denied?<p role="alert">{t('error_access')}</p>:<>{read.error?<p role="alert">{t(networkError(read.error))}</p>:null}{row?<>
       {!mutation.conflicted?<><NetworkPanel title={row.title}><p className="text-sm font-semibold">{row.view==='managed'?t('service.request_states.'+row.status):t('service.recipient_states.'+row.recipient.status)}</p><p className="mt-2 text-sm">{category?professionalLabel(category.label,i18n.language):row.category_id}</p><p className="mt-3 break-words whitespace-pre-wrap">{row.brief}</p><dl className="mt-4 grid gap-2 text-sm"><div><dt className="font-semibold">{t('service.requester_alias')}</dt><dd>{row.requester_alias}</dd></div><div><dt className="font-semibold">{t('service.coarse_area')}</dt><dd>{row.area_label||'—'}</dd></div><div><dt className="font-semibold">{t('service.desired_start')}</dt><dd>{row.desired_start_on?<NetworkDate value={row.desired_start_on}/>: '—'}</dd></div></dl><p className="mt-2 text-xs text-dim">{t('service.not_appointment')}</p>{row.view==='managed'?<p className="mt-4 text-sm">{t('service.source')}: {row.source.title}</p>:null}
         {row.can_open_project&&row.project_id?<button className={NETWORK_PRIMARY+' mt-4'} disabled={locked||editor!==null} onClick={()=>{if(row.project_id&&allowNetworkNavigation())onProject(row.project_id)}}>{t('service.open_project')}</button>:null}
       </NetworkPanel>
       {canReadWork?<ServiceWorkPanel key={`${id}:${workProjectId}:${view}`} requestId={id} projectId={workProjectId} parentFresh={fresh&&workAccessFresh&&!locked&&!editor} onProject={onProject}/>:null}
       {workProjectId&&projectAccess.data?.status!=='archived'&&conversationSender?<ServiceConversationPanel key={`${id}:${workProjectId}:${conversationSender}`} requestId={id} sender={conversationSender} parentFresh={fresh&&workAccessFresh&&!locked&&!editor}/>:null}
+      {row.view === 'received' && canOpenNegotiation(row.recipient.id) ? <ServiceConversationPanel
+        key={`negotiation:${id}:${row.recipient.id}:provider`} requestId={id} recipientId={row.recipient.id} sender="provider" parentFresh={negotiationFresh} /> : null}
       {row.view==='received'?<NetworkPanel title={t('service.my_thread')}><p className="mb-3 text-sm">{t('service.accept_help')}</p><div className="flex flex-wrap gap-3">
         {row.capabilities.can_accept?<button className={NETWORK_PRIMARY} disabled={!fresh||locked||editor!==null} onClick={()=>action('recipient_accept',row.recipient.id)}>{t('service.accept')}</button>:null}
         {row.capabilities.can_decline?<button className={NETWORK_BUTTON} disabled={!fresh||locked||editor!==null} onClick={()=>action('recipient_decline',row.recipient.id)}>{t('service.decline')}</button>:null}
@@ -99,7 +124,20 @@ export function ServiceRequestDetail({id,view,options,onBack,onProject}:{id:stri
         {row.capabilities.can_accept_counter&&row.current_proposal?<button className={NETWORK_PRIMARY} disabled={!fresh||locked||editor!==null} onClick={()=>action('counter_accept',row.recipient.id,row.current_proposal)}>{t('service.accept_counter')}</button>:null}
         {row.capabilities.can_decline_counter&&row.current_proposal?<button className={NETWORK_BUTTON} disabled={!fresh||locked||editor!==null} onClick={()=>action('counter_decline',row.recipient.id,row.current_proposal)}>{t('service.decline_counter')}</button>:null}
       </div>{row.current_proposal?<div className="mt-4"><ServiceProposalCard proposal={row.current_proposal}/></div>:<p className="mt-3 text-sm text-dim">{t('service.no_quote')}</p>}</NetworkPanel>:<>
-        <NetworkPanel title={t('service.recipients')}><div className="grid gap-4 sm:grid-cols-2">{row.recipients.map(recipient=><article className="space-y-3 rounded-xl border border-line bg-white p-4" key={recipient.id}><h3 className="font-semibold">{recipient.member_alias}</h3><p className="text-sm">{t('service.recipient_states.'+recipient.status)}</p><button className={NETWORK_BUTTON} disabled={locked||editor!==null} onClick={()=>{setHistoryRecipient(recipient.id);setHistoryPage(1)}}>{t('service.quote_history')}</button>{recipient.capabilities.can_revoke?<button className={NETWORK_BUTTON} disabled={!fresh||locked||editor!==null} onClick={()=>action('recipient_revoke',recipient.id)}>{t('service.revoke')}</button>:null}</article>)}</div></NetworkPanel>
+        <NetworkPanel title={t('service.recipients')}><div className="grid gap-4 sm:grid-cols-2">{row.recipients.map(recipient => <article
+          className="min-w-0 space-y-3 rounded-xl border border-line bg-white p-4" key={recipient.id}>
+          <h3 className="font-semibold">{recipient.member_alias}</h3><p className="text-sm">{t('service.recipient_states.'+recipient.status)}</p>
+          <div className="flex flex-wrap gap-2">
+            <button className={NETWORK_BUTTON} disabled={locked||editor!==null} onClick={()=>{setHistoryRecipient(recipient.id);setHistoryPage(1)}}>{t('service.quote_history')}</button>
+            {recipient.capabilities.can_revoke?<button className={NETWORK_BUTTON} disabled={!fresh||locked||editor!==null} onClick={()=>action('recipient_revoke',recipient.id)}>{t('service.revoke')}</button>:null}
+            {canOpenNegotiation(recipient.id) ? <button type="button" className={NETWORK_BUTTON} disabled={!negotiationFresh}
+              aria-expanded={openRecipient === recipient.id} onClick={() => {
+                if (allowNetworkNavigation()) setOpenRecipient(openRecipient === recipient.id ? '' : recipient.id)
+              }}>{t(openRecipient === recipient.id ? 'conversation.close_negotiation' : 'conversation.open_negotiation')}</button> : null}
+          </div>
+        </article>)}</div></NetworkPanel>
+        {selectedRecipient ? <ServiceConversationPanel key={`negotiation:${id}:${selectedRecipient.id}:owner`} requestId={id}
+          recipientId={selectedRecipient.id} providerName={selectedRecipient.member_alias} sender="owner" parentFresh={negotiationFresh} /> : null}
         {row.capabilities.can_compare?<NetworkPanel title={t('service.compare')}><p className="mb-3 text-sm">{t('service.currency_help')}</p><NetworkFreshness read={comparison}/>{comparison.error?<p role="alert">{t(networkError(comparison.error))}</p>:null}{comparison.data?.groups.map(group=><section className="mb-5" key={group.currency}><h3 className="mb-3 font-bold">{group.currency}</h3><div className="grid gap-4 lg:grid-cols-2">{group.items.map(recipient=><article className="min-w-0 space-y-3" key={recipient.id}><h4 className="font-semibold">{recipient.member_alias}</h4>{recipient.current_proposal?<ServiceProposalCard proposal={recipient.current_proposal}/>:null}<div className="flex flex-wrap gap-2">
           {recipient.capabilities.can_counter?<button className={NETWORK_BUTTON} disabled={!fresh||locked||editor!==null||!matchComparison(recipient)} onClick={()=>begin('owner_counter',recipient.id)}>{t('service.counter')}</button>:null}
           {recipient.capabilities.can_award?<button className={NETWORK_PRIMARY} disabled={!fresh||locked||editor!==null||!matchComparison(recipient)} onClick={()=>begin('request_award',recipient.id)}>{t('service.review_award')}</button>:null}
