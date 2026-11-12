@@ -48,14 +48,19 @@ function sender(value: unknown): ConversationSender {
   return value === 'owner' || value === 'provider' ? value : invalid()
 }
 
+function validMessageBody(body: string): boolean {
+  return body.length > 0 && [...body].length <= CONVERSATION_MESSAGE_LIMIT && !CONTROLS.test(body)
+}
+
 export function conversationBody(value: string): string | null {
   const body = value.trim()
-  return body.length && [...body].length <= CONVERSATION_MESSAGE_LIMIT && !CONTROLS.test(body) ? body : null
+  return validMessageBody(body) ? body : null
 }
 
 function message(value: unknown): ServiceMessage {
   const row = exactObject(value, ['id', 'sender', 'body', 'created_at'])
-  if (typeof row.body !== 'string' || conversationBody(row.body) !== row.body
+  // Validate stored text without applying the browser's input normalization.
+  if (typeof row.body !== 'string' || !validMessageBody(row.body)
     || typeof row.created_at !== 'string' || !TIMESTAMP.test(row.created_at) || !Number.isFinite(Date.parse(row.created_at))) invalid()
   return { id: identifier(row.id), sender: sender(row.sender), body: row.body, created_at: row.created_at }
 }

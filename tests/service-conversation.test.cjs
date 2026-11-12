@@ -77,6 +77,17 @@ test('sending and resolving an uncertain message retain its exact key, text and 
   await assert.rejects(h.api.sendConversationMessage(action), ServiceContractError)
 })
 
+test('stored Unicode edge characters survive readback without changing outgoing trim', async () => {
+  const stored = { ...row, body: `\uFEFF${row.body}\uFEFF` }
+  const h = harness({ ...page, items: [stored] })
+  assert.deepEqual(plain((await h.api.getServiceConversation(requestId, 2)).items), [stored])
+  assert.equal(h.api.conversationBody(stored.body), row.body)
+  for (const body of ['', 'x'.repeat(2001), 'a\u009fb']) {
+    h.reply({ ...page, items: [{ ...row, body }] })
+    await assert.rejects(h.api.getServiceConversation(requestId, 2), ServiceContractError)
+  }
+})
+
 test('plain text is trimmed and bounded by characters while preserving markup literally', () => {
   const { api } = harness(null)
   assert.equal(api.conversationBody(`  ${row.body}\t`), row.body)
