@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getProject } from '../../api/propertyNetwork'
 import { getServiceNegotiationAccess } from '../../api/serviceConversation'
+import type { ServiceRebookContext, ServiceRebookScope } from '../../api/serviceRebook'
 import { SERVICE_OPERATIONS, getServiceComparison, getServiceEvents, getServiceProposals, getServiceRequest, type ManagedRecipient, type ServiceAction, type ServiceOperation, type ServiceRequest, type ServiceProposal } from '../../api/serviceWorkflow'
 import { professionalLabel, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
@@ -21,7 +22,7 @@ function reviewedEditor(editor:Editor,row:ServiceRequest):Editor {
   const current=thread(row,editor.recipientId)
   return current?{...editor,requestVersion:row.view==='managed'?row.version:null,recipientVersion:current.version,proposalId:current.proposal?.id??null,proposalVersion:current.proposal?.version??null,ack:false}:editor
 }
-export function ServiceRequestDetail({id,view,role,options,onBack,onProject}:{id:string;view:'managed'|'received';role:string;options:ProfessionalOptions;onBack:()=>void;onProject:(id:string)=>void}) {
+export function ServiceRequestDetail({id,view,role,options,onBack,onProject,onRebook}:{id:string;view:'managed'|'received';role:string;options:ProfessionalOptions;onBack:()=>void;onProject:(id:string)=>void;onRebook:(context:ServiceRebookContext)=>void}) {
   const {t,i18n}=useTranslation('property_network')
   const read=useNetworkRead('service-detail:'+view+':'+id,signal=>getServiceRequest(id,view,signal))
   const [editor,setEditor]=useState<Editor|null>(null),[historyRecipient,setHistoryRecipient]=useState(''),[historyPage,setHistoryPage]=useState(1),[eventPage,setEventPage]=useState(1)
@@ -90,6 +91,12 @@ export function ServiceRequestDetail({id,view,role,options,onBack,onProject}:{id
   const conversationSender=projectRole==='owner'&&view==='managed'?'owner'
     :projectRole==='professional'&&view==='received'?'provider':null
   const reviewSender = role !== 'admin' && projectAccess.data?.status !== 'archived' ? conversationSender : null
+  const repeatable = reviewSender === 'owner' && row?.view === 'managed' && row.status === 'awarded' ? row : null
+  const repeatSource = repeatable?.source.property_id ?? repeatable?.source.listing_id
+  const rebookScope: ServiceRebookScope | null = repeatable && repeatSource ? {
+    request_id: id, category_id: repeatable.category_id,
+    source: { kind: repeatable.source.property_id ? 'private' : 'listing', id: repeatSource, property_class: repeatable.source.property_class },
+  } : null
   const workAccessFresh=!projectAccess.stale&&!projectAccess.error&&!projectAccess.checking
   const candidates = role === 'admin' || !row || denied || mutation.conflicted ? [] : row.view === 'managed'
     ? row.status === 'open' ? row.recipients.filter(recipient => recipient.status === 'accepted').map(recipient => recipient.id).sort() : []
@@ -113,7 +120,7 @@ export function ServiceRequestDetail({id,view,role,options,onBack,onProject}:{id
       {!mutation.conflicted?<><NetworkPanel title={row.title}><p className="text-sm font-semibold">{row.view==='managed'?t('service.request_states.'+row.status):t('service.recipient_states.'+row.recipient.status)}</p><p className="mt-2 text-sm">{category?professionalLabel(category.label,i18n.language):row.category_id}</p><p className="mt-3 break-words whitespace-pre-wrap">{row.brief}</p><dl className="mt-4 grid gap-2 text-sm"><div><dt className="font-semibold">{t('service.requester_alias')}</dt><dd>{row.requester_alias}</dd></div><div><dt className="font-semibold">{t('service.coarse_area')}</dt><dd>{row.area_label||'—'}</dd></div><div><dt className="font-semibold">{t('service.desired_start')}</dt><dd>{row.desired_start_on?<NetworkDate value={row.desired_start_on}/>: '—'}</dd></div></dl><p className="mt-2 text-xs text-dim">{t('service.not_appointment')}</p>{row.view==='managed'?<p className="mt-4 text-sm">{t('service.source')}: {row.source.title}</p>:null}
         {row.can_open_project&&row.project_id?<button className={NETWORK_PRIMARY+' mt-4'} disabled={locked||editor!==null} onClick={()=>{if(row.project_id&&allowNetworkNavigation())onProject(row.project_id)}}>{t('service.open_project')}</button>:null}
       </NetworkPanel>
-      {canReadWork?<ServiceWorkPanel key={`${id}:${workProjectId}:${view}`} requestId={id} projectId={workProjectId} parentFresh={fresh&&workAccessFresh&&!locked&&!editor} reviewSender={reviewSender} onProject={onProject}/>:null}
+      {canReadWork?<ServiceWorkPanel key={`${id}:${workProjectId}:${view}`} requestId={id} projectId={workProjectId} parentFresh={fresh&&workAccessFresh&&!locked&&!editor} reviewSender={reviewSender} rebookScope={rebookScope} onRebook={onRebook} onProject={onProject}/>:null}
       {workProjectId&&projectAccess.data?.status!=='archived'&&conversationSender?<ServiceConversationPanel key={`${id}:${workProjectId}:${conversationSender}`} requestId={id} sender={conversationSender} parentFresh={fresh&&workAccessFresh&&!locked&&!editor}/>:null}
       {row.view === 'received' && canOpenNegotiation(row.recipient.id) ? <ServiceConversationPanel
         key={`negotiation:${id}:${row.recipient.id}:provider`} requestId={id} recipientId={row.recipient.id} sender="provider" parentFresh={negotiationFresh} /> : null}

@@ -6,6 +6,7 @@ import {
   VISIT_TIME_ZONE, WORK_NOTE_LIMIT, type ServiceWork, type WorkAction, type WorkIntent, type WorkOperation,
 } from '../../api/serviceWork'
 import { todayInDR } from '../../api/propertyManagement'
+import { getServiceRebookContext, sameRebookScope, type ServiceRebookContext, type ServiceRebookScope } from '../../api/serviceRebook'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { allowNetworkNavigation, NetworkDate, NetworkFreshness, NetworkPanel, NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, networkError, useNetworkDraftGuard } from './NetworkShared'
 import { ServiceMutationStatus, useServiceAttempt } from './ServiceWorkflowShared'
@@ -54,8 +55,9 @@ function intentFor(draft: Draft, work: ServiceWork): WorkIntent | null {
   }
 }
 
-export function ServiceWorkPanel({ requestId, projectId, parentFresh, reviewSender, onProject }: {
-  requestId: string; projectId: string; parentFresh: boolean; reviewSender: 'owner' | 'provider' | null; onProject: (id: string) => void
+export function ServiceWorkPanel({ requestId, projectId, parentFresh, reviewSender, rebookScope, onRebook, onProject }: {
+  requestId: string; projectId: string; parentFresh: boolean; reviewSender: 'owner' | 'provider' | null
+  rebookScope: ServiceRebookScope | null; onRebook: (context: ServiceRebookContext) => void; onProject: (id: string) => void
 }) {
   const { t, i18n } = useTranslation('property_network')
   const read = useNetworkRead(`service-work:${requestId}:${projectId}`, signal => getServiceWork(requestId, projectId, signal))
@@ -75,6 +77,10 @@ export function ServiceWorkPanel({ requestId, projectId, parentFresh, reviewSend
   const work = latest && (!read.data || latest.version > read.data.version) ? latest : read.data
   const fresh = parentFresh && !!work && read.data?.version === work.version && !read.checking && !read.stale && !read.error
   const locked = mutation.busy || mutation.pending !== null
+  const approved = work?.status === 'completed' && !!work.completion_update_id
+  const rebook = useNetworkRead(`service-rebook-action:${requestId}:${projectId}:${work?.completion_update_id ?? ''}`,
+    signal => getServiceRebookContext(requestId, signal), !!rebookScope && approved && !denied)
+  const repeat = rebookScope && rebook.data && !rebook.error && sameRebookScope(rebookScope, rebook.data) ? rebook.data : null
   useNetworkDraftGuard(!denied && (draft !== null || mutation.pending !== null), !denied && mutation.busy)
 
   function begin(operation: WorkOperation) {
@@ -115,7 +121,11 @@ export function ServiceWorkPanel({ requestId, projectId, parentFresh, reviewSend
         {work.completion_note ? <div><dt className="font-semibold">{t('work.completion_summary')}</dt><dd className="break-words whitespace-pre-wrap">{work.completion_note}</dd></div> : null}
         {work.completion_review_note ? <div><dt className="font-semibold">{t('work.private_review_note')}</dt><dd className="break-words whitespace-pre-wrap">{work.completion_review_note}</dd></div> : null}
       </dl>
-      {work.completion_update_id ? <button type="button" className={NETWORK_BUTTON} disabled={!fresh || locked || !!draft} onClick={() => { if (allowNetworkNavigation()) onProject(projectId) }}>{t('work.open_history')}</button> : null}
+      {work.completion_update_id ? <div className="flex flex-wrap gap-2">
+        <button type="button" className={NETWORK_BUTTON} disabled={!fresh || locked || !!draft} onClick={() => { if (allowNetworkNavigation()) onProject(projectId) }}>{t('work.open_history')}</button>
+        {repeat ? <button type="button" className={NETWORK_BUTTON} disabled={!fresh || locked || !!draft || rebook.stale || rebook.checking}
+          onClick={() => { if (allowNetworkNavigation()) onRebook(repeat) }}>{t('rebook.open')}</button> : null}
+      </div> : null}
       <div className="my-4 flex flex-wrap gap-2">
         {work.actions.map(operation => <button type="button" className={NETWORK_BUTTON} disabled={!fresh || locked || !!draft} key={operation} onClick={() => begin(operation)}>{t(`work.actions.${operation}`)}</button>)}
       </div>

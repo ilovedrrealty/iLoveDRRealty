@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getServiceRequests, type ServiceRequest } from '../../api/serviceWorkflow'
+import type { ServiceRebookContext } from '../../api/serviceRebook'
 import type { ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { NETWORK_BUTTON, NETWORK_PRIMARY, NetworkDate, NetworkFreshness, NetworkPagination, NetworkPanel, allowNetworkNavigation, networkError } from './NetworkShared'
@@ -20,11 +21,18 @@ function ServiceRequestList({view,onOpen,onCreate}:{view:'managed'|'received';on
 }
 export function ServiceWorkflow({options,role,actorId,actorCode,onProject}:{options:ProfessionalOptions;role:string;actorId:string;actorCode:number|null;onProject:(id:string)=>void}) {
   const {t}=useTranslation('property_network')
-  const [tab,setTab]=useState<'managed'|'received'|'preferences'>('managed'),[detail,setDetail]=useState(''),[creating,setCreating]=useState(false)
+  const [tab,setTab]=useState<'managed'|'received'|'preferences'>('managed'),[detail,setDetail]=useState('')
+  const [draft, setDraft] = useState<'new' | ServiceRebookContext | null>(null)
+  const rebook = draft === 'new' ? null : draft
   const heading=useRef<HTMLHeadingElement|null>(null)
-  useEffect(()=>{heading.current?.focus()},[tab,detail,creating])
-  function navigate(next:typeof tab){if(allowNetworkNavigation()){setTab(next);setDetail('');setCreating(false)}}
+  useEffect(()=>{heading.current?.focus()},[tab,detail,draft])
+  function navigate(next:typeof tab){if(allowNetworkNavigation()){setTab(next);setDetail('');setDraft(null)}}
+  function closeDraft() { if (allowNetworkNavigation()) setDraft(null) }
+  function opened(id: string) { setDraft(null); setDetail(id) }
   return <div className="min-w-0 space-y-5"><h2 ref={heading} tabIndex={-1} className="text-xl font-semibold">{t('main.services')}</h2><p className="text-sm text-ink2">{t('service.intro')}</p><nav className="flex flex-wrap gap-2" aria-label={t('service.navigation')}>{(['managed','received','preferences'] as const).map(value=><button key={value} className={tab===value?NETWORK_PRIMARY:NETWORK_BUTTON} aria-current={tab===value?'page':undefined} onClick={()=>navigate(value)}>{t('service.'+value)}</button>)}</nav>
-    {tab==='preferences'?<ServicePreferences options={options} actorId={actorId}/>:creating?<><button className={NETWORK_BUTTON} onClick={()=>{if(allowNetworkNavigation())setCreating(false)}}>{t('service.back')}</button><ServiceRequestCreate options={options} role={role} actorCode={actorCode} onCreated={id=>{setCreating(false);setDetail(id)}}/></>:detail?<ServiceRequestDetail key={tab+':'+detail} id={detail} view={tab} role={role} options={options} onBack={()=>setDetail('')} onProject={onProject}/>:<ServiceRequestList key={tab} view={tab} onOpen={setDetail} onCreate={()=>setCreating(true)}/>}
+    {tab==='preferences'?<ServicePreferences options={options} actorId={actorId}/>:draft?<>
+      <button className={NETWORK_BUTTON} onClick={closeDraft}>{t(rebook?'rebook.back':'service.back')}</button>
+      <ServiceRequestCreate key={rebook?.request_id??'new'} options={options} role={role} actorCode={actorCode} rebook={rebook} onCreated={opened}/>
+    </>:detail?<ServiceRequestDetail key={tab+':'+detail} id={detail} view={tab} role={role} options={options} onBack={()=>setDetail('')} onProject={onProject} onRebook={setDraft}/>:<ServiceRequestList key={tab} view={tab} onOpen={setDetail} onCreate={()=>setDraft('new')}/>}
   </div>
 }

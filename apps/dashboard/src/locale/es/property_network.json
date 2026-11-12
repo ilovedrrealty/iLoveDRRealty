@@ -256,6 +256,14 @@
     "empty": "Todavía no hay una reseña.",
     "score": "{{stars}} de 5"
   },
+  "rebook": {
+    "open": "Solicitar de nuevo",
+    "title": "Repetir solicitud de servicio",
+    "back": "Volver a la solicitud completada",
+    "provider": "Profesional de servicios",
+    "unavailable": "Este servicio ya no está disponible para volver a solicitarlo.",
+    "changed": "Los detalles del servicio cambiaron. Revisa los datos actuales antes de enviar la solicitud."
+  },
   "service": {
     "member_code": "Miembro n.º {{code}}",
     "your_account": "Tu cuenta",

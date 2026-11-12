@@ -256,6 +256,14 @@
     "empty": "No review yet.",
     "score": "{{stars}} out of 5"
   },
+  "rebook": {
+    "open": "Request again",
+    "title": "Repeat service request",
+    "back": "Back to completed request",
+    "provider": "Service provider",
+    "unavailable": "This service is no longer available to request again.",
+    "changed": "The service details changed. Review the current details before sending."
+  },
   "service": {
     "member_code": "Member #{{code}}",
     "your_account": "Your account",
