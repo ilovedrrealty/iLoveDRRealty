@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useNav } from "../hooks/useNav";
 import { fmt } from "../data/listings";
-import { TONE_MAP } from "../data/propertyDetailData";
+import { listingGallery, TONE_MAP } from "../data/propertyDetailData";
 import { parseListingRoomTour } from "../data/listingRoomTour";
 import { ListingRoomTour } from "../components/ListingRoomTour";
 import { fetchListingById, recordListingView } from "../api/listings";
@@ -268,7 +268,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
 
   const [listing, setListing] = useState<ApiListingDetail | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [requestedLightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [dopRate, setDopRate] = useState(59.5);
   const [currency, setCurrency] = useState<'USD' | 'DOP'>('DOP');
   const [aPrice, setAPrice] = useState(0);
@@ -338,6 +338,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
     setListing(null);
     setLoadError(false);
     setAPrice(0);
+    setLightboxIdx(null);
     return observeInquiryProperty(id, fetchListingById,
       (data) => {
         setListing(data);
@@ -424,10 +425,10 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
     } finally { setBookingSending(false) }
   }
 
-  const imgs: string[] = listing?.images ?? [];
+  const gallery = useMemo(() => listingGallery(listing?.images ?? []), [listing?.images]);
+  const imgs = gallery.photos;
+  const lightboxIdx = requestedLightboxIdx !== null && imgs[requestedLightboxIdx] ? requestedLightboxIdx : null;
   const roomTour = useMemo(() => listing?.id === id ? parseListingRoomTour(listing.room_photo_tour, listing.images) : null, [id, listing]);
-
-  const remainingCount = imgs.length - 4;
 
   useEffect(() => {
     document.body.style.overflow = lightboxIdx !== null ? "hidden" : "";
@@ -676,39 +677,21 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
               title="3D Tour"
             />
           </div>
-        ) : (
-          <div className="grid grid-cols-[2fr_1fr] sm:grid-cols-[2fr_1fr_1fr] grid-rows-[130px_130px] sm:grid-rows-[172px_172px] gap-2">
-            <div
-              className="rounded-2xl overflow-hidden row-span-2 bg-cover bg-center cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[0]})` }}
-              onClick={() => setLightboxIdx(0)}
-            />
-            <div
-              className="rounded-xl overflow-hidden bg-cover bg-center cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[1]})` }}
-              onClick={() => setLightboxIdx(1)}
-            />
-            <div
-              className="rounded-xl overflow-hidden bg-cover bg-center hidden sm:block cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[2]})` }}
-              onClick={() => setLightboxIdx(2)}
-            />
-            <div
-              className="rounded-xl overflow-hidden bg-cover bg-center hidden sm:block cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[3]})` }}
-              onClick={() => setLightboxIdx(3)}
-            />
-            <div
-              className="rounded-xl overflow-hidden bg-cover bg-center relative cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[4] ?? imgs[1]})` }}
-              onClick={() => setLightboxIdx(4)}
-            >
-              {remainingCount > 0 && (
-                <div className="absolute inset-0 grid place-items-center text-white text-[13px] font-semibold font-sans bg-ink/52">
-                  {remainingCount !== 1 ? t('photo_more_plural', { count: remainingCount }) : t('photo_more', { count: remainingCount })}
-                </div>
-              )}
-            </div>
+        ) : gallery.tiles.length > 0 && (
+          <div className={`grid gap-2 ${gallery.grid}`}>
+            {gallery.tiles.map(({ src, index, placement, remainingCount }) => (
+              <button key={index} type="button"
+                className={`${index === 0 ? 'rounded-2xl' : 'rounded-xl'} ${placement} relative overflow-hidden border-0 bg-cover bg-center p-0 cursor-pointer`}
+                aria-label={t('open_gallery_photo', { number: index + 1, total: imgs.length })}
+                style={{ backgroundImage: `url(${src})` }}
+                onClick={() => setLightboxIdx(index)}>
+                {remainingCount > 0 && (
+                  <span className="absolute inset-0 grid place-items-center text-white text-[13px] font-semibold font-sans bg-ink/52">
+                    {remainingCount !== 1 ? t('photo_more_plural', { count: remainingCount }) : t('photo_more', { count: remainingCount })}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         )}
         {!activeTourUrl && roomTour && <ListingRoomTour key={listing.id} tour={roomTour} />}

@@ -6,6 +6,31 @@ export const TONE_MAP: Record<string, string> = {
   sand:  'bg-ink/80 text-white border-white/20',
 }
 
+const galleryRows = 'grid-rows-[130px_130px] sm:grid-rows-[172px_172px]'
+const galleryColumns = 'grid-cols-[2fr_1fr]'
+const fullGalleryColumns = `${galleryColumns} sm:grid-cols-[2fr_1fr_1fr]`
+const shortGalleryLayouts = [
+  { grid: '', tiles: [] },
+  { grid: 'grid-cols-1 h-[268px] sm:h-[352px]', tiles: [''] },
+  { grid: `${galleryColumns} ${galleryRows}`, tiles: ['row-span-2', 'row-span-2'] },
+  { grid: `${galleryColumns} ${galleryRows}`, tiles: ['row-span-2', '', ''] },
+  { grid: `${fullGalleryColumns} h-[268px] grid-rows-3 sm:h-auto sm:grid-rows-[172px_172px]`,
+    tiles: ['row-span-3 sm:row-span-2', 'sm:row-span-2', '', ''] },
+]
+const fullGalleryLayout = {
+  grid: `${fullGalleryColumns} ${galleryRows}`,
+  tiles: ['row-span-2', '', 'hidden sm:block', 'hidden sm:block', ''],
+}
+
+export function listingGallery(images: readonly string[]) {
+  const photos = images.filter(image => typeof image === 'string' && image.trim() !== '')
+  const layout = photos.length < 5 ? shortGalleryLayouts[photos.length] : fullGalleryLayout
+  const tiles = layout.tiles.map((placement, index) => ({
+    src: photos[index], index, placement, remainingCount: index === 4 ? photos.length - 4 : 0,
+  }))
+  return { photos, tiles, grid: layout.grid }
+}
+
 export const GALLERY_EXTRAS = [
   'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=600&q=80&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=600&q=80&auto=format&fit=crop',

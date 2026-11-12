@@ -10,6 +10,7 @@
   "tour_3d": "3D Tour",
   "photo_more": "+{{count}} photo",
   "photo_more_plural": "+{{count}} photos",
+  "open_gallery_photo": "View photo {{number}} of {{total}}",
   "room_tour": {
     "open": "Browse photos by room",
     "title": "Room-by-room photo tour",
