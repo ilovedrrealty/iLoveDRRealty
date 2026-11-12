@@ -243,6 +243,19 @@
     "send": "Enviar mensaje",
     "empty": "Todavía no hay mensajes."
   },
+  "review": {
+    "title": "Reseña privada del servicio",
+    "privacy": "Solo la persona propietaria y el profesional adjudicado pueden ver esta reseña.",
+    "one_review": "Puedes guardar una reseña para este servicio.",
+    "rating": "Calificación (1–5)",
+    "choose_rating": "Elige una calificación",
+    "comment": "Reseña (opcional)",
+    "limit": "Usa hasta {{limit, number}} caracteres de texto sin formato.",
+    "invalid_comment": "Usa texto sin formato con un máximo de {{limit, number}} caracteres.",
+    "save": "Guardar reseña",
+    "empty": "Todavía no hay una reseña.",
+    "score": "{{stars}} de 5"
+  },
   "service": {
     "member_code": "Miembro n.º {{code}}",
     "your_account": "Tu cuenta",

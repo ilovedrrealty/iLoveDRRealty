@@ -9,6 +9,7 @@ import { todayInDR } from '../../api/propertyManagement'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { allowNetworkNavigation, NetworkDate, NetworkFreshness, NetworkPanel, NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, networkError, useNetworkDraftGuard } from './NetworkShared'
 import { ServiceMutationStatus, useServiceAttempt } from './ServiceWorkflowShared'
+import { ServiceReviewPanel } from './ServiceReviewPanel'
 
 type Draft = {
   operation: WorkOperation
@@ -53,8 +54,8 @@ function intentFor(draft: Draft, work: ServiceWork): WorkIntent | null {
   }
 }
 
-export function ServiceWorkPanel({ requestId, projectId, parentFresh, onProject }: {
-  requestId: string; projectId: string; parentFresh: boolean; onProject: (id: string) => void
+export function ServiceWorkPanel({ requestId, projectId, parentFresh, reviewSender, onProject }: {
+  requestId: string; projectId: string; parentFresh: boolean; reviewSender: 'owner' | 'provider' | null; onProject: (id: string) => void
 }) {
   const { t, i18n } = useTranslation('property_network')
   const read = useNetworkRead(`service-work:${requestId}:${projectId}`, signal => getServiceWork(requestId, projectId, signal))
@@ -100,7 +101,7 @@ export function ServiceWorkPanel({ requestId, projectId, parentFresh, onProject 
     dateStyle: 'medium', timeStyle: 'short', timeZone: VISIT_TIME_ZONE,
   }).format(new Date(value))
   const firstCompletionDate = work?.confirmed_visit ? todayInDR(new Date(work.confirmed_visit.starts_at)) : undefined
-  return <NetworkPanel title={t('work.title')}>
+  return <><NetworkPanel title={t('work.title')}>
     <NetworkFreshness read={read} />
     <p className="mb-4 text-sm text-dim">{t('work.privacy')}</p>
     {readError ? <p role="alert" className="text-sm text-red-800">{t(readError)}</p> : null}
@@ -142,4 +143,8 @@ export function ServiceWorkPanel({ requestId, projectId, parentFresh, onProject 
       retry: () => { if (retryCurrent) mutation.retry() },
     }} />
   </NetworkPanel>
+    {reviewSender && work?.status === 'completed' && work.completion_update_id ? <ServiceReviewPanel
+      key={`${requestId}:${projectId}:${work.completion_update_id}:${reviewSender}`}
+      requestId={requestId} sender={reviewSender} parentFresh={fresh && !locked} /> : null}
+  </>
 }

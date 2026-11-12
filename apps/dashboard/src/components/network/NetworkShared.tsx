@@ -18,8 +18,8 @@ export function useNetworkDraftGuard(dirty: boolean, busy = false) {
     return () => { window.removeEventListener('beforeunload', unload); window.removeEventListener('ildr:before-dashboard-navigation', navigate) }
   }, [dirty, busy, t])
 }
-export function NetworkPanel({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="min-w-0 rounded-2xl border border-line bg-paper p-4 sm:p-6"><h2 className="mb-4 text-lg font-bold text-ink">{title}</h2>{children}</section>
+export function NetworkPanel({ title, children, headingId }: { title: string; children: ReactNode; headingId?: string }) {
+  return <section aria-labelledby={headingId} className="min-w-0 rounded-2xl border border-line bg-paper p-4 sm:p-6"><h2 id={headingId} className="mb-4 text-lg font-bold text-ink">{title}</h2>{children}</section>
 }
 export function networkError(error: unknown): string {
   if (isAxiosError(error)) {

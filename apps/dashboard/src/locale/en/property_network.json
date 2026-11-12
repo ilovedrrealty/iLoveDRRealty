@@ -243,6 +243,19 @@
     "send": "Send message",
     "empty": "No messages yet."
   },
+  "review": {
+    "title": "Private service review",
+    "privacy": "Only the property owner and the awarded provider can see this review.",
+    "one_review": "You can save one review for this service.",
+    "rating": "Rating (1–5)",
+    "choose_rating": "Choose a rating",
+    "comment": "Review (optional)",
+    "limit": "Use up to {{limit, number}} characters of plain text.",
+    "invalid_comment": "Use plain text with up to {{limit, number}} characters.",
+    "save": "Save review",
+    "empty": "No review yet.",
+    "score": "{{stars}} out of 5"
+  },
   "service": {
     "member_code": "Member #{{code}}",
     "your_account": "Your account",
