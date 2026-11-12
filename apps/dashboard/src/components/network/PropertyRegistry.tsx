@@ -7,6 +7,7 @@ import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkFreshness, NetworkPagination, NetworkPanel, allowNetworkNavigation, networkError, useNetworkDraftGuard } from './NetworkShared'
 import { ServiceHistory } from './ProjectWorkspace'
 import { MaintenanceReminders } from './MaintenanceReminders'
+import { HistoryShareCreateControl } from './HistoryShareCreate'
 
 type Draft = { title: string; location: string; address: string; property_class: string; relationship: string; notes: string }
 const emptyDraft = (): Draft => ({ title: '', location: '', address: '', property_class: '', relationship: '', notes: '' })
@@ -80,7 +81,9 @@ export function PrivatePropertyCreate({ options, onCreated }: { options: Profess
   </form></NetworkPanel>
 }
 
-export function PrivatePropertyDetail({ id, options, actorRole, onBack, onCreateProject }: { id: string; options: ProfessionalOptions; actorRole: string; onBack: () => void; onCreateProject: (id: string) => void }) {
+export function PrivatePropertyDetail({ id, options, actorRole, onBack, onCreateProject, onHistorySent }: {
+  id: string; options: ProfessionalOptions; actorRole: string; onBack: () => void; onCreateProject: (id: string) => void; onHistorySent?: () => void
+}) {
   const { t } = useTranslation('property_network')
   const [revision, setRevision] = useState(0), [baseline, setBaseline] = useState<PrivateProperty | null>(null), [draft, setDraft] = useState<Draft>(emptyDraft)
   const [busy, setBusy] = useState(false), [writeError, setWriteError] = useState(''), [requiresRefresh, setRequiresRefresh] = useState(false), [refreshRequested, setRefreshRequested] = useState(false), [accessLost, setAccessLost] = useState(false)
@@ -119,6 +122,9 @@ export function PrivatePropertyDetail({ id, options, actorRole, onBack, onCreate
       {baseline ? <NetworkPanel title={t('registry.details')}><form className="space-y-4" onSubmit={event => { event.preventDefault(); void save() }}><fieldset className="space-y-4" disabled={!writable}><PropertyFields draft={draft} setDraft={setDraft} options={options} /><button className={NETWORK_PRIMARY} type="submit" disabled={!dirty || !validDraft(draft)}>{t(busy ? 'saving' : 'save_changes')}</button></fieldset>{dirty ? <p className="text-xs text-dim">{t('registry.draft_retained')}</p> : null}{record && record.version !== baseline.version ? <p role="status" className="text-sm text-amber-950">{t('registry.new_version')}</p> : null}</form>{baseline.status === 'active' ? <button className={NETWORK_BUTTON+' mt-5'} disabled={!writable || dirty} onClick={() => void save(true)}>{t('registry.archive')}</button> : null}{dirty ? <p className="mt-2 text-xs text-dim">{t('registry.save_before_archive')}</p> : null}</NetworkPanel> : null}
       {currentRecord?.status === 'active' && currentRecord.can_manage && actorRole && actorRole !== 'admin' ? <MaintenanceReminders
         source={{ kind: 'private', id }} parentFresh={!read.stale && !read.checking && !read.error && !requiresRefresh && !busy} /> : null}
+      {currentRecord?.status === 'active' && currentRecord.can_manage && actorRole !== 'admin' && onHistorySent ? <HistoryShareCreateControl
+        source={{ kind: 'private', id }} categories={options.categories}
+        parentFresh={!read.stale && !read.error && !requiresRefresh && !busy} onSent={onHistorySent} /> : null}
       {record && !requiresRefresh ? <ServiceHistory propertyId={record.id} /> : null}
     </>}
   </div>

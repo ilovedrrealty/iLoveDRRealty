@@ -7,6 +7,8 @@ import { professionalLabel } from '../../../../../packages/professionals/src'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkComments, NetworkComposer, NetworkDate, NetworkFreshness, NetworkPagination, NetworkPanel, PrivatePhotos, networkError, useNetworkDraftGuard, allowNetworkNavigation } from './NetworkShared'
 import { DueWorkReminders } from './DueWorkReminders'
+import { HistoryShareCreateControl } from './HistoryShareCreate'
+import type { HistoryShareSource } from '../../api/historyShares'
 
 type Catalog = ProfessionalOptions & { property_classes?: { id: string; label: { en: string; es: string } }[] }
 const PROJECT_STATUSES = ['open', 'in_progress', 'completed', 'archived'] as const
@@ -80,7 +82,9 @@ export function ProjectCreate({ options, onCreated, canUseListings = true, initi
   </fieldset>{error ? <p role="alert" className="text-sm text-red-800">{t(error)}</p> : null}{pending ? <><p role="status" className="text-sm text-amber-950">{t(pending.property_id ? 'registry.uncertain_project' : 'reload_before_new_project')}</p>{pending.property_id ? <div className="flex flex-wrap gap-3"><button type="button" className={NETWORK_BUTTON} disabled={busy} onClick={() => void checkResult()}>{t('registry.check_result')}</button><button type="button" className={NETWORK_BUTTON} disabled={busy || error === 'error_conflict'} onClick={() => void save()}>{t('registry.retry_same_project')}</button>{checkedAbsent ? <p role="status" className="text-sm text-dim">{t('registry.not_found_project')}</p> : null}</div> : null}</> : null}</form></NetworkPanel>
 }
 
-export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
+export function ProjectDetail({ id, onBack, onHistorySent, historyCategories = [] }: {
+  id: string; onBack: () => void; onHistorySent?: () => void; historyCategories?: ProfessionalOptions['categories']
+}) {
   const { t, i18n } = useTranslation('property_network')
   const [manualReload, setManualReload] = useState(0)
   const read = useNetworkRead(`project:${id}:${manualReload}`, signal => getProject(id, signal))
@@ -89,6 +93,8 @@ export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }
   const reload = read.refresh
   const canReadDueWork = project && (project.my_role === 'owner' || project.my_role === 'professional')
     && (project.status === 'open' || project.status === 'in_progress')
+  const historySource: HistoryShareSource | undefined = project?.property_id ? { kind: 'private', id: project.property_id }
+    : project?.listing_id ? { kind: 'listing', id: project.listing_id } : undefined
   function changeTab(value: typeof tab) { if (window.dispatchEvent(new Event('ildr:before-dashboard-navigation', { cancelable: true }))) setTab(value) }
   return <div className="space-y-5"><div className="flex flex-wrap gap-3"><button className={NETWORK_BUTTON} onClick={onBack}>{t('back_projects')}</button><button className={NETWORK_BUTTON} onClick={() => { if (allowNetworkNavigation()) setManualReload(value => value+1) }}>{t('reload')}</button></div><NetworkFreshness read={read} />{error ? <p role="alert" className="text-sm text-red-800">{t(error)}</p> : null}{!project ? !error ? <p role="status">{t('loading')}</p> : null : <>
     <header className="rounded-2xl bg-ink p-5 text-white"><p className="text-xs text-white/70">{project.property_title ?? project.listing_title}</p><h1 className="mt-2 break-words text-2xl font-bold">{project.title}</h1><p className="mt-3 whitespace-pre-wrap break-words text-sm text-white/80">{project.summary}</p><p className="mt-4 text-sm font-semibold">{t(`statuses.${project.status}`)} · {project.progress.percent === null ? t('no_milestones') : t('progress', { completed: project.progress.completed, total: project.progress.total, percent: project.progress.percent.toLocaleString(i18n.language) })}</p><p className="mt-2 text-xs text-white/65">{t('project_private')}</p>{project.property_id ? <p className="mt-2 text-xs text-white/65">{t('registry.unverified')}</p> : null}</header>
@@ -100,7 +106,12 @@ export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }
     </> : null}
     {tab === 'milestones' ? <ProjectMilestones key={project.id} project={project} onChanged={reload} /> : null}
     {tab === 'members' ? <ProjectMembers key={project.id} project={project} onChanged={reload} /> : null}
-    {tab === 'history' ? project.property_id ? <ServiceHistory key={`private:${project.property_id}`} propertyId={project.property_id} /> : project.listing_id ? <ServiceHistory key={`listing:${project.listing_id}`} listingId={project.listing_id} /> : null : null}
+    {tab === 'history' && historySource ? <>
+      {project.my_role === 'owner' && onHistorySent ? <HistoryShareCreateControl source={historySource} categories={historyCategories}
+        parentFresh={!read.stale && !read.error} onSent={onHistorySent} /> : null}
+      <ServiceHistory key={`${historySource.kind}:${historySource.id}`}
+        propertyId={project.property_id ?? undefined} listingId={project.listing_id ?? undefined} />
+    </> : null}
     {tab === 'details' ? <ProjectEdit key={project.id} project={project} onChanged={reload} /> : null}
   </>}</div>
 }

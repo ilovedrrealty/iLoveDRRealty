@@ -30,7 +30,8 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
   let clock = Date.parse('2026-01-02T12:00:00Z'), nextTimer = 0
   const timers = new Map(), fakeNavigator = { onLine: true }
   const lookup = (key, values = {}) => {
-    let result = key.split('.').reduce((value, part) => value?.[part], translations)
+    const translated = name => name.split('.').reduce((value, part) => value?.[part], translations)
+    const result = translated(key) ?? (Number.isInteger(values.count) ? translated(key + (values.count === 1 ? '_one' : '_other')) : undefined)
     assert.equal(typeof result, 'string', `Missing ${language} translation: ${key}`)
     return result.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? ''))
   }
@@ -44,6 +45,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
   const hooks = { ...React,
     useState(initial) { const state = slot('state'); if (!Object.hasOwn(state, 'value')) state.value = typeof initial === 'function' ? initial() : initial; return [state.value, next => { state.value = typeof next === 'function' ? next(state.value) : next; dirty = true }] },
     useRef(initial) { const state = slot('ref'); if (!state.value) state.value = { current: initial }; return state.value },
+    useId() { const state = slot('id'); return state.value ??= `synthetic-${++nextFunction}` },
     useEffect(effect, deps) { const state = slot('effect'); if (!state.deps || deps.some((value, index) => value !== state.deps[index])) { state.deps = [...deps]; effects.push({ state, effect }) } },
   }
   function resolveChildren(children, parentPath) {
@@ -101,6 +103,15 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
       return responses[name](...args)
     }
   } })
+  const historyApi = new Proxy({}, { get: (_, name) => {
+    const actual = load(sourceRoot + 'api/historyShares.ts')
+    if (typeof actual[name] !== 'function' || ['prepareHistoryShare', 'validHistoryShareText'].includes(name)) return actual[name]
+    return (...args) => {
+      calls.push({ name, args })
+      assert.equal(typeof responses[name], 'function', 'Unexpected history API call: ' + String(name))
+      return responses[name](...args)
+    }
+  } })
   const fakeWindow = {
     addEventListener(name, callback) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(callback) },
     removeEventListener(name, callback) { listeners.get(name)?.delete(callback) },
@@ -122,7 +133,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
       crypto: { randomUUID: () => fixtureId(++nextUUID) }, window: fakeWindow,
       URL: { createObjectURL: () => `blob:synthetic-${++nextBlob}`, revokeObjectURL: value => revoked.push(value) },
       require(name) {
-        if (['api/propertyNetwork.ts', 'api/serviceWorkflow.ts'].some(file => absolute === path.resolve(root, sourceRoot + file)) && name === './axios') {
+        if (absolute.startsWith(path.join(root, sourceRoot, 'api') + path.sep) && name === './axios') {
           const refuse = () => assert.fail('UI adapter must use explicit API responses, never the authenticated client')
           return { __esModule: true, default: { get: refuse, post: refuse, put: refuse } }
         }
@@ -133,6 +144,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
         if (name === 'react-router-dom') return { useSearchParams: () => { const [value, setValue] = hooks.useState(''); return [new URLSearchParams(value), next => setValue(next.toString())] } }
         if (name.endsWith('/api/propertyNetwork')) return api
         if (name.endsWith('/api/serviceWorkflow')) return serviceApi
+        if (name.endsWith('/api/historyShares')) return historyApi
         if (name.endsWith('/api/professionals')) return { getProfessionalOptions: api.getProfessionalOptions }
         if (name.endsWith('/api/propertyManagement')) return { todayInDR: () => '2026-01-02' }
         assert.ok(name.startsWith('.'), `Unapproved module dependency: ${name}`)
@@ -193,6 +205,92 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
     dispose() { for (const frame of frames.values()) for (const entry of frame.slots) entry.cleanup?.(); frames.clear(); effects.length = 0 },
   }
 }
+
+test('a history draft uses one live same-source project and only explicitly reviewed entries', async () => {
+  const source = { kind: 'private', id: LISTING }
+  const updates = [{ update_id: ENTRY, project_title: 'Past repair', occurred_on: '2026-01-01', service_category_ids: ['pool_service'] },
+    { update_id: PHOTO1, project_title: 'Other repair', occurred_on: '2025-12-31', service_category_ids: ['pool_service'] }]
+  const categories = [{ id: 'pool_service', label: { en: 'Pool service', es: 'Servicio de piscina' } }]
+  const h = ui('components/network/HistoryShareCreate.tsx', 'HistoryShareCreateControl', { source, categories, parentFresh: true, onSent() {} }, {
+    getProjects: async params => { assert.equal(params.property_id, LISTING); assert.equal(params.listing_id, undefined); return page([project({ my_role: 'owner' }), project({ id: PHOTO2, my_role: 'viewer', title: 'Not owned' })]) },
+    getHistoryShareOptions: async (requested, anchor) => {
+      assert.equal(requested.id, LISTING); assert.equal(anchor, ID)
+      return { source_kind: 'private', source_id: LISTING, anchor_project_id: ID, professionals: [author], ...page(updates) }
+    },
+    runHistoryShare: async () => ({ id: PHOTO2, operation: 'create', status: 'pending', version: 1 }),
+  }, 'es')
+  const button = key => h.find('button', node => h.text(node) === h.t('history_shares.' + key))
+  try {
+    await h.settle()
+    await h.fire(button('create'), 'onClick')
+    assert.doesNotMatch(h.html, /Not owned/)
+    await h.fire(button('choose_anchor'), 'onClick')
+    await h.fire(h.find('select', node => node.props.id.endsWith('-recipient')), 'onChange', { target: { value: '71' } })
+    await h.fire(h.find('input', node => node.props.id?.endsWith('-label')), 'onChange', { target: { value: 'Pool maintenance' } })
+    await h.fire(h.find('select', node => node.props.id.endsWith('-expiry')), 'onChange', { target: { value: '7' } })
+    await h.fire(h.find('input', node => node.props['aria-label']?.includes('Past repair')), 'onChange', { target: { checked: true } })
+    assert.ok(h.html.includes('Servicio de piscina'))
+    await h.fire(h.find('textarea'), 'onChange', { target: { value: 'Filter replaced.' } })
+    assert.equal(button('submit').props.disabled, true)
+    await h.fire(h.find('input', node => node.props.type === 'checkbox' && node.props['aria-label'] === undefined), 'onChange', { target: { checked: true } })
+    assert.equal(button('submit').props.disabled, false)
+    await h.fire(h.find('textarea'), 'onChange', { target: { value: 'Filter replaced and tested.' } })
+    assert.equal(button('submit').props.disabled, true)
+    await h.fire(h.find('input', node => node.props.type === 'checkbox' && node.props['aria-label'] === undefined), 'onChange', { target: { checked: true } })
+    assert.equal(h.calls.filter(call => call.name === 'runHistoryShare').length, 0)
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    const write = h.calls.find(call => call.name === 'runHistoryShare').args[0]
+    assert.deepEqual(JSON.parse(JSON.stringify(write.input)), { source_kind: 'private', source_id: LISTING, anchor_project_id: ID,
+      recipient_user_code: 71, label: 'Pool maintenance', expires_in_days: 7,
+      items: [{ update_id: ENTRY, summary: 'Filter replaced and tested.' }] })
+    assert.ok(h.html.includes(h.t('history_shares.staged')))
+    assert.doesNotMatch(h.html, /Filter replaced/)
+  } finally { h.dispose() }
+})
+
+test('a recipient sees summaries only after explicit acceptance and loses them when access closes', async () => {
+  const row = { id: ENTRY, label: 'A reviewed invitation', view: 'received', status: 'pending', expires_at: '2026-01-03T12:00:00Z',
+    version: 1, item_count: 1, items: null, actions: ['accept', 'decline'] }
+  let accepted = false, denied = false, checking
+  const h = ui('components/network/HistorySharing.tsx', 'HistorySharing', { actorId: ID, initialView: 'received', options: { categories: [] } }, {
+    getHistoryShares: async () => ({ ...page([row]), view: 'received' }),
+    getHistoryShare: async () => {
+      if (denied) throw { isAxiosError: true, response: { status: 404 } }
+      if (checking) return new Promise(resolve => { checking.resolve = resolve })
+      return accepted ? { ...row, status: 'accepted', version: 2, actions: ['revoke'],
+        items: [{ occurred_on: '2026-01-01', service_category_ids: [], summary: 'A reviewed private summary.' }] } : row
+    },
+    runHistoryShare: async intent => {
+      assert.equal(intent.operation, 'accept'); assert.equal(intent.expected_version, 1)
+      accepted = true; return { id: ENTRY, operation: 'accept', status: 'accepted', version: 2 }
+    },
+  })
+  const button = key => h.find('button', node => h.text(node) === h.t('history_shares.' + key))
+  try {
+    await h.settle()
+    await h.fire(button('open'), 'onClick')
+    assert.ok(h.html.includes(h.t('history_shares.invitation_help')))
+    assert.doesNotMatch(h.html, /A reviewed private summary/)
+    await h.fire(button('actions.accept'), 'onClick')
+    assert.equal(h.calls.filter(call => call.name === 'runHistoryShare').length, 0)
+    await h.fire(button('confirm_action'), 'onClick')
+    assert.match(h.html, /A reviewed private summary/)
+    checking = {}
+    await h.fire(h.find('button', node => h.text(node) === h.t('refresh')), 'onClick')
+    assert.doesNotMatch(h.html, /A reviewed private summary/)
+    checking.resolve({ ...row, status: 'accepted', version: 2, actions: ['revoke'],
+      items: [{ occurred_on: '2026-01-01', service_category_ids: [], summary: 'A reviewed private summary.' }] })
+    checking = null
+    await h.settle()
+    assert.match(h.html, /A reviewed private summary/)
+    await h.presence(false, true)
+    assert.doesNotMatch(h.html, /A reviewed private summary/)
+    denied = true
+    await h.presence(true, true)
+    assert.ok(h.html.includes(h.t('error_access')))
+    assert.doesNotMatch(h.html, /A reviewed private summary|A reviewed invitation/)
+  } finally { h.dispose() }
+})
 
 test('actual member editor starts private, creates nothing on read, and saves only deliberate visibility changes', async () => {
   let saved = profile()
