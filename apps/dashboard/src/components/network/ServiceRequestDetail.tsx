@@ -22,7 +22,7 @@ function reviewedEditor(editor:Editor,row:ServiceRequest):Editor {
   const current=thread(row,editor.recipientId)
   return current?{...editor,requestVersion:row.view==='managed'?row.version:null,recipientVersion:current.version,proposalId:current.proposal?.id??null,proposalVersion:current.proposal?.version??null,ack:false}:editor
 }
-export function ServiceRequestDetail({id,view,role,options,onBack,onProject,onRebook}:{id:string;view:'managed'|'received';role:string;options:ProfessionalOptions;onBack:()=>void;onProject:(id:string)=>void;onRebook:(context:ServiceRebookContext)=>void}) {
+export function ServiceRequestDetail({id,view,role,options,onBack,onProject,onRebook,backLabel}:{id:string;view:'managed'|'received';role:string;options:ProfessionalOptions;onBack:()=>void;onProject:(id:string)=>void;onRebook:(context:ServiceRebookContext)=>void;backLabel?:string}) {
   const {t,i18n}=useTranslation('property_network')
   const read=useNetworkRead('service-detail:'+view+':'+id,signal=>getServiceRequest(id,view,signal))
   const [editor,setEditor]=useState<Editor|null>(null),[historyRecipient,setHistoryRecipient]=useState(''),[historyPage,setHistoryPage]=useState(1),[eventPage,setEventPage]=useState(1)
@@ -115,7 +115,7 @@ export function ServiceRequestDetail({id,view,role,options,onBack,onProject,onRe
   useEffect(() => {
     if (openRecipient && (!selectedCandidate || (accessFresh && !selectedAccess))) setOpenRecipient('')
   }, [openRecipient, selectedCandidate, selectedAccess, accessFresh])
-  return <div className="min-w-0 break-words space-y-5"><button className={NETWORK_BUTTON} onClick={()=>{if(allowNetworkNavigation())onBack()}}>{t('service.back')}</button><NetworkFreshness read={{...read,refresh:()=>{read.refresh();comparison.refresh();events.refresh();history.refresh();negotiationAccess.refresh()}}}/>
+  return <div className="min-w-0 break-words space-y-5"><button className={NETWORK_BUTTON} onClick={()=>{if(allowNetworkNavigation())onBack()}}>{backLabel ?? t('service.back')}</button><NetworkFreshness read={{...read,refresh:()=>{read.refresh();comparison.refresh();events.refresh();history.refresh();negotiationAccess.refresh()}}}/>
     {denied?<p role="alert">{t('error_access')}</p>:<>{read.error?<p role="alert">{t(networkError(read.error))}</p>:null}{row?<>
       {!mutation.conflicted?<><NetworkPanel title={row.title}><p className="text-sm font-semibold">{row.view==='managed'?t('service.request_states.'+row.status):t('service.recipient_states.'+row.recipient.status)}</p><p className="mt-2 text-sm">{category?professionalLabel(category.label,i18n.language):row.category_id}</p><p className="mt-3 break-words whitespace-pre-wrap">{row.brief}</p><dl className="mt-4 grid gap-2 text-sm"><div><dt className="font-semibold">{t('service.requester_alias')}</dt><dd>{row.requester_alias}</dd></div><div><dt className="font-semibold">{t('service.coarse_area')}</dt><dd>{row.area_label||'—'}</dd></div><div><dt className="font-semibold">{t('service.desired_start')}</dt><dd>{row.desired_start_on?<NetworkDate value={row.desired_start_on}/>: '—'}</dd></div></dl><p className="mt-2 text-xs text-dim">{t('service.not_appointment')}</p>{row.view==='managed'?<p className="mt-4 text-sm">{t('service.source')}: {row.source.title}</p>:null}
         {row.can_open_project&&row.project_id?<button className={NETWORK_PRIMARY+' mt-4'} disabled={locked||editor!==null} onClick={()=>{if(row.project_id&&allowNetworkNavigation())onProject(row.project_id)}}>{t('service.open_project')}</button>:null}

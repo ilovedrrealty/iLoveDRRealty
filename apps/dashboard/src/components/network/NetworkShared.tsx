@@ -30,10 +30,12 @@ export function networkError(error: unknown): string {
   }
   return 'error_unknown'
 }
-export function NetworkDate({ value }: { value: string }) {
+export function NetworkDate({ value, showTime = false }: { value: string; showTime?: boolean }) {
   const { i18n } = useTranslation('property_network')
   const date = new Date(value.length === 10 ? value+'T12:00:00Z' : value)
-  return <time dateTime={value}>{Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(i18n.language.startsWith('es') ? 'es-DO' : 'en-US', { dateStyle: 'medium', timeZone: 'America/Santo_Domingo' }).format(date) : '—'}</time>
+  return <time dateTime={value}>{Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(i18n.language.startsWith('es') ? 'es-DO' : 'en-US', {
+    dateStyle: 'medium', timeStyle: showTime ? 'short' : undefined, timeZone: 'America/Santo_Domingo',
+  }).format(date) : '—'}</time>
 }
 export function NetworkFreshness({ read }: { read: Pick<NetworkRead<unknown>, 'checking' | 'checkedAt' | 'stale' | 'refresh'> }) {
   const { t, i18n } = useTranslation('property_network')

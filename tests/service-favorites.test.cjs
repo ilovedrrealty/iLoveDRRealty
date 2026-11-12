@@ -160,6 +160,7 @@ test('only non-Admin dashboards offer their personal saved-professionals tab', (
     './NetworkShared': shared(),
     './ServicePreferences': { ServicePreferences: never }, './ServiceRequestCreate': { ServiceRequestCreate: never },
     './ServiceRequestDetail': { ServiceRequestDetail: never }, './ServiceFavorites': { ServiceFavorites: never },
+    './ServiceOperations': { ServiceOperations: never },
   })
   const dashboard = role => renderToStaticMarkup(React.createElement(ServiceWorkflow, { options: {}, role, actorId: id, actorCode: 10, onProject: never }))
   assert.match(dashboard('owner'), /<button[^>]*>Saved professionals<\/button>/)
