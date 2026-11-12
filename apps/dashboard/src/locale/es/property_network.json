@@ -228,6 +228,15 @@
       "approve_completion": "Revisa el resumen y la fecha de finalización que aparecen arriba antes de aprobar el trabajo."
     }
   },
+  "conversation": {
+    "heading": "Conversación privada",
+    "privacy": "Los mensajes son visibles para la persona propietaria y el profesional adjudicado.",
+    "sender": { "owner": "Persona propietaria", "provider": "Profesional adjudicado" },
+    "message": "Mensaje",
+    "limit": "Usa hasta {{limit, number}} caracteres de texto sin formato.",
+    "send": "Enviar mensaje",
+    "empty": "Todavía no hay mensajes."
+  },
   "service": {
     "member_code": "Miembro n.º {{code}}",
     "your_account": "Tu cuenta",

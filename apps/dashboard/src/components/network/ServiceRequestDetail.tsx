@@ -8,6 +8,7 @@ import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkDate, NetworkFre
 import { ServiceMutationStatus, useServiceMutation } from './ServiceWorkflowShared'
 import { ServiceProposalCard, ServiceProposalFields, termsDraft, termsInput, validTerms, type TermsDraft } from './ServiceProposalFields'
 import { ServiceWorkPanel } from './ServiceWorkPanel'
+import { ServiceConversationPanel } from './ServiceConversationPanel'
 
 type Editor={operation:'provider_quote'|'owner_counter'|'request_award';recipientId:string;requestVersion:number|null;recipientVersion:number;proposalId:string|null;proposalVersion:number|null;terms:TermsDraft;projectTitle:string;projectSummary:string;ack:boolean}
 function thread(row:ServiceRequest,id:string) {
@@ -80,6 +81,8 @@ export function ServiceRequestDetail({id,view,options,onBack,onProject}:{id:stri
   const projectAccess=useNetworkRead(`service-work-access:${view}:${id}:${workProjectId}`,signal=>getProject(workProjectId!,signal),!!workProjectId&&!denied&&!mutation.conflicted)
   const projectRole=projectAccess.data?.my_role
   const canReadWork=workProjectId&&(view==='managed'?projectRole==='owner'||projectRole==='admin':projectRole==='professional')
+  const conversationSender=projectRole==='owner'&&view==='managed'?'owner'
+    :projectRole==='professional'&&view==='received'?'provider':null
   const workAccessFresh=!projectAccess.stale&&!projectAccess.error&&!projectAccess.checking
   return <div className="min-w-0 break-words space-y-5"><button className={NETWORK_BUTTON} onClick={()=>{if(allowNetworkNavigation())onBack()}}>{t('service.back')}</button><NetworkFreshness read={{...read,refresh:()=>{read.refresh();comparison.refresh();events.refresh();history.refresh()}}}/>
     {denied?<p role="alert">{t('error_access')}</p>:<>{read.error?<p role="alert">{t(networkError(read.error))}</p>:null}{row?<>
@@ -87,6 +90,7 @@ export function ServiceRequestDetail({id,view,options,onBack,onProject}:{id:stri
         {row.can_open_project&&row.project_id?<button className={NETWORK_PRIMARY+' mt-4'} disabled={locked||editor!==null} onClick={()=>{if(row.project_id&&allowNetworkNavigation())onProject(row.project_id)}}>{t('service.open_project')}</button>:null}
       </NetworkPanel>
       {canReadWork?<ServiceWorkPanel key={`${id}:${workProjectId}:${view}`} requestId={id} projectId={workProjectId} parentFresh={fresh&&workAccessFresh&&!locked&&!editor} onProject={onProject}/>:null}
+      {workProjectId&&projectAccess.data?.status!=='archived'&&conversationSender?<ServiceConversationPanel key={`${id}:${workProjectId}:${conversationSender}`} requestId={id} sender={conversationSender} parentFresh={fresh&&workAccessFresh&&!locked&&!editor}/>:null}
       {row.view==='received'?<NetworkPanel title={t('service.my_thread')}><p className="mb-3 text-sm">{t('service.accept_help')}</p><div className="flex flex-wrap gap-3">
         {row.capabilities.can_accept?<button className={NETWORK_PRIMARY} disabled={!fresh||locked||editor!==null} onClick={()=>action('recipient_accept',row.recipient.id)}>{t('service.accept')}</button>:null}
         {row.capabilities.can_decline?<button className={NETWORK_BUTTON} disabled={!fresh||locked||editor!==null} onClick={()=>action('recipient_decline',row.recipient.id)}>{t('service.decline')}</button>:null}

@@ -228,6 +228,15 @@
       "approve_completion": "Review the completion summary and date above before approving the work."
     }
   },
+  "conversation": {
+    "heading": "Private conversation",
+    "privacy": "Messages are visible to the property owner and the awarded provider.",
+    "sender": { "owner": "Property owner", "provider": "Awarded provider" },
+    "message": "Message",
+    "limit": "Use up to {{limit, number}} characters of plain text.",
+    "send": "Send message",
+    "empty": "No messages yet."
+  },
   "service": {
     "member_code": "Member #{{code}}",
     "your_account": "Your account",
