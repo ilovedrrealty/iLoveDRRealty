@@ -18,6 +18,7 @@ import { AdminEditListing, AdminSubmitListing } from './SubmitListing'
 import { TONE, FilterPills } from './shared'
 import { ListingDetailPanel } from '../../components/admin/ListingDetailPanel'
 import { ListingEditReviewPage } from '../../components/admin/ListingEditReviewPage'
+import { RoomPhotoTourEditReview } from '../../components/admin/RoomPhotoTourEditReview'
 import { ListingHistoryPanel } from '../../components/admin/ListingHistoryPanel'
 import { ConfirmModal } from '../../components/shared/ConfirmModal'
 
@@ -395,20 +396,22 @@ export function AdminListings() {
 
   async function handleApproveEdit(id: string) {
     setWorking(true)
-    await approveListingEdit(id)
-    setSelectedEdit(null)
-    await load()
-    setWorking(false)
-    toast.success(t('listings_page.toast_edit_approved'))
+    try {
+      await approveListingEdit(id)
+      setSelectedEdit(null)
+      await load()
+      toast.success(t('listings_page.toast_edit_approved'))
+    } finally { setWorking(false) }
   }
 
   async function handleRejectEdit(id: string, reason: string) {
     setWorking(true)
-    await rejectListingEdit(id, reason)
-    setSelectedEdit(null)
-    await load()
-    setWorking(false)
-    toast.success(t('listings_page.toast_edit_rejected'))
+    try {
+      await rejectListingEdit(id, reason)
+      setSelectedEdit(null)
+      await load()
+      toast.success(t('listings_page.toast_edit_rejected'))
+    } finally { setWorking(false) }
   }
 
   async function handleArchive(id: string) {
@@ -1012,7 +1015,15 @@ export function AdminListings() {
       )}
 
       {/* Edit review — full screen */}
-      {selectedEdit && (
+      {selectedEdit && (Object.prototype.hasOwnProperty.call(selectedEdit.proposed_data, 'room_photo_tour') ? (
+        <RoomPhotoTourEditReview key={selectedEdit.id}
+          edit={selectedEdit}
+          working={working}
+          onApprove={() => handleApproveEdit(selectedEdit.id)}
+          onReject={(reason) => handleRejectEdit(selectedEdit.id, reason)}
+          onClose={() => setSelectedEdit(null)}
+        />
+      ) : (
         <ListingEditReviewPage
           edit={selectedEdit}
           working={working}
@@ -1020,7 +1031,7 @@ export function AdminListings() {
           onReject={(reason) => handleRejectEdit(selectedEdit.id, reason)}
           onClose={() => setSelectedEdit(null)}
         />
-      )}
+      ))}
 
       {/* Archive confirmation */}
       {confirmArchive && (

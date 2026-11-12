@@ -7,7 +7,7 @@ const { pathToFileURL } = require('node:url')
 const { readFileSync } = require('node:fs')
 
 const src = resolve(__dirname, '../apps/landing/src')
-const contractUrl = pathToFileURL(resolve(src, 'data/listingRoomTour.ts')).href
+const contractUrl = pathToFileURL(resolve(__dirname, '../packages/listing-room-tour/index.ts')).href
 const objectBase = 'https://synthetic-project.supabase.co/storage/v1/object/public/listing-images/synthetic-listing/'
 const cover = objectBase + 'cover.jpg'
 const kitchen = objectBase + 'kitchen.jpg'
@@ -70,16 +70,47 @@ test('refuses private, signed, foreign, credentialed and noncanonical references
     kitchen.replace('/object/public/listing-images/', '/object/authenticated/property-network-private/'),
     kitchen.replace('/object/public/listing-images/', '/object/sign/property-network-private/') + '?token=synthetic',
     kitchen.replace('/listing-images/', '/property-network-private/'),
+    objectBase.replace('/synthetic-listing/', '/professionals/') + 'photo.jpg',
+    objectBase.replace('/synthetic-listing/', '/share/') + 'photo.jpg',
     kitchen.replace('synthetic-project.supabase.co', 'external.example'),
     kitchen.replace('https://', 'https://synthetic-user@'),
     kitchen.replace('/synthetic-listing/', '/synthetic-listing/../'),
     kitchen.replace('kitchen.jpg', 'private%2fphoto.jpg'),
     kitchen + '?token=synthetic',
+    kitchen + '#',
     kitchen + '#photo',
     '/property-network/media/synthetic',
   ]) {
     const payload = { groups: [{ ...tour.groups[0], photos: [{ url }] }] }
     assert.equal(await parseTour(payload, [url]), null)
+  }
+})
+
+test('preserves exact Supabase public gallery URLs with an empty query delimiter', async () => {
+  const exactImage = kitchen + '?'
+  const input = { groups: [{ ...tour.groups[0], photos: [{ url: exactImage }] }] }
+  assert.deepEqual(await parseTour(input, [exactImage]), input)
+  assert.equal(await parseTour(input, [kitchen]), null)
+})
+
+test('an author draft keeps explicit ordering and requires both captions or no caption', async () => {
+  const { prepareRoomTourDraft } = await import(contractUrl)
+  const captioned = { url: kitchen, caption_en: '  Kitchen counter ', caption_es: ' Encimera de la cocina  ' }
+  const group = { id: 'kitchen', label_en: ' Kitchen ', label_es: ' Cocina ', photos: [captioned, { url: detail, caption_en: ' ', caption_es: '' }] }
+  assert.deepEqual(prepareRoomTourDraft([group], images), { groups: [tour.groups[0]] })
+  assert.equal(prepareRoomTourDraft([{ ...group, photos: [{ ...captioned, caption_es: '' }] }], images), null)
+  assert.equal(prepareRoomTourDraft([group], [cover, detail]), null)
+  assert.equal(prepareRoomTourDraft([], images), null)
+})
+
+test('authoring and Admin decisions have independent English and Spanish controls', () => {
+  const dashboard = resolve(src, '../../dashboard/src')
+  const strings = lang => JSON.parse(readFileSync(resolve(dashboard, `locale/${lang}/common.json`), 'utf8')).room_photo_tour
+  const english = strings('en'), spanish = strings('es')
+  assert.deepEqual(Object.keys(english), Object.keys(spanish))
+  for (const key of ['edit', 'submit', 'replace_proposal', 'admin_review', 'photos_reviewed', 'approve', 'confirm_reject', 'preview_removal']) {
+    assert.ok(english[key] && spanish[key])
+    assert.notEqual(english[key], spanish[key])
   }
 })
 

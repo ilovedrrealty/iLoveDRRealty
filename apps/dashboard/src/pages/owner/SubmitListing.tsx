@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, ImagePlus, X, Star, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { submitListing, updateListing, uploadListingImages, type Listing } from '../../api/listings'
+import { RoomPhotoTourEditor } from '../../components/listings/RoomPhotoTourEditor'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { adminListingAction } from '../../lib/listingPublication'
 
@@ -269,6 +270,8 @@ export function OwnerSubmitListing({ go, tone, listing, onBack, isAdmin = false 
       >
         <ArrowLeft size={14} /> {t('submit_listing_page.back')}
       </button>
+
+      {listing?.status === 'active' && <RoomPhotoTourEditor key={listing.id} listingId={listing.id} />}
 
       {/* Pending approval notice */}
       <div className="mb-5 flex items-start gap-3 px-4 py-3.5 rounded-xl border text-[13px]"
