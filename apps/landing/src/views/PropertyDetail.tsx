@@ -497,6 +497,9 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
       </div>
     );
 
+  const safeTourUrl = listing.tour_3d_url ? safeUrl(listing.tour_3d_url) : null;
+  const activeTourUrl = galleryTab === '3dtour' ? safeTourUrl : null;
+
   return (
     <div className="max-w-310 mx-auto px-4 sm:px-6 py-5 pb-20">
       {/* Back */}
@@ -646,7 +649,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
 
       {/* Gallery */}
       <div className="mb-7">
-        {listing.tour_3d_url && safeUrl(listing.tour_3d_url) && (
+        {safeTourUrl && (
           <div className="flex gap-1 mb-3">
             <button
               onClick={() => setGalleryTab('photos')}
@@ -663,10 +666,10 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
             </button>
           </div>
         )}
-        {galleryTab === '3dtour' && listing.tour_3d_url && safeUrl(listing.tour_3d_url) ? (
+        {activeTourUrl ? (
           <div className="rounded-2xl overflow-hidden aspect-video">
             <iframe
-              src={safeUrl(listing.tour_3d_url)!}
+              src={activeTourUrl}
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -708,7 +711,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
             </div>
           </div>
         )}
-        {galleryTab === 'photos' && roomTour && <ListingRoomTour key={listing.id} tour={roomTour} />}
+        {!activeTourUrl && roomTour && <ListingRoomTour key={listing.id} tour={roomTour} />}
       </div>
 
       {/* Main two-column layout */}

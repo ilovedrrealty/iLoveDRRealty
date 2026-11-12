@@ -94,3 +94,12 @@ test('room viewer controls have independent English and Spanish copy and numbere
     assert.deepEqual(placeholders(english[key]), placeholders(spanish[key]))
   }
 })
+
+test('the room tour follows the visible photo gallery if a selected 3D tab has no safe tour URL', () => {
+  const source = readFileSync(resolve(src, 'views/PropertyDetail.tsx'), 'utf8')
+  assert.match(source, /const safeTourUrl = listing\.tour_3d_url \? safeUrl\(listing\.tour_3d_url\) : null/)
+  assert.match(source, /const activeTourUrl = galleryTab === '3dtour' \? safeTourUrl : null/)
+  const gallery = source.split('{/* Gallery */}')[1].split('{/* Main two-column layout */}')[0]
+  assert.match(gallery, /\{activeTourUrl \? \([\s\S]+<iframe\s+src=\{activeTourUrl\}/)
+  assert.match(gallery, /\{!activeTourUrl && roomTour && <ListingRoomTour\b/)
+})
