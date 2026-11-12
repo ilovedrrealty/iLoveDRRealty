@@ -6,6 +6,7 @@ import { professionalLabel, type ProfessionalOptions } from '../../../../../pack
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkFreshness, NetworkPagination, NetworkPanel, allowNetworkNavigation, networkError, useNetworkDraftGuard } from './NetworkShared'
 import { ServiceHistory } from './ProjectWorkspace'
+import { MaintenanceReminders } from './MaintenanceReminders'
 
 type Draft = { title: string; location: string; address: string; property_class: string; relationship: string; notes: string }
 const emptyDraft = (): Draft => ({ title: '', location: '', address: '', property_class: '', relationship: '', notes: '' })
@@ -79,7 +80,7 @@ export function PrivatePropertyCreate({ options, onCreated }: { options: Profess
   </form></NetworkPanel>
 }
 
-export function PrivatePropertyDetail({ id, options, onBack, onCreateProject }: { id: string; options: ProfessionalOptions; onBack: () => void; onCreateProject: (id: string) => void }) {
+export function PrivatePropertyDetail({ id, options, actorRole, onBack, onCreateProject }: { id: string; options: ProfessionalOptions; actorRole: string; onBack: () => void; onCreateProject: (id: string) => void }) {
   const { t } = useTranslation('property_network')
   const [revision, setRevision] = useState(0), [baseline, setBaseline] = useState<PrivateProperty | null>(null), [draft, setDraft] = useState<Draft>(emptyDraft)
   const [busy, setBusy] = useState(false), [writeError, setWriteError] = useState(''), [requiresRefresh, setRequiresRefresh] = useState(false), [refreshRequested, setRefreshRequested] = useState(false), [accessLost, setAccessLost] = useState(false)
@@ -116,6 +117,8 @@ export function PrivatePropertyDetail({ id, options, onBack, onCreateProject }: 
       {requiresRefresh ? <p role="status" className="text-sm text-amber-950">{t('registry.refresh_required')}</p> : null}
       {currentRecord && !requiresRefresh ? <header className="rounded-2xl bg-ink p-5 text-white"><p className="text-xs text-white/70">{t(`registry.statuses.${currentRecord.status}`)}</p><h1 className="mt-2 break-words text-2xl font-bold">{currentRecord.title}</h1><p className="mt-3 text-sm text-white/80">{t('registry.unverified')}</p>{currentRecord.can_create_project ? <button className={NETWORK_BUTTON+' mt-4'} disabled={dirty || busy} onClick={() => { if (allowNetworkNavigation()) onCreateProject(currentRecord.id) }}>{t('registry.create_project')}</button> : <p className="mt-4 text-sm">{t(currentRecord.status === 'archived' ? 'registry.archived_note' : 'registry.project_unavailable')}</p>}</header> : !baseline && !readError ? <p role="status">{t('loading')}</p> : null}
       {baseline ? <NetworkPanel title={t('registry.details')}><form className="space-y-4" onSubmit={event => { event.preventDefault(); void save() }}><fieldset className="space-y-4" disabled={!writable}><PropertyFields draft={draft} setDraft={setDraft} options={options} /><button className={NETWORK_PRIMARY} type="submit" disabled={!dirty || !validDraft(draft)}>{t(busy ? 'saving' : 'save_changes')}</button></fieldset>{dirty ? <p className="text-xs text-dim">{t('registry.draft_retained')}</p> : null}{record && record.version !== baseline.version ? <p role="status" className="text-sm text-amber-950">{t('registry.new_version')}</p> : null}</form>{baseline.status === 'active' ? <button className={NETWORK_BUTTON+' mt-5'} disabled={!writable || dirty} onClick={() => void save(true)}>{t('registry.archive')}</button> : null}{dirty ? <p className="mt-2 text-xs text-dim">{t('registry.save_before_archive')}</p> : null}</NetworkPanel> : null}
+      {currentRecord?.status === 'active' && currentRecord.can_manage && actorRole && actorRole !== 'admin' ? <MaintenanceReminders
+        source={{ kind: 'private', id }} parentFresh={!read.stale && !read.checking && !read.error && !requiresRefresh && !busy} /> : null}
       {record && !requiresRefresh ? <ServiceHistory propertyId={record.id} /> : null}
     </>}
   </div>

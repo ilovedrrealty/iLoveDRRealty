@@ -9,6 +9,8 @@ import {
 } from '../../api/propertyManagement'
 import { ManagementRecordDialog } from '../../components/management/ManagementRecordDialog'
 import { MANAGEMENT_BUTTON, MANAGEMENT_FIELD, MANAGEMENT_PRIMARY, ManagementRecordBadges, managementDate, managementMoney } from '../../components/management/ManagementDisplay'
+import { MaintenanceReminders } from '../../components/network/MaintenanceReminders'
+import { allowNetworkNavigation } from '../../components/network/NetworkShared'
 
 const ICONS = { overview: Building2, lease: FileText, maintenance: Wrench, inspection: ClipboardCheck, ledger: Wallet, task: ListChecks }
 const TABS: ManagementTab[] = ['overview', ...MANAGEMENT_KINDS]
@@ -53,7 +55,7 @@ function NativeStatement({ statement, onOpen, busy }: { statement: ManagementSta
   </div>
 }
 
-function PropertyWorkspace({ property }: { property: ManagedProperty }) {
+function PropertyWorkspace({ property, actorRole }: { property: ManagedProperty; actorRole: string }) {
   const { t } = useTranslation('management')
   const today = todayInDR()
   const [tab, setTab] = useState<ManagementTab>('overview')
@@ -98,9 +100,11 @@ function PropertyWorkspace({ property }: { property: ManagedProperty }) {
     finally { if (alive.current) setOpening(false) }
   }
   const applyPeriod = (event: FormEvent) => { event.preventDefault(); const valid = validStatementPeriod(rangeDraft.start, rangeDraft.end); setPeriodError(!valid); if (valid) setRange({ ...rangeDraft }) }
+  const canUseReminders = actorRole !== 'admin' && property.status === 'active' && property.can_approve
+    && statementError !== 'error_access' && statementError !== 'error_missing' && statement?.can_approve !== false
   return <div className="space-y-5">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-dim">{t('selected_property')}</p><h2 className="mt-1 text-xl font-bold text-ink">{property.title}</h2><p className="mt-1 text-sm text-ink2">{property.location}</p></div><button type="button" className={MANAGEMENT_BUTTON + ' inline-flex items-center gap-2'} disabled={statementBusy || recordsBusy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={16} aria-hidden="true" />{t('refresh')}</button></div>
-    <nav className="flex flex-wrap gap-2 rounded-2xl border border-line bg-paper p-2" aria-label={t('workspace_tabs')}>{TABS.map(key => { const Icon = ICONS[key]; return <button type="button" key={key} aria-pressed={key === tab} onClick={() => { setTab(key); setRecordPage(1); setOpenError(null) }} className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-sea ${key === tab ? 'bg-sea text-white' : 'text-ink2 hover:bg-line-soft'}`}><Icon size={17} aria-hidden="true" />{t(`tabs.${key}`)}</button> })}</nav>
+    <nav className="flex flex-wrap gap-2 rounded-2xl border border-line bg-paper p-2" aria-label={t('workspace_tabs')}>{TABS.map(key => { const Icon = ICONS[key]; return <button type="button" key={key} aria-pressed={key === tab} onClick={() => { if (key !== tab && !allowNetworkNavigation()) return; setTab(key); setRecordPage(1); setOpenError(null) }} className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-sea ${key === tab ? 'bg-sea text-white' : 'text-ink2 hover:bg-line-soft'}`}><Icon size={17} aria-hidden="true" />{t(`tabs.${key}`)}</button> })}</nav>
     <div className="rounded-xl border border-line bg-paper p-4"><div className="flex flex-wrap items-end justify-between gap-4"><form className="flex flex-wrap items-end gap-3" onSubmit={applyPeriod}><label className="text-xs font-semibold text-ink2">{t('period_start')}<input type="date" required className={MANAGEMENT_FIELD + ' mt-1'} value={rangeDraft.start} onChange={event => setRangeDraft(previous => ({ ...previous, start: event.target.value }))} /></label><label className="text-xs font-semibold text-ink2">{t('period_end')}<input type="date" required min={rangeDraft.start} className={MANAGEMENT_FIELD + ' mt-1'} value={rangeDraft.end} onChange={event => setRangeDraft(previous => ({ ...previous, end: event.target.value }))} /></label><button type="submit" className={MANAGEMENT_BUTTON}>{t('apply_period')}</button></form>{tab !== 'overview' ? <button type="button" className={MANAGEMENT_PRIMARY + ' inline-flex items-center gap-2'} onClick={() => setDialog({ kind: tab, record: null, key: `new:${tab}` })}><Plus size={17} aria-hidden="true" />{t('add_kind', { kind: t(`kinds.${tab}`) })}</button> : null}</div><p className="mt-2 text-xs text-dim">{t('period_filter_note')}</p>{periodError ? <p role="alert" className="mt-2 text-sm text-red-800">{t('error_period')}</p> : null}</div>
     {openError ? <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">{t(openError)}</p> : null}{opening ? <p role="status" className="text-sm text-dim">{t('opening_record')}</p> : null}
     {statementError ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">{t(statementError)}</p> : null}
@@ -111,11 +115,12 @@ function PropertyWorkspace({ property }: { property: ManagedProperty }) {
       {recordsBusy ? <p role="status" className="py-8 text-sm text-dim">{t('loading')}</p> : null}{recordsError ? <p role="alert" className="text-sm text-red-800">{t(recordsError)}</p> : null}
       {records ? <><RecordList key={`${tab}:${recordPage}:${refresh}`} records={records.items} onOpen={openRecord} busy={opening} /><div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4"><button type="button" className={MANAGEMENT_BUTTON} disabled={recordsBusy || recordPage <= 1} onClick={() => setRecordPage(page => page - 1)}>{t('previous')}</button><span className="text-xs text-dim">{t('page_number', { page: records.page, total: Math.max(1, Math.ceil(records.total / records.page_size)) })}</span><button type="button" className={MANAGEMENT_BUTTON} disabled={recordsBusy || recordPage * records.page_size >= records.total} onClick={() => setRecordPage(page => page + 1)}>{t('next')}</button></div></> : null}
     </Panel>}
+    {tab === 'maintenance' && canUseReminders ? <MaintenanceReminders source={{ kind: 'listing', id: property.id }} /> : null}
     {dialog ? <ManagementRecordDialog key={dialog.key} listingId={property.id} kind={dialog.kind} record={dialog.record} canApprove={statement?.can_approve ?? property.can_approve} onClose={() => setDialog(null)} onSaved={() => setRefresh(value => value + 1)} /> : null}
   </div>
 }
 
-function ManagementWorkspace() {
+function ManagementWorkspace({ actorRole }: { actorRole: string }) {
   const { t } = useTranslation('management')
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
@@ -139,14 +144,14 @@ function ManagementWorkspace() {
     <Panel title={t('choose_property')} description={t('scope_note')}>
       <form className="flex flex-wrap gap-3" onSubmit={find}><label className="min-w-0 flex-1"><span className="sr-only">{t('search_properties')}</span><input type="search" className={MANAGEMENT_FIELD} maxLength={160} value={search} placeholder={t('search_placeholder')} onChange={event => setSearch(event.target.value)} /></label><button type="submit" className={MANAGEMENT_BUTTON + ' inline-flex items-center gap-2'} disabled={busy}><Search size={16} aria-hidden="true" />{t('search')}</button></form>
       {busy ? <p role="status" className="mt-4 text-sm text-dim">{t('loading_properties')}</p> : null}{error ? <div role="alert" className="mt-4 text-sm text-red-800"><p>{t(error)}</p><button type="button" className={MANAGEMENT_BUTTON + ' mt-2'} onClick={() => setRefresh(value => value + 1)}>{t('refresh')}</button></div> : null}
-      {properties ? <><label className="mt-4 block text-xs font-semibold text-ink2">{t('choose_property')}<select className={MANAGEMENT_FIELD + ' mt-1'} value={selected?.id ?? ''} onChange={event => { const property = properties.items.find(row => row.id === event.target.value); if (property) setSelected(property) }}><option value="" disabled>{t('choose_property')}</option>{selected && !properties.items.some(row => row.id === selected.id) ? <option value={selected.id}>{selected.title} · {selected.location}</option> : null}{properties.items.map(property => <option key={property.id} value={property.id}>{property.title} · {property.location}</option>)}</select></label>{!properties.items.length ? <p className="mt-4 rounded-xl bg-line-soft p-4 text-sm text-ink2">{t(query ? 'empty_property_search' : 'empty_properties')}</p> : null}<div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-dim">{t('properties_total', { count: properties.total })}</p>{properties.total > properties.page_size ? <div className="flex items-center gap-3"><button type="button" className={MANAGEMENT_BUTTON} disabled={busy || page <= 1} onClick={() => setPage(value => value - 1)}>{t('previous')}</button><span className="text-xs text-dim">{t('page_number', { page: properties.page, total: Math.ceil(properties.total / properties.page_size) })}</span><button type="button" className={MANAGEMENT_BUTTON} disabled={busy || page * properties.page_size >= properties.total} onClick={() => setPage(value => value + 1)}>{t('next')}</button></div> : null}</div></> : null}
+      {properties ? <><label className="mt-4 block text-xs font-semibold text-ink2">{t('choose_property')}<select className={MANAGEMENT_FIELD + ' mt-1'} value={selected?.id ?? ''} onChange={event => { const property = properties.items.find(row => row.id === event.target.value); if (property && allowNetworkNavigation()) setSelected(property) }}><option value="" disabled>{t('choose_property')}</option>{selected && !properties.items.some(row => row.id === selected.id) ? <option value={selected.id}>{selected.title} · {selected.location}</option> : null}{properties.items.map(property => <option key={property.id} value={property.id}>{property.title} · {property.location}</option>)}</select></label>{!properties.items.length ? <p className="mt-4 rounded-xl bg-line-soft p-4 text-sm text-ink2">{t(query ? 'empty_property_search' : 'empty_properties')}</p> : null}<div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-dim">{t('properties_total', { count: properties.total })}</p>{properties.total > properties.page_size ? <div className="flex items-center gap-3"><button type="button" className={MANAGEMENT_BUTTON} disabled={busy || page <= 1} onClick={() => setPage(value => value - 1)}>{t('previous')}</button><span className="text-xs text-dim">{t('page_number', { page: properties.page, total: Math.ceil(properties.total / properties.page_size) })}</span><button type="button" className={MANAGEMENT_BUTTON} disabled={busy || page * properties.page_size >= properties.total} onClick={() => setPage(value => value + 1)}>{t('next')}</button></div> : null}</div></> : null}
     </Panel>
-    {selected && error !== 'error_access' ? <PropertyWorkspace key={selected.id} property={selected} /> : !busy && !error ? <div className="flex items-start gap-3 rounded-2xl border border-line bg-paper p-6 text-sm text-ink2"><CalendarDays size={22} className="shrink-0 text-sea" aria-hidden="true" /><p>{t('select_property_hint')}</p></div> : null}
+    {selected && error !== 'error_access' ? <PropertyWorkspace key={selected.id} property={selected} actorRole={actorRole} /> : !busy && !error ? <div className="flex items-start gap-3 rounded-2xl border border-line bg-paper p-6 text-sm text-ink2"><CalendarDays size={22} className="shrink-0 text-sea" aria-hidden="true" /><p>{t('select_property_hint')}</p></div> : null}
   </div>
 }
 
 export function PropertyManagement({ user }: { user: UserInfo }) {
   const { t } = useTranslation('management')
   if (!['admin', 'owner', 'realtor'].includes(user.role)) return <div role="alert" className="rounded-xl border border-line bg-paper p-6 text-sm text-ink2">{t('error_access')}</div>
-  return <ManagementWorkspace key={`${user.id}:${user.role}`} />
+  return <ManagementWorkspace key={`${user.id}:${user.role}`} actorRole={user.role} />
 }
