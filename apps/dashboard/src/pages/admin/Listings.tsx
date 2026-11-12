@@ -8,7 +8,7 @@ import {
 import toast from 'react-hot-toast'
 import {
   getAdminListings, getAdminListing, approveAdminListing, rejectAdminListing, archiveAdminListing,
-  getAdminListingEdits, approveListingEdit, rejectListingEdit,
+  getAdminListingEdits, approveListingEdit, approveListingRoomPhotoTour, rejectListingEdit,
   getAdminDealRequests, approveDealRequest, rejectDealRequest,
   clearListingDeal, setListingDeal, assignAdminListing,
   getAdminActivityLog, getAdminAgents, getAdminStats,
@@ -258,8 +258,13 @@ const CO_LISTING_FILTERS = ['All', 'Co-Listed', 'No Co-Listing'] as const
 const COLS = 'grid-cols-[2fr_0.9fr_1fr_1fr_1.6fr_1fr_40px]'
 const PAGE_SIZE = 50
 
+function isRoomTourEdit(edit: AdminListingEdit) {
+  return Object.prototype.hasOwnProperty.call(edit.proposed_data, 'room_photo_tour')
+}
+
 export function AdminListings() {
   const { t } = useTranslation('admin')
+  const { t: tRoom } = useTranslation('common', { keyPrefix: 'room_photo_tour' })
   const [mainItems,    setMainItems]    = useState<AdminListing[]>([])
   const [mainTotal,    setMainTotal]    = useState(0)
   const [pendingItems, setPendingItems] = useState<AdminListing[]>([])
@@ -394,10 +399,12 @@ export function AdminListings() {
     toast.success(t('listings_page.toast_rejected'))
   }
 
-  async function handleApproveEdit(id: string) {
+  async function handleApproveEdit(edit: AdminListingEdit, roomTourReviewed = false) {
+    if (roomTourReviewed !== isRoomTourEdit(edit)) throw new Error('Invalid room-tour review state')
     setWorking(true)
     try {
-      await approveListingEdit(id)
+      if (roomTourReviewed) await approveListingRoomPhotoTour(edit.id)
+      else await approveListingEdit(edit.id)
       setSelectedEdit(null)
       await load()
       toast.success(t('listings_page.toast_edit_approved'))
@@ -674,24 +681,32 @@ export function AdminListings() {
                     <div className="text-[12px] text-dim shrink-0 hidden sm:block">
                       {edit.submitted_by_name ?? '—'} · {fmtRelative(edit.submitted_at, t)}
                     </div>
-                    {/* Desktop: text buttons */}
+                    {isRoomTourEdit(edit) ? (
+                      <button type="button" aria-label={tRoom('admin_review')} disabled={working}
+                        onClick={event => { event.stopPropagation(); setSelectedEdit(edit) }}
+                        className="flex min-h-11 shrink-0 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-ink disabled:opacity-50">
+                        <GitCompare size={14} aria-hidden="true" /> {t('listings_page.review')}
+                      </button>
+                    ) : <>
+                    {/* Desktop: text buttons for ordinary edits */}
                     <div className="hidden sm:flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => handleApproveEdit(edit.id)} disabled={working} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white cursor-pointer disabled:opacity-50 border-0" style={{ background: '#1f7a3d' }}>
+                      <button onClick={() => handleApproveEdit(edit)} disabled={working} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white cursor-pointer disabled:opacity-50 border-0" style={{ background: '#1f7a3d' }}>
                         <Check size={11} /> {t('listings_page.approve')}
                       </button>
                       <button onClick={() => setSelectedEdit(edit)} disabled={working} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-line text-[12px] font-semibold text-ink bg-paper cursor-pointer disabled:opacity-50">
                         <GitCompare size={11} /> {t('listings_page.review')}
                       </button>
                     </div>
-                    {/* Mobile: icon-only buttons */}
+                    {/* Mobile: icon-only buttons for ordinary edits */}
                     <div className="sm:hidden flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => handleApproveEdit(edit.id)} disabled={working} className="w-8 h-8 rounded-full flex items-center justify-center border-0 cursor-pointer disabled:opacity-50 shrink-0" style={{ background: '#1f7a3d' }}>
+                      <button onClick={() => handleApproveEdit(edit)} disabled={working} className="w-8 h-8 rounded-full flex items-center justify-center border-0 cursor-pointer disabled:opacity-50 shrink-0" style={{ background: '#1f7a3d' }}>
                         <Check size={14} color="white" />
                       </button>
                       <button onClick={() => setSelectedEdit(edit)} disabled={working} className="w-8 h-8 rounded-full flex items-center justify-center border border-violet-200 bg-violet-50 cursor-pointer disabled:opacity-50 shrink-0">
                         <GitCompare size={13} color="#7c3aed" />
                       </button>
                     </div>
+                    </>}
                   </div>
                 ))}
               </div>
@@ -1015,11 +1030,11 @@ export function AdminListings() {
       )}
 
       {/* Edit review — full screen */}
-      {selectedEdit && (Object.prototype.hasOwnProperty.call(selectedEdit.proposed_data, 'room_photo_tour') ? (
+      {selectedEdit && (isRoomTourEdit(selectedEdit) ? (
         <RoomPhotoTourEditReview key={selectedEdit.id}
           edit={selectedEdit}
           working={working}
-          onApprove={() => handleApproveEdit(selectedEdit.id)}
+          onApprove={() => handleApproveEdit(selectedEdit, true)}
           onReject={(reason) => handleRejectEdit(selectedEdit.id, reason)}
           onClose={() => setSelectedEdit(null)}
         />
@@ -1027,7 +1042,7 @@ export function AdminListings() {
         <ListingEditReviewPage
           edit={selectedEdit}
           working={working}
-          onApprove={() => handleApproveEdit(selectedEdit.id)}
+          onApprove={() => handleApproveEdit(selectedEdit)}
           onReject={(reason) => handleRejectEdit(selectedEdit.id, reason)}
           onClose={() => setSelectedEdit(null)}
         />

@@ -114,6 +114,24 @@ test('authoring and Admin decisions have independent English and Spanish control
   }
 })
 
+test('room proposals require visual review in both Admin queue layouts before approval', () => {
+  const dashboard = resolve(src, '../../dashboard/src')
+  const queue = readFileSync(resolve(dashboard, 'pages/admin/Listings.tsx'), 'utf8')
+  const pending = queue.split('Pending Edits section')[1].split('Active Deals section')[0]
+  const [room, ordinary] = pending.split(') : <>')
+  assert.match(room, /\{isRoomTourEdit\(edit\) \? \(/)
+  assert.match(room, /aria-label=\{tRoom\('admin_review'\)\}/)
+  assert.doesNotMatch(room, /handleApproveEdit/)
+  assert.equal((ordinary.match(/handleApproveEdit\(edit\)/g) ?? []).length, 2)
+  assert.equal((queue.match(/handleApproveEdit\(selectedEdit, true\)/g) ?? []).length, 1)
+  assert.match(queue, /if \(roomTourReviewed !== isRoomTourEdit\(edit\)\) throw/)
+  const review = readFileSync(resolve(dashboard, 'components/admin/RoomPhotoTourEditReview.tsx'), 'utf8')
+  assert.match(review, /if \(approve && valid && reviewed && photosReady\) await onApprove\(\)/)
+  const api = readFileSync(resolve(dashboard, 'api/admin.ts'), 'utf8')
+  assert.match(api, /approveListingEdit\(id: string\)[\s\S]*?client\.post\(`\/admin\/listing-edits\/\$\{id\}\/approve`\)/)
+  assert.match(api, /approveListingRoomPhotoTour\(id: string\)[\s\S]*?client\.post\(`\/admin\/listing-edits\/\$\{id\}\/approve`, \{ room_photo_tour_reviewed: true \}\)/)
+})
+
 test('room viewer controls have independent English and Spanish copy and numbered placeholders', () => {
   const roomTour = lang => JSON.parse(readFileSync(resolve(src, `locales/${lang}/property_detail.json`), 'utf8')).room_tour
   const english = roomTour('en'), spanish = roomTour('es')
