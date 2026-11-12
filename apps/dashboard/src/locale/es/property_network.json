@@ -183,6 +183,51 @@
     "retry_same_project": "Reintentar este mismo proyecto",
     "not_found_project": "Esta referencia no devolvió un proyecto accesible. Se conserva la solicitud. Esta consulta no ha creado un proyecto ni restablecido un acceso revocado."
   },
+  "work": {
+    "title": "Visita de servicio y aprobación del trabajo",
+    "privacy": "Gestiona aquí el trabajo adjudicado. La programación y las notas de revisión quedan en esta solicitud. El resumen de finalización aprobado se agrega al historial del proyecto y de la propiedad.",
+    "time_zone_label": "Zona horaria",
+    "time_zone": "Las horas se muestran en el horario de Santo Domingo (UTC−04:00).",
+    "visit_start": "Fecha y hora de inicio (Santo Domingo)",
+    "duration": "Duración en minutos (15–480)",
+    "minutes_one": "{{count}} minuto",
+    "minutes_other": "{{count}} minutos",
+    "confirmed_visit": "Visita confirmada",
+    "proposed_visit": { "owner": "Visita propuesta por la persona propietaria", "provider": "Visita propuesta por el profesional" },
+    "completed_on": "Fecha de finalización del trabajo (Santo Domingo)",
+    "completion_summary": "Resumen del trabajo realizado",
+    "private_review_note": "Nota privada sobre los cambios solicitados",
+    "share_in_history": "Apruebo este resumen y entiendo que aparecerá en el registro de avances del proyecto y en el historial de servicios de la propiedad para las personas con acceso.",
+    "confirm_action": "Confirmar acción",
+    "open_history": "Abrir el registro de avances del proyecto",
+    "action_unavailable": "Esta acción ya no está disponible. Cierra el borrador y revisa el registro actual.",
+    "states": {
+      "unscheduled": "Visita sin programar",
+      "proposed": "Visita propuesta pendiente de confirmación",
+      "confirmed": "Visita confirmada",
+      "cancelled": "Visita cancelada",
+      "completion_requested": "Trabajo pendiente de aprobación",
+      "completed": "Trabajo finalizado y aprobado"
+    },
+    "actions": {
+      "propose_visit": "Proponer una fecha y hora",
+      "accept_visit": "Aceptar la visita propuesta",
+      "decline_visit": "Rechazar la visita propuesta",
+      "cancel_visit": "Cancelar la visita",
+      "request_completion": "Solicitar la aprobación del trabajo",
+      "request_changes": "Solicitar cambios",
+      "approve_completion": "Aprobar el trabajo realizado"
+    },
+    "help": {
+      "propose_visit": "Elige una fecha y hora futuras en Santo Domingo. Si ya hay una visita confirmada, se mantiene hasta que se acepte la nueva propuesta.",
+      "accept_visit": "Confirma la fecha, la hora y la duración que aparecen arriba.",
+      "decline_visit": "Rechaza la fecha y hora propuestas. Si ya hay una visita confirmada, se mantiene.",
+      "cancel_visit": "Cancela la visita de esta solicitud adjudicada. Se puede proponer otra fecha y hora más adelante.",
+      "request_completion": "Describe el trabajo realizado e indica cuándo terminó. La persona propietaria revisará el resumen antes de que pueda agregarse al historial del proyecto.",
+      "request_changes": "Explica qué debe cambiar el profesional. Esta nota queda en la solicitud de servicio.",
+      "approve_completion": "Revisa el resumen y la fecha de finalización que aparecen arriba antes de aprobar el trabajo."
+    }
+  },
   "service": {
     "member_code": "Miembro n.º {{code}}",
     "your_account": "Tu cuenta",

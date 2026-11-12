@@ -4,20 +4,27 @@ import { isAxiosError } from 'axios'
 import { ServiceInputError, getServiceSubmission, prepareServiceAction, runServiceAction, type ServiceAction, type ServiceCurrent } from '../../api/serviceWorkflow'
 import { NETWORK_BUTTON, networkError } from './NetworkShared'
 
+type ServiceAttemptTransport<Action, Current, Read> = {
+  prepare: (action: Action) => unknown
+  execute: (action: Action, signal: AbortSignal) => Promise<Current>
+  resolve: (action: Action, signal: AbortSignal) => Promise<Current>
+  canRetry?: (action: Action, current: Read) => boolean
+}
+
 /** One actor/context-scoped service attempt; never retries as a side effect. */
-export function useServiceMutation(reauthorize: (signal: AbortSignal) => Promise<unknown>, onApplied: (value: ServiceCurrent) => void, onReviewed: (value: unknown) => void, blocked = false) {
-  const [pending, setPending] = useState<ServiceAction | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [checked, setChecked] = useState(false), [denied, setDenied] = useState(false), [saved,setSaved]=useState(false)
-  const alive=useRef(true), request=useRef<AbortController|null>(null), reviewed=useRef<unknown>(null), conflict=useRef(false), blockedRef=useRef(blocked), inFlight=useRef(false)
+export function useServiceAttempt<Action, Current, Read>(transport: ServiceAttemptTransport<Action, Current, Read>, reauthorize: (signal: AbortSignal) => Promise<Read>, onApplied: (value: Current) => void, onReviewed: (value: Read) => void, blocked = false) {
+  const [pending, setPending] = useState<Action | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [checked, setChecked] = useState(false), [denied, setDenied] = useState(false), [saved,setSaved]=useState(false)
+  const alive=useRef(true), request=useRef<AbortController|null>(null), reviewed=useRef<Read|null>(null), conflict=useRef(false), blockedRef=useRef(blocked), inFlight=useRef(false)
   blockedRef.current=blocked
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;request.current?.abort()}},[])
   useEffect(()=>{if(blocked){request.current?.abort();inFlight.current=false;setBusy(false);setDenied(true)}},[blocked])
   const active=(controller:AbortController)=>alive.current && !blockedRef.current && request.current===controller && !controller.signal.aborted
-  function complete(value:ServiceCurrent) {setPending(null);setError('');setChecked(false);setSaved(true);conflict.current=false;reviewed.current=null;onApplied(value)}
-  async function execute(action:ServiceAction) {
+  function complete(value:Current) {setPending(null);setError('');setChecked(false);setSaved(true);conflict.current=false;reviewed.current=null;onApplied(value)}
+  async function execute(action:Action) {
     if(inFlight.current||denied||blockedRef.current||!alive.current)return
     inFlight.current=true
     const controller=new AbortController();request.current=controller;setPending(action);setBusy(true);setChecked(false);setError('');setSaved(false)
-    try {const result=await runServiceAction(action,controller.signal);if(active(controller))complete(result)}
+    try {const result=await transport.execute(action,controller.signal);if(active(controller))complete(result)}
     catch(cause){if(active(controller)){const code=networkError(cause);conflict.current=code==='error_conflict'||code==='error_fields';setError(code);if(code==='error_access')setDenied(true)}}
     finally{if(request.current===controller)inFlight.current=false;if(active(controller))setBusy(false)}
   }
@@ -25,13 +32,20 @@ export function useServiceMutation(reauthorize: (signal: AbortSignal) => Promise
     if(!pending||inFlight.current||denied||blockedRef.current||!alive.current)return
     inFlight.current=true
     const controller=new AbortController();request.current=controller;setBusy(true);setChecked(false);reviewed.current=null
-    try{const result=await getServiceSubmission(pending,controller.signal);if(active(controller))complete(result.current)}
+    try{const result=await transport.resolve(pending,controller.signal);if(active(controller))complete(result)}
     catch(cause){
       if(!active(controller))return
       if(isAxiosError(cause)&&cause.response?.status===404){
         // A resolver404 is ambiguous. A separate actual authorized read is
         // required even to offer an explicit identical-body/key retry.
-        try{const fresh=await reauthorize(controller.signal);if(active(controller)){reviewed.current=fresh;setChecked(true)}}
+        try {
+          const fresh = await reauthorize(controller.signal)
+          if (active(controller)) {
+            reviewed.current = fresh
+            if (transport.canRetry && !transport.canRetry(pending, fresh)) conflict.current = true
+            setChecked(true)
+          }
+        }
         catch(access){if(active(controller)){const code=networkError(access);setError(code);if(code==='error_access')setDenied(true)}}
       }else{const code=networkError(cause);setError(code);if(code==='error_access')setDenied(true)}
     }finally{if(request.current===controller)inFlight.current=false;if(active(controller))setBusy(false)}
@@ -41,18 +55,29 @@ export function useServiceMutation(reauthorize: (signal: AbortSignal) => Promise
     onReviewed(reviewed.current);setPending(null);setError('');setChecked(false);conflict.current=false;reviewed.current=null
   }
   return {pending,busy,error,denied,checked,saved,conflicted:conflict.current,
-    send:(action:ServiceAction)=>{
+    send:(action:Action)=>{
       if(pending||inFlight.current||denied||blockedRef.current||!alive.current)return
       // This synchronous, pure boundary cannot have sent anything. A response
       // contract error thrown later by execute must never release its attempt.
-      try{prepareServiceAction(action)}
+      try{transport.prepare(action)}
       catch(cause){setError(cause instanceof ServiceInputError?'error_fields':'error_unknown');setSaved(false);return}
       void execute(action)
     },
     check:()=>void check(), retry:()=>{if(pending&&checked&&!conflict.current)void execute(pending)},reviewConflict}
 }
+
+const serviceTransport: ServiceAttemptTransport<ServiceAction, ServiceCurrent, unknown> = {
+  prepare: prepareServiceAction,
+  execute: runServiceAction,
+  resolve: async (action, signal) => (await getServiceSubmission(action, signal)).current,
+}
+
+export function useServiceMutation(reauthorize: (signal: AbortSignal) => Promise<unknown>, onApplied: (value: ServiceCurrent) => void, onReviewed: (value: unknown) => void, blocked = false) {
+  return useServiceAttempt(serviceTransport, reauthorize, onApplied, onReviewed, blocked)
+}
+
 export type ServiceMutation = ReturnType<typeof useServiceMutation>
-export function ServiceMutationStatus({ mutation }: { mutation:ServiceMutation }) {
+export function ServiceMutationStatus({ mutation }: { mutation: Omit<ServiceMutation, 'send'|'pending'> & { pending: unknown } }) {
   const {t}=useTranslation('property_network')
   const errorRef=useRef<HTMLParagraphElement|null>(null)
   useEffect(()=>{if(mutation.error)errorRef.current?.focus()},[mutation.error])

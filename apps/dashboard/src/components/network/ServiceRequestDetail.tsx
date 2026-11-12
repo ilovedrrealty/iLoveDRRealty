@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getProject } from '../../api/propertyNetwork'
 import { SERVICE_OPERATIONS, getServiceComparison, getServiceEvents, getServiceProposals, getServiceRequest, type ManagedRecipient, type ServiceAction, type ServiceOperation, type ServiceRequest, type ServiceProposal } from '../../api/serviceWorkflow'
 import { professionalLabel, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkDate, NetworkFreshness, NetworkPagination, NetworkPanel, allowNetworkNavigation, networkError, useNetworkDraftGuard } from './NetworkShared'
 import { ServiceMutationStatus, useServiceMutation } from './ServiceWorkflowShared'
 import { ServiceProposalCard, ServiceProposalFields, termsDraft, termsInput, validTerms, type TermsDraft } from './ServiceProposalFields'
+import { ServiceWorkPanel } from './ServiceWorkPanel'
 
 type Editor={operation:'provider_quote'|'owner_counter'|'request_award';recipientId:string;requestVersion:number|null;recipientVersion:number;proposalId:string|null;proposalVersion:number|null;terms:TermsDraft;projectTitle:string;projectSummary:string;ack:boolean}
 function thread(row:ServiceRequest,id:string) {
@@ -73,11 +75,18 @@ export function ServiceRequestDetail({id,view,options,onBack,onProject}:{id:stri
   }
   function matchComparison(recipient:ManagedRecipient){if(row?.view!=='managed')return false;const current=row.recipients.find(item=>item.id===recipient.id);return !!current&&current.version===recipient.version&&current.current_proposal?.id===recipient.current_proposal?.id&&current.current_proposal?.version===recipient.current_proposal?.version&&comparison.data?.request_version===row.version&&!comparison.stale&&!comparison.error&&!comparison.checking}
   const category=options.categories.find(item=>item.id===row?.category_id)
+  const workProjectId=row?.can_open_project&&(row.view==='managed'?row.status==='awarded':row.recipient.status==='awarded')?row.project_id:null
+  // Opening a project does not confer access to the owner's private service record.
+  const projectAccess=useNetworkRead(`service-work-access:${view}:${id}:${workProjectId}`,signal=>getProject(workProjectId!,signal),!!workProjectId&&!denied&&!mutation.conflicted)
+  const projectRole=projectAccess.data?.my_role
+  const canReadWork=workProjectId&&(view==='managed'?projectRole==='owner'||projectRole==='admin':projectRole==='professional')
+  const workAccessFresh=!projectAccess.stale&&!projectAccess.error&&!projectAccess.checking
   return <div className="min-w-0 break-words space-y-5"><button className={NETWORK_BUTTON} onClick={()=>{if(allowNetworkNavigation())onBack()}}>{t('service.back')}</button><NetworkFreshness read={{...read,refresh:()=>{read.refresh();comparison.refresh();events.refresh();history.refresh()}}}/>
     {denied?<p role="alert">{t('error_access')}</p>:<>{read.error?<p role="alert">{t(networkError(read.error))}</p>:null}{row?<>
       {!mutation.conflicted?<><NetworkPanel title={row.title}><p className="text-sm font-semibold">{row.view==='managed'?t('service.request_states.'+row.status):t('service.recipient_states.'+row.recipient.status)}</p><p className="mt-2 text-sm">{category?professionalLabel(category.label,i18n.language):row.category_id}</p><p className="mt-3 break-words whitespace-pre-wrap">{row.brief}</p><dl className="mt-4 grid gap-2 text-sm"><div><dt className="font-semibold">{t('service.requester_alias')}</dt><dd>{row.requester_alias}</dd></div><div><dt className="font-semibold">{t('service.coarse_area')}</dt><dd>{row.area_label||'—'}</dd></div><div><dt className="font-semibold">{t('service.desired_start')}</dt><dd>{row.desired_start_on?<NetworkDate value={row.desired_start_on}/>: '—'}</dd></div></dl><p className="mt-2 text-xs text-dim">{t('service.not_appointment')}</p>{row.view==='managed'?<p className="mt-4 text-sm">{t('service.source')}: {row.source.title}</p>:null}
         {row.can_open_project&&row.project_id?<button className={NETWORK_PRIMARY+' mt-4'} disabled={locked||editor!==null} onClick={()=>{if(row.project_id&&allowNetworkNavigation())onProject(row.project_id)}}>{t('service.open_project')}</button>:null}
       </NetworkPanel>
+      {canReadWork?<ServiceWorkPanel key={`${id}:${workProjectId}:${view}`} requestId={id} projectId={workProjectId} parentFresh={fresh&&workAccessFresh&&!locked&&!editor} onProject={onProject}/>:null}
       {row.view==='received'?<NetworkPanel title={t('service.my_thread')}><p className="mb-3 text-sm">{t('service.accept_help')}</p><div className="flex flex-wrap gap-3">
         {row.capabilities.can_accept?<button className={NETWORK_PRIMARY} disabled={!fresh||locked||editor!==null} onClick={()=>action('recipient_accept',row.recipient.id)}>{t('service.accept')}</button>:null}
         {row.capabilities.can_decline?<button className={NETWORK_BUTTON} disabled={!fresh||locked||editor!==null} onClick={()=>action('recipient_decline',row.recipient.id)}>{t('service.decline')}</button>:null}
