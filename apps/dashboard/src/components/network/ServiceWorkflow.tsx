@@ -8,6 +8,10 @@ import { NETWORK_BUTTON, NETWORK_PRIMARY, NetworkDate, NetworkFreshness, Network
 import { ServicePreferences } from './ServicePreferences'
 import { ServiceRequestCreate } from './ServiceRequestCreate'
 import { ServiceRequestDetail } from './ServiceRequestDetail'
+import { ServiceFavorites } from './ServiceFavorites'
+
+const SERVICE_TABS = ['managed', 'received', 'preferences'] as const
+type ServiceTab = typeof SERVICE_TABS[number] | 'favorites'
 
 function ServiceRequestList({view,onOpen,onCreate}:{view:'managed'|'received';onOpen:(id:string)=>void;onCreate:()=>void}) {
   const {t}=useTranslation('property_network')
@@ -21,16 +25,19 @@ function ServiceRequestList({view,onOpen,onCreate}:{view:'managed'|'received';on
 }
 export function ServiceWorkflow({options,role,actorId,actorCode,onProject}:{options:ProfessionalOptions;role:string;actorId:string;actorCode:number|null;onProject:(id:string)=>void}) {
   const {t}=useTranslation('property_network')
-  const [tab,setTab]=useState<'managed'|'received'|'preferences'>('managed'),[detail,setDetail]=useState('')
+  const [selectedTab, setTab] = useState<ServiceTab>('managed'),[detail,setDetail]=useState('')
   const [draft, setDraft] = useState<'new' | ServiceRebookContext | null>(null)
+  const canUseFavorites = role !== 'admin'
+  const tabs: readonly ServiceTab[] = canUseFavorites ? [...SERVICE_TABS, 'favorites'] : SERVICE_TABS
+  const tab = selectedTab === 'favorites' && !canUseFavorites ? 'managed' : selectedTab
   const rebook = draft === 'new' ? null : draft
   const heading=useRef<HTMLHeadingElement|null>(null)
   useEffect(()=>{heading.current?.focus()},[tab,detail,draft])
-  function navigate(next:typeof tab){if(allowNetworkNavigation()){setTab(next);setDetail('');setDraft(null)}}
+  function navigate(next:ServiceTab){if(allowNetworkNavigation()){setTab(next);setDetail('');setDraft(null)}}
   function closeDraft() { if (allowNetworkNavigation()) setDraft(null) }
   function opened(id: string) { setDraft(null); setDetail(id) }
-  return <div className="min-w-0 space-y-5"><h2 ref={heading} tabIndex={-1} className="text-xl font-semibold">{t('main.services')}</h2><p className="text-sm text-ink2">{t('service.intro')}</p><nav className="flex flex-wrap gap-2" aria-label={t('service.navigation')}>{(['managed','received','preferences'] as const).map(value=><button key={value} className={tab===value?NETWORK_PRIMARY:NETWORK_BUTTON} aria-current={tab===value?'page':undefined} onClick={()=>navigate(value)}>{t('service.'+value)}</button>)}</nav>
-    {tab==='preferences'?<ServicePreferences options={options} actorId={actorId}/>:draft?<>
+  return <div className="min-w-0 space-y-5"><h2 ref={heading} tabIndex={-1} className="text-xl font-semibold">{t('main.services')}</h2><p className="text-sm text-ink2">{t('service.intro')}</p><nav className="flex flex-wrap gap-2" aria-label={t('service.navigation')}>{tabs.map(value=><button key={value} className={tab===value?NETWORK_PRIMARY:NETWORK_BUTTON} aria-current={tab===value?'page':undefined} onClick={()=>navigate(value)}>{t(value==='favorites'?'favorites.title':'service.'+value)}</button>)}</nav>
+    {tab==='favorites'?<ServiceFavorites key={actorId} actorId={actorId}/>:tab==='preferences'?<ServicePreferences options={options} actorId={actorId}/>:draft?<>
       <button className={NETWORK_BUTTON} onClick={closeDraft}>{t(rebook?'rebook.back':'service.back')}</button>
       <ServiceRequestCreate key={rebook?.request_id??'new'} options={options} role={role} actorCode={actorCode} rebook={rebook} onCreated={opened}/>
     </>:detail?<ServiceRequestDetail key={tab+':'+detail} id={detail} view={tab} role={role} options={options} onBack={()=>setDetail('')} onProject={onProject} onRebook={setDraft}/>:<ServiceRequestList key={tab} view={tab} onOpen={setDetail} onCreate={()=>setDraft('new')}/>}

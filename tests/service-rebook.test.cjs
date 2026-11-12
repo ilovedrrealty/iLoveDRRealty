@@ -114,6 +114,7 @@ function renderDraft(rebook, freshContext, error = null, language = 'en') {
     react: React, 'react/jsx-runtime': jsxRuntime, 'react-i18next': { useTranslation: () => ({ t, i18n: { language } }) },
     '../../api/propertyNetwork': { getPrivateProperties: never, getPrivateProperty: never, getNetworkProperties: never },
     '../../api/serviceRebook': api,
+    '../../api/serviceFavorites': { saveServiceFavorite: never },
     '../../api/serviceWorkflow': { getServiceProviders: never, ServiceContractError },
     '../../../../../packages/professionals/src': { professionalLabel: labels => labels[language] },
     '../../hooks/useNetworkRead': { useNetworkRead: (key, _load, enabled) => {
@@ -126,6 +127,7 @@ function renderDraft(rebook, freshContext, error = null, language = 'en') {
       NetworkFreshness: () => null, NetworkPagination: () => null, useNetworkDraftGuard() {}, networkError: () => 'error_access',
     },
     './ServiceWorkflowShared': { useServiceMutation: () => ({ pending: null, busy: false, denied: false, send: never }), ServiceMutationStatus: () => null },
+    './ServiceFavorites': { useFavoriteChange: () => ({ busy: false, run: never }), FavoriteChangeStatus: () => null },
   })
   const options = { property_classes: [{ id: 'house_villa', label: { en: 'House or villa', es: 'Casa o villa' } }],
     categories: [{ id: 'pool', label: { en: 'Pool care', es: 'Cuidado de piscinas' } }] }

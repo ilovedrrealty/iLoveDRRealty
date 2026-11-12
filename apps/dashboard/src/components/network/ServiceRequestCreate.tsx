@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { getNetworkProperties, getPrivateProperties, getPrivateProperty } from '../../api/propertyNetwork'
 import { getServiceProviders, ServiceContractError, type ManagedServiceRequest, type ServiceProvider } from '../../api/serviceWorkflow'
 import { getServiceRebookContext, sameRebookPreview, sameRebookSelection, type ServiceRebookContext } from '../../api/serviceRebook'
+import { saveServiceFavorite } from '../../api/serviceFavorites'
 import { professionalLabel, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkFreshness, NetworkPagination, NetworkPanel, networkError, useNetworkDraftGuard } from './NetworkShared'
 import { ServiceMutationStatus, useServiceMutation } from './ServiceWorkflowShared'
+import { FavoriteChangeStatus, useFavoriteChange } from './ServiceFavorites'
 
 export function ServiceRequestCreate({options,role,actorCode,rebook,onCreated}:{options:ProfessionalOptions;role:string;actorCode?:number|null;rebook:ServiceRebookContext|null;onCreated:(id:string)=>void}) {
   const {t,i18n}=useTranslation('property_network')
@@ -16,6 +18,8 @@ export function ServiceRequestCreate({options,role,actorCode,rebook,onCreated}:{
   const [rebookPreview, setRebookPreview] = useState<ServiceRebookContext | null>(null)
   const [checkingRepeat, setCheckingRepeat] = useState(false)
   const [repeatError, setRepeatError] = useState('')
+  const [savedProviders, setSavedProviders] = useState<Set<number>>(() => new Set())
+  const favorite = useFavoriteChange()
   const repeatCheck = useRef<AbortController | null>(null)
   useEffect(() => () => repeatCheck.current?.abort(), [])
   const context = useNetworkRead(`service-rebook-draft:${rebook?.request_id??''}`, signal => getServiceRebookContext(rebook!.request_id, signal), !!rebook)
@@ -52,7 +56,7 @@ export function ServiceRequestCreate({options,role,actorCode,rebook,onCreated}:{
   },readDenied)
   const denied=mutation.denied||readDenied
   const dirty=!!(title||brief||area||alias||desired||ack||(!rebook&&(sourceId||selected.length)))
-  useNetworkDraftGuard(dirty||mutation.pending!==null,mutation.busy||checkingRepeat)
+  useNetworkDraftGuard(dirty||mutation.pending!==null,mutation.busy||checkingRepeat||favorite.busy)
   const source=sources.data?.items.find(item=>item.id===sourceId)
   const fresh=!!sources.data&&!sources.stale&&!sources.error&&!sources.checking&&!!providers.data&&!providers.stale&&!providers.error&&!providers.checking
   const eligible=rebook ? repeatFresh && !!currentRepeat && currentRepeat.provider.user_code !== actorCode
@@ -62,6 +66,13 @@ export function ServiceRequestCreate({options,role,actorCode,rebook,onCreated}:{
   const contextError = context.error ? (networkError(context.error) === 'error_access' ? 'rebook.unavailable' : networkError(context.error))
     : context.data && !currentRepeat ? 'rebook.unavailable' : currentRepeat && rebookPreview && preview && !reviewCurrent ? 'rebook.changed' : repeatError
   function chooseSource(id:string){setSourceId(id);setPropertyClass(kind==='private'?sources.data?.items.find(item=>item.id===id)?.property_class??'':'');setSelected([]);setPreview(false);setAck(false)}
+  function saveProvider(code: number) {
+    if (role === 'admin' || code === actorCode || rebook || !eligible || locked || savedProviders.has(code)
+      || !providers.data?.items.some(member => member.user_code === code)) return
+    void favorite.run(signal => saveServiceFavorite(code, signal), () => {
+      setSavedProviders(previous => new Set(previous).add(code))
+    }, code => { if (code === 'error_access') providers.refresh() })
+  }
   async function checkRepeat(expected: ServiceRebookContext, apply: () => void) {
     if (repeatCheck.current) return
     const controller = new AbortController()
@@ -118,10 +129,28 @@ export function ServiceRequestCreate({options,role,actorCode,rebook,onCreated}:{
       <div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-semibold">{t('property_class')}<select className={NETWORK_FIELD} value={propertyClass} disabled={kind==='private'} required onChange={e=>{setPropertyClass(e.target.value);setSelected([]);setProviderPage(1);setPreview(false)}}><option value="">{t('choose_class')}</option>{options.property_classes?.map(option=><option key={option.id} value={option.id}>{professionalLabel(option.label,i18n.language)}</option>)}</select></label>
         <label className="block text-sm font-semibold">{t('service.category')}<select className={NETWORK_FIELD} value={category} required onChange={e=>{setCategory(e.target.value);setSelected([]);setProviderPage(1);setPreview(false)}}><option value="">{t('service.choose_category')}</option>{options.categories.map(option=><option key={option.id} value={option.id}>{professionalLabel(option.label,i18n.language)}</option>)}</select></label></div>
       <NetworkPanel title={t('service.find_members')}><p className="mb-3 text-sm">{t('service.discovery_help')}</p><NetworkFreshness read={providers}/>{providers.error?<p role="alert">{t(networkError(providers.error))}</p>:null}
-        {providers.data?.items.map(member=><label className="flex min-h-11 items-start gap-3 py-2 text-sm" key={member.user_code}><input type="checkbox" className="mt-1" checked={selected.some(item=>item.user_code===member.user_code)} disabled={member.user_code===actorCode||selected.length>=5&&!selected.some(item=>item.user_code===member.user_code)} onChange={e=>{if(member.user_code===actorCode)return;setSelected(e.target.checked?[...selected,member]:selected.filter(item=>item.user_code!==member.user_code));setPreview(false);setAck(false)}}/><span className="min-w-0 break-words">{member.member_alias} · {t('service.member_code',{code:member.user_code})}{member.user_code===actorCode?' · '+t('service.your_account'):''}</span></label>)}
+        {providers.data?.items.map(member => {
+          const self = member.user_code === actorCode
+          const checked = selected.some(item => item.user_code === member.user_code)
+          const saved = savedProviders.has(member.user_code)
+          return <div key={member.user_code} role="group" aria-label={member.member_alias} className="flex flex-wrap items-center justify-between gap-2 py-1">
+            <label className="flex min-h-11 min-w-0 items-start gap-3 py-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={checked} disabled={self || (selected.length >= 5 && !checked)} onChange={e=>{
+                if (self) return
+                setSelected(e.target.checked ? [...selected,member] : selected.filter(item=>item.user_code!==member.user_code))
+                setPreview(false)
+                setAck(false)
+              }}/>
+              <span className="min-w-0 break-words">{member.member_alias} · {t('service.member_code',{code:member.user_code})}{self?' · '+t('service.your_account'):''}</span>
+            </label>
+            {role !== 'admin' && !self ? <button type="button" className={NETWORK_BUTTON} disabled={!eligible || favorite.busy || saved}
+              onClick={() => saveProvider(member.user_code)}>{t(saved ? 'favorites.saved_label' : 'favorites.save')}</button> : null}
+          </div>
+        })}
         {providers.data&&!providers.data.items.length?<p role="status">{t('service.no_providers')}</p>:null}
         {providers.data?<NetworkPagination page={providerPage} total={providers.data.total} busy={providers.checking} onChange={setProviderPage}/>:null}
         <p className="mt-3 text-xs">{t('service.selected_count',{count:selected.length})}</p><ul>{selected.map(member=><li className="flex items-center justify-between gap-3 text-sm" key={member.user_code}><span className="min-w-0 break-words">{member.member_alias} · {t('service.member_code',{code:member.user_code})}</span><button type="button" className={NETWORK_BUTTON} onClick={()=>{setSelected(selected.filter(item=>item.user_code!==member.user_code));setPreview(false);setAck(false)}}>{t('service.remove')}</button></li>)}</ul>
+        <FavoriteChangeStatus change={favorite} success="favorites.saved" />
       </NetworkPanel>
       </>}
       <label className="block text-sm font-semibold">{t('service.request_title')}<input className={NETWORK_FIELD} required maxLength={180} value={title} onChange={e=>{setTitle(e.target.value);setPreview(false);setAck(false)}}/></label>

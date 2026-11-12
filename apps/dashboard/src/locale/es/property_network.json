@@ -264,6 +264,16 @@
     "unavailable": "Este servicio ya no está disponible para volver a solicitarlo.",
     "changed": "Los detalles del servicio cambiaron. Revisa los datos actuales antes de enviar la solicitud."
   },
+  "favorites": {
+    "title": "Profesionales guardados",
+    "save": "Guardar profesional",
+    "saved_label": "Guardado",
+    "saved": "Profesional guardado.",
+    "remove": "Quitar profesional guardado",
+    "removed": "Se quitó al profesional de tu lista.",
+    "unavailable": "Profesional no disponible",
+    "empty": "Todavía no has guardado profesionales."
+  },
   "service": {
     "member_code": "Miembro n.º {{code}}",
     "your_account": "Tu cuenta",

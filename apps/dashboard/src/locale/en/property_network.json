@@ -264,6 +264,16 @@
     "unavailable": "This service is no longer available to request again.",
     "changed": "The service details changed. Review the current details before sending."
   },
+  "favorites": {
+    "title": "Saved professionals",
+    "save": "Save professional",
+    "saved_label": "Saved",
+    "saved": "Professional saved.",
+    "remove": "Remove saved professional",
+    "removed": "Professional removed from your saved list.",
+    "unavailable": "Professional unavailable",
+    "empty": "You haven't saved any professionals yet."
+  },
   "service": {
     "member_code": "Member #{{code}}",
     "your_account": "Your account",
