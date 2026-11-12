@@ -1,6 +1,7 @@
 import client from './axios'
 import type { Listing } from '../data/listings'
 import type { ListingMapData, MapBounds } from '../data/searchMap'
+import type { ListingRoomTour } from '../data/listingRoomTour'
 
 export interface ApiDealListing {
   id: string
@@ -82,6 +83,7 @@ export interface ApiListingDetail {
   association_fee: number | null
   deposit_policy: string | null
   images: string[]
+  room_photo_tour?: ListingRoomTour | null
   status: string
   submitted_by_name: string | null
   submitted_by_email: string | null

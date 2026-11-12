@@ -27,6 +27,8 @@ import {
 import { useNav } from "../hooks/useNav";
 import { fmt } from "../data/listings";
 import { TONE_MAP } from "../data/propertyDetailData";
+import { parseListingRoomTour } from "../data/listingRoomTour";
+import { ListingRoomTour } from "../components/ListingRoomTour";
 import { fetchListingById, recordListingView } from "../api/listings";
 import type { ApiListingDetail } from "../api/listings";
 import { isInquiryPropertyContext, observeInquiryProperty, preparePropertyInquiry, submitInquiry, type LeadSubmissionAttempt } from "../api/inquiries";
@@ -423,6 +425,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
   }
 
   const imgs: string[] = listing?.images ?? [];
+  const roomTour = useMemo(() => listing?.id === id ? parseListingRoomTour(listing.room_photo_tour, listing.images) : null, [id, listing]);
 
   const remainingCount = imgs.length - 4;
 
@@ -705,6 +708,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
             </div>
           </div>
         )}
+        {galleryTab === 'photos' && roomTour && <ListingRoomTour key={listing.id} tour={roomTour} />}
       </div>
 
       {/* Main two-column layout */}

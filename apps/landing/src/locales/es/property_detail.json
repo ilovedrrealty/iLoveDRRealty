@@ -10,6 +10,16 @@
   "tour_3d": "Tour 3D",
   "photo_more": "+{{count}} foto",
   "photo_more_plural": "+{{count}} fotos",
+  "room_tour": {
+    "open": "Ver fotos por ambiente",
+    "title": "Recorrido fotográfico por ambientes",
+    "close": "Cerrar recorrido fotográfico",
+    "back": "Volver a los ambientes",
+    "photo": "{{room}}, foto {{number}} de {{total}}",
+    "position": "Foto {{number}} de {{total}}",
+    "previous": "Foto anterior",
+    "next": "Foto siguiente"
+  },
   "beds": "hab.",
   "baths": "baños",
   "built": "Construido en {{year}}",
