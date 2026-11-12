@@ -300,6 +300,18 @@
     "attention": { "scheduled": "Programado", "upcoming": "Próximo", "due": "Vence hoy", "overdue": "Vencido", "snoozed": "Pospuesto" },
     "actions": { "complete": "Marcar como completado", "snooze": "Posponer", "pause": "Pausar", "resume": "Reanudar", "stop": "Detener recordatorio" }
   },
+  "due_work": {
+    "title": "Recordatorios de trabajo pendiente",
+    "in_app": "Estas preferencias solo se aplican a ti en este proyecto. Las fechas y horas se muestran en horario de Santo Domingo.",
+    "milestones": "Recordarme los hitos",
+    "visits": "Recordarme las visitas confirmadas",
+    "visit_time": "Hora de la visita",
+    "empty": "No hay trabajo pendiente que coincida con tus preferencias.",
+    "disabled": "Activa un tipo de recordatorio para ver aquí el trabajo pendiente.",
+    "kind": { "milestone": "Hito", "visit": "Visita confirmada" },
+    "state": { "snoozed": "Pospuesto", "dismissed": "Descartado", "stopped": "Detenido" },
+    "actions": { "snooze": "Posponer", "dismiss": "Descartar", "restore": "Restaurar recordatorio", "stop": "Detener recordatorio" }
+  },
   "service": {
     "member_code": "Miembro n.º {{code}}",
     "your_account": "Tu cuenta",

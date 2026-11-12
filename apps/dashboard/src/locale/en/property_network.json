@@ -300,6 +300,18 @@
     "attention": { "scheduled": "Scheduled", "upcoming": "Upcoming", "due": "Due today", "overdue": "Overdue", "snoozed": "Snoozed" },
     "actions": { "complete": "Mark complete", "snooze": "Snooze", "pause": "Pause", "resume": "Resume", "stop": "Stop reminder" }
   },
+  "due_work": {
+    "title": "Due-work reminders",
+    "in_app": "Your settings apply only to you in this project. Dates and times are shown in Santo Domingo time.",
+    "milestones": "Remind me about milestones",
+    "visits": "Remind me about confirmed visits",
+    "visit_time": "Visit time",
+    "empty": "No due work matches your reminder settings.",
+    "disabled": "Turn on a reminder type to see due work here.",
+    "kind": { "milestone": "Milestone", "visit": "Confirmed visit" },
+    "state": { "snoozed": "Snoozed", "dismissed": "Dismissed", "stopped": "Stopped" },
+    "actions": { "snooze": "Snooze", "dismiss": "Dismiss", "restore": "Restore reminder", "stop": "Stop reminder" }
+  },
   "service": {
     "member_code": "Member #{{code}}",
     "your_account": "Your account",

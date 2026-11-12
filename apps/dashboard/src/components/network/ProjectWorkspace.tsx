@@ -6,6 +6,7 @@ import type { ProfessionalOptions } from '../../../../../packages/professionals/
 import { professionalLabel } from '../../../../../packages/professionals/src'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkComments, NetworkComposer, NetworkDate, NetworkFreshness, NetworkPagination, NetworkPanel, PrivatePhotos, networkError, useNetworkDraftGuard, allowNetworkNavigation } from './NetworkShared'
+import { DueWorkReminders } from './DueWorkReminders'
 
 type Catalog = ProfessionalOptions & { property_classes?: { id: string; label: { en: string; es: string } }[] }
 const PROJECT_STATUSES = ['open', 'in_progress', 'completed', 'archived'] as const
@@ -86,11 +87,17 @@ export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }
   const project = read.data, error = read.error ? networkError(read.error) : ''
   const [tab, setTab] = useState<'timeline' | 'milestones' | 'members' | 'history' | 'details'>('timeline')
   const reload = read.refresh
+  const canReadDueWork = project && (project.my_role === 'owner' || project.my_role === 'professional')
+    && (project.status === 'open' || project.status === 'in_progress')
   function changeTab(value: typeof tab) { if (window.dispatchEvent(new Event('ildr:before-dashboard-navigation', { cancelable: true }))) setTab(value) }
   return <div className="space-y-5"><div className="flex flex-wrap gap-3"><button className={NETWORK_BUTTON} onClick={onBack}>{t('back_projects')}</button><button className={NETWORK_BUTTON} onClick={() => { if (allowNetworkNavigation()) setManualReload(value => value+1) }}>{t('reload')}</button></div><NetworkFreshness read={read} />{error ? <p role="alert" className="text-sm text-red-800">{t(error)}</p> : null}{!project ? !error ? <p role="status">{t('loading')}</p> : null : <>
     <header className="rounded-2xl bg-ink p-5 text-white"><p className="text-xs text-white/70">{project.property_title ?? project.listing_title}</p><h1 className="mt-2 break-words text-2xl font-bold">{project.title}</h1><p className="mt-3 whitespace-pre-wrap break-words text-sm text-white/80">{project.summary}</p><p className="mt-4 text-sm font-semibold">{t(`statuses.${project.status}`)} · {project.progress.percent === null ? t('no_milestones') : t('progress', { completed: project.progress.completed, total: project.progress.total, percent: project.progress.percent.toLocaleString(i18n.language) })}</p><p className="mt-2 text-xs text-white/65">{t('project_private')}</p>{project.property_id ? <p className="mt-2 text-xs text-white/65">{t('registry.unverified')}</p> : null}</header>
     <nav aria-label={t('project_tabs')} className="flex flex-wrap gap-2">{(['timeline', 'milestones', 'members', 'history', 'details'] as const).map(value => <button className={tab === value ? NETWORK_PRIMARY : NETWORK_BUTTON} key={value} aria-current={tab === value ? 'page' : undefined} onClick={() => changeTab(value)}>{t(`tabs.${value}`)}</button>)}</nav>
-    {tab === 'timeline' ? <ProjectTimeline key={project.id} project={project} /> : null}
+    {tab === 'timeline' ? <>
+      {canReadDueWork ? <DueWorkReminders key={`${project.id}:${project.my_role}`} projectId={project.id}
+        parentFresh={!read.stale && !read.checking && !read.error} /> : null}
+      <ProjectTimeline key={project.id} project={project} />
+    </> : null}
     {tab === 'milestones' ? <ProjectMilestones key={project.id} project={project} onChanged={reload} /> : null}
     {tab === 'members' ? <ProjectMembers key={project.id} project={project} onChanged={reload} /> : null}
     {tab === 'history' ? project.property_id ? <ServiceHistory key={`private:${project.property_id}`} propertyId={project.property_id} /> : project.listing_id ? <ServiceHistory key={`listing:${project.listing_id}`} listingId={project.listing_id} /> : null : null}
