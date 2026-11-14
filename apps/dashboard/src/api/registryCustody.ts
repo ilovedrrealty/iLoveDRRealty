@@ -86,7 +86,8 @@ function transfer(value: unknown, view: CustodyView, detail: boolean): CustodyTr
   if (row.view !== view) invalid()
   const status = choice(row.status, STATUSES)
   const version = integer(row.version, 1, 2)
-  if (version !== (status === 'pending' || status === 'expired' ? 1 : 2)) invalid()
+  // Expiry is projected at v1 and becomes a persisted v2 when a new offer replaces it.
+  if (status !== 'expired' && version !== (status === 'pending' ? 1 : 2)) invalid()
   const expected: CustodyAction[] = status !== 'pending' ? [] : view === 'sent' ? ['cancel'] : ['accept', 'decline']
   const actions = row.actions
   if (!Array.isArray(actions) || actions.length !== expected.length

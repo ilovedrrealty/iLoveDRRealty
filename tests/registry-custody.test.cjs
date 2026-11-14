@@ -94,3 +94,17 @@ test('offer and accept require exact consent, sealed property version and origin
   h.reply({ ...receipt, version: 1 })
   await assert.rejects(h.api.resolveCustodyTransfer(decision, signal), ServiceContractError)
 })
+
+test('both elapsed and retired invitations read as expired without fields or actions', async () => {
+  const h = harness()
+  for (const version of [1, 2]) {
+    const expired = { ...pending, version, status: 'expired', actions: [] }
+    h.reply(expired)
+    assert.deepEqual(plain(await h.api.getCustodyTransfer(id(1), 'received')), expired)
+    h.reply({ view: 'received', items: [expired], total: 1, page: 1, page_size: 30 })
+    const result = await h.api.getCustodyTransfers('received', 1)
+    assert.deepEqual(plain(result.items), [expired])
+  }
+  h.reply({ ...pending, version: 3, status: 'expired', actions: [] })
+  await assert.rejects(h.api.getCustodyTransfer(id(1), 'received'), ServiceContractError)
+})
