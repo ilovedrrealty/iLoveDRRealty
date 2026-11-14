@@ -1,5 +1,7 @@
 {
   "general": "General",
+  "management_portal": "Kaoba management portal",
+  "management_navigation_note": "Navigation connection only. Separate sign-in may be required; accounts and data remain separate.",
   "professional-profile": "My professional profile",
   "professionals": "Professionals review",
   "logout": "Log out",

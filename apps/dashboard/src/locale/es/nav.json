@@ -1,5 +1,7 @@
 {
   "general": "General",
+  "management_portal": "Portal de administración de Kaoba",
+  "management_navigation_note": "Solo un enlace de navegación. Puede requerir otro inicio de sesión; las cuentas y los datos siguen separados.",
   "professional-profile": "Mi perfil profesional",
   "professionals": "Revisión de profesionales",
   "logout": "Cerrar sesión",
