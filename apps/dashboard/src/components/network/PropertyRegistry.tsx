@@ -8,6 +8,7 @@ import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkFreshness, Netwo
 import { ServiceHistory } from './ProjectWorkspace'
 import { MaintenanceReminders } from './MaintenanceReminders'
 import { HistoryShareCreateControl } from './HistoryShareCreate'
+import { CustodyTransferControl } from './CustodyTransferOffer'
 
 type Draft = { title: string; location: string; address: string; property_class: string; relationship: string; notes: string }
 const emptyDraft = (): Draft => ({ title: '', location: '', address: '', property_class: '', relationship: '', notes: '' })
@@ -81,8 +82,9 @@ export function PrivatePropertyCreate({ options, onCreated }: { options: Profess
   </form></NetworkPanel>
 }
 
-export function PrivatePropertyDetail({ id, options, actorRole, onBack, onCreateProject, onHistorySent }: {
-  id: string; options: ProfessionalOptions; actorRole: string; onBack: () => void; onCreateProject: (id: string) => void; onHistorySent?: () => void
+export function PrivatePropertyDetail({ id, options, actorRole, actorCode = null, onBack, onCreateProject, onHistorySent, onCustodySent }: {
+  id: string; options: ProfessionalOptions; actorRole: string; actorCode?: number | null; onBack: () => void
+  onCreateProject: (id: string) => void; onHistorySent?: () => void; onCustodySent?: () => void
 }) {
   const { t } = useTranslation('property_network')
   const [revision, setRevision] = useState(0), [baseline, setBaseline] = useState<PrivateProperty | null>(null), [draft, setDraft] = useState<Draft>(emptyDraft)
@@ -125,6 +127,9 @@ export function PrivatePropertyDetail({ id, options, actorRole, onBack, onCreate
       {currentRecord?.status === 'active' && currentRecord.can_manage && actorRole !== 'admin' && onHistorySent ? <HistoryShareCreateControl
         source={{ kind: 'private', id }} categories={options.categories}
         parentFresh={!read.stale && !read.error && !requiresRefresh && !busy} onSent={onHistorySent} /> : null}
+      {currentRecord?.status === 'active' && currentRecord.can_manage && actorRole !== 'admin' && onCustodySent ? <CustodyTransferControl
+        propertyId={id} propertyVersion={currentRecord.version} actorCode={actorCode} classes={options.property_classes}
+        parentFresh={!read.stale && !read.error && !requiresRefresh && !busy && !dirty} onSent={onCustodySent} /> : null}
       {record && !requiresRefresh ? <ServiceHistory propertyId={record.id} /> : null}
     </>}
   </div>

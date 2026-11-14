@@ -112,6 +112,15 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
       return responses[name](...args)
     }
   } })
+  const custodyApi = new Proxy({}, { get: (_, name) => {
+    const actual = load(sourceRoot + 'api/registryCustody.ts')
+    if (typeof actual[name] !== 'function' || ['prepareCustodyTransfer', 'validCustodyLabel', 'custodyMemberCode', 'custodyBlocked'].includes(name)) return actual[name]
+    return (...args) => {
+      calls.push({ name, args })
+      assert.equal(typeof responses[name], 'function', 'Unexpected custody API call: ' + String(name))
+      return responses[name](...args)
+    }
+  } })
   const fakeWindow = {
     addEventListener(name, callback) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(callback) },
     removeEventListener(name, callback) { listeners.get(name)?.delete(callback) },
@@ -145,6 +154,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
         if (name.endsWith('/api/propertyNetwork')) return api
         if (name.endsWith('/api/serviceWorkflow')) return serviceApi
         if (name.endsWith('/api/historyShares')) return historyApi
+        if (name.endsWith('/api/registryCustody')) return custodyApi
         if (name.endsWith('/api/professionals')) return { getProfessionalOptions: api.getProfessionalOptions }
         if (name.endsWith('/api/propertyManagement')) return { todayInDR: () => '2026-01-02' }
         assert.ok(name.startsWith('.'), `Unapproved module dependency: ${name}`)
@@ -205,6 +215,81 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
     dispose() { for (const frame of frames.values()) for (const entry of frame.slots) entry.cleanup?.(); frames.clear(); effects.length = 0 },
   }
 }
+
+const custodyFields = { title: 'Synthetic villa registry', location: 'Synthetic province', address: 'Private synthetic address',
+  property_class: 'house_villa', relationship: 'owner' }
+const transferRow = { id: ENTRY, label: 'Synthetic transfer', view: 'received', status: 'pending', version: 1,
+  expires_at: '2026-01-09T12:00:00Z', fields: null, property_id: null, actions: ['accept', 'decline'] }
+
+test('custody sender sees exact offered fields, active-work blockers and explicit review', async () => {
+  let blockers = { active_projects: 1, open_requests: 2, unfinished_awards: 1 }
+  const h = ui('components/network/CustodyTransferOffer.tsx', 'CustodyTransferControl', {
+    propertyId: LISTING, propertyVersion: 4, parentFresh: true, actorCode: 71, onSent() {},
+  }, {
+    getCustodyOptions: async () => ({ property_id: LISTING, property_version: 4, fields: custodyFields, blockers, pending_transfer_id: null }),
+    runCustodyTransfer: async () => ({ id: ENTRY, operation: 'offer', status: 'pending', version: 1 }),
+  }, 'es')
+  const button = key => h.find('button', node => h.text(node) === h.t(key))
+  try {
+    await h.settle()
+    await h.fire(button('custody.start'), 'onClick')
+    for (const blocker of Object.keys(blockers)) assert.ok(h.html.includes(h.t('custody.' + blocker)))
+    assert.equal(h.nodes().some(node => node.type === 'form'), false)
+    assert.doesNotMatch(h.html, /Private synthetic address/)
+    blockers = { active_projects: 0, open_requests: 0, unfinished_awards: 0 }
+    await h.fire(button('refresh'), 'onClick')
+    assert.match(h.html, /Private synthetic address|Synthetic province/)
+    await h.fire(h.find('input', node => node.props.id?.endsWith('-code')), 'onChange', { target: { value: '72' } })
+    await h.fire(h.find('input', node => node.props.id?.endsWith('-label')), 'onChange', { target: { value: 'Reviewed handoff' } })
+    assert.equal(button('custody.offer_submit').props.disabled, true)
+    await h.fire(h.find('input', node => node.props.type === 'checkbox'), 'onChange', { target: { checked: true } })
+    assert.equal(button('custody.offer_submit').props.disabled, false)
+    assert.equal(h.calls.filter(call => call.name === 'runCustodyTransfer').length, 0)
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    const write = h.calls.find(call => call.name === 'runCustodyTransfer').args[0]
+    assert.deepEqual(JSON.parse(JSON.stringify(write)), { operation: 'offer', submission_id: write.submission_id, property_id: LISTING,
+      expected_property_version: 4, recipient_user_code: 72, label: 'Reviewed handoff', transfer_acknowledged: true })
+    assert.ok(h.html.includes(h.t('custody.offer_saved')))
+  } finally { h.dispose() }
+})
+
+test('custody recipient sees no fields before acceptance and only exact current fields after GET', async () => {
+  let accepted = false, current = true
+  const opened = []
+  const h = ui('components/network/CustodyTransfers.tsx', 'CustodyTransfers', {
+    actorId: ID, initialView: 'received', onProperty: id => opened.push(id),
+  }, {
+    getCustodyTransfers: async () => ({ ...page([transferRow]), view: 'received' }),
+    getCustodyTransfer: async () => accepted ? { ...transferRow, status: 'accepted', version: 2,
+      fields: current ? custodyFields : null, property_id: current ? LISTING : null, actions: [] } : transferRow,
+    runCustodyTransfer: async intent => {
+      assert.equal(intent.operation, 'accept')
+      assert.equal(intent.transfer_acknowledged, true)
+      accepted = true
+      return { id: ENTRY, operation: 'accept', status: 'accepted', version: 2 }
+    },
+  })
+  const button = key => h.find('button', node => h.text(node) === h.t(key))
+  try {
+    await h.settle()
+    await h.fire(button('custody.open'), 'onClick')
+    assert.doesNotMatch(h.html, /Private synthetic address/)
+    await h.fire(button('custody.actions.accept'), 'onClick')
+    assert.equal(button('custody.confirm.accept').props.disabled, true)
+    await h.fire(h.find('input', node => node.props.type === 'checkbox'), 'onChange', { target: { checked: true } })
+    assert.equal(h.calls.filter(call => call.name === 'runCustodyTransfer').length, 0)
+    await h.fire(button('custody.confirm.accept'), 'onClick')
+    assert.match(h.html, /Private synthetic address/)
+    await h.fire(button('custody.open_property'), 'onClick')
+    assert.deepEqual(opened, [LISTING])
+    await h.presence(false, true)
+    assert.doesNotMatch(h.html, /Private synthetic address/)
+    current = false
+    await h.presence(true, true)
+    assert.doesNotMatch(h.html, /Private synthetic address/)
+    assert.equal(h.nodes().some(node => node.type === 'button' && h.text(node) === h.t('custody.open_property')), false)
+  } finally { h.dispose() }
+})
 
 test('a history draft uses one live same-source project and only explicitly reviewed entries', async () => {
   const source = { kind: 'private', id: LISTING }
