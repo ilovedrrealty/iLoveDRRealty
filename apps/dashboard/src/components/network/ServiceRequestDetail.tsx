@@ -90,8 +90,10 @@ export function ServiceRequestDetail({id,view,role,options,onBack,onProject,onRe
   const canReadWork=workProjectId&&(view==='managed'?projectRole==='owner'||projectRole==='admin':projectRole==='professional')
   const conversationSender=projectRole==='owner'&&view==='managed'?'owner'
     :projectRole==='professional'&&view==='received'?'provider':null
-  const reviewSender = role !== 'admin' && projectAccess.data?.status !== 'archived' ? conversationSender : null
-  const repeatable = reviewSender === 'owner' && row?.view === 'managed' && row.status === 'awarded' ? row : null
+  const retainedAgreement = !!conversationSender && projectAccess.data?.can_update === false
+  const showAgreement = projectAccess.data?.status !== 'archived' || retainedAgreement
+  const reviewSender = role !== 'admin' && showAgreement ? conversationSender : null
+  const repeatable = !retainedAgreement && reviewSender === 'owner' && row?.view === 'managed' && row.status === 'awarded' ? row : null
   const repeatSource = repeatable?.source.property_id ?? repeatable?.source.listing_id
   const rebookScope: ServiceRebookScope | null = repeatable && repeatSource ? {
     request_id: id, category_id: repeatable.category_id,
@@ -121,7 +123,7 @@ export function ServiceRequestDetail({id,view,role,options,onBack,onProject,onRe
         {row.can_open_project&&row.project_id?<button className={NETWORK_PRIMARY+' mt-4'} disabled={locked||editor!==null} onClick={()=>{if(row.project_id&&allowNetworkNavigation())onProject(row.project_id)}}>{t('service.open_project')}</button>:null}
       </NetworkPanel>
       {canReadWork?<ServiceWorkPanel key={`${id}:${workProjectId}:${view}`} requestId={id} projectId={workProjectId} parentFresh={fresh&&workAccessFresh&&!locked&&!editor} reviewSender={reviewSender} rebookScope={rebookScope} onRebook={onRebook} onProject={onProject}/>:null}
-      {workProjectId&&projectAccess.data?.status!=='archived'&&conversationSender?<ServiceConversationPanel key={`${id}:${workProjectId}:${conversationSender}`} requestId={id} sender={conversationSender} parentFresh={fresh&&workAccessFresh&&!locked&&!editor}/>:null}
+      {workProjectId&&showAgreement&&conversationSender?<ServiceConversationPanel key={`${id}:${workProjectId}:${conversationSender}`} requestId={id} sender={conversationSender} readOnly={retainedAgreement} parentFresh={fresh&&workAccessFresh&&!locked&&!editor}/>:null}
       {row.view === 'received' && canOpenNegotiation(row.recipient.id) ? <ServiceConversationPanel
         key={`negotiation:${id}:${row.recipient.id}:provider`} requestId={id} recipientId={row.recipient.id} sender="provider" parentFresh={negotiationFresh} /> : null}
       {row.view==='received'?<NetworkPanel title={t('service.my_thread')}><p className="mb-3 text-sm">{t('service.accept_help')}</p><div className="flex flex-wrap gap-3">

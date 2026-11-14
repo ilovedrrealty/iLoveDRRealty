@@ -16,12 +16,13 @@ const transport = {
   resolve: resolveConversationMessage,
 }
 
-export function ServiceConversationPanel({ requestId, recipientId, providerName, sender, parentFresh }: {
+export function ServiceConversationPanel({ requestId, recipientId, providerName, sender, parentFresh, readOnly = false }: {
   requestId: string
   recipientId?: string
   providerName?: string
   sender: ConversationSender
   parentFresh: boolean
+  readOnly?: boolean
 }) {
   const { t, i18n } = useTranslation('property_network')
   const fieldId = useId()
@@ -45,10 +46,10 @@ export function ServiceConversationPanel({ requestId, recipientId, providerName,
   const beforeAward = recipientId !== undefined
   const title = !beforeAward ? t('conversation.heading') : providerName
     ? t('conversation.negotiation_with', { provider: providerName }) : t('conversation.negotiation_heading')
-  useNetworkDraftGuard(!denied && (!!draft || mutation.pending !== null), !denied && mutation.busy)
+  useNetworkDraftGuard(!denied && !readOnly && (!!draft || mutation.pending !== null), !denied && mutation.busy)
 
   function send() {
-    if (!fresh || locked || !body) return
+    if (!fresh || locked || readOnly || !body) return
     mutation.send({ requestId, recipientId, sender, payload: { submission_id: crypto.randomUUID(), body } })
   }
 
@@ -76,7 +77,7 @@ export function ServiceConversationPanel({ requestId, recipientId, providerName,
         busy={read.checking || locked} onChange={next => { setDraft(''); setPage(next) }} /> : null}
     </> : !readError ? <p role="status">{t('loading')}</p> : null}
 
-    {read.data ? <form className="mt-5 space-y-2" onSubmit={event => { event.preventDefault(); send() }}>
+    {read.data && !readOnly ? <form className="mt-5 space-y-2" onSubmit={event => { event.preventDefault(); send() }}>
       <label className="block text-sm font-semibold text-ink" htmlFor={fieldId}>{t('conversation.message')}</label>
       <textarea id={fieldId} className={NETWORK_FIELD} aria-describedby={helpId} aria-invalid={invalidDraft}
         maxLength={CONVERSATION_MESSAGE_LIMIT * 2} required rows={3} value={draft} disabled={locked}
@@ -86,7 +87,7 @@ export function ServiceConversationPanel({ requestId, recipientId, providerName,
       </p>
       <button type="submit" className={NETWORK_PRIMARY} disabled={!fresh || locked || !body}>{t('conversation.send')}</button>
     </form> : null}
-    <ServiceMutationStatus mutation={{ ...mutation, checked: mutation.checked && fresh,
-      retry: () => { if (fresh) mutation.retry() }, reviewConflict: () => { if (fresh) mutation.reviewConflict() } }} />
+    {!readOnly && <ServiceMutationStatus mutation={{ ...mutation, checked: mutation.checked && fresh,
+      retry: () => { if (fresh) mutation.retry() }, reviewConflict: () => { if (fresh) mutation.reviewConflict() } }} />}
   </NetworkPanel>
 }
