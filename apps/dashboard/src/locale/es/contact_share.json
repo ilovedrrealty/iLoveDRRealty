@@ -7,7 +7,6 @@
   "name": "Nombre / empresa",
   "email": "Correo electrónico",
   "phone": "Teléfono",
-  "listing": "Anuncio público",
   "unavailable": "No disponible o no válido",
   "permission": "Tengo permiso para compartir los datos de contacto seleccionados de esta persona con el destinatario que elija.",
   "permission_needed": "Confirma el permiso antes de abrir un borrador o copiar el contacto.",

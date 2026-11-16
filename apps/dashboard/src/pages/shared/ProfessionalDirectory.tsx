@@ -106,7 +106,7 @@ export default function ProfessionalDirectory() {
     </>}
     <p className="text-xs leading-relaxed text-dim">{t('directory_search.review_note')}</p>
     {selectedId && !authError && <ProfessionalDialog title={detail?.business_name || detail?.contact_name || t('directory_search.title')} closeLabel={t('directory_search.close')} onClose={() => select()}>
-      {detailError ? <p role="alert">{t('directory_search.unavailable')}</p> : detailLoading || !detail ? <p role="status">{t('directory_search.loading')}</p> : <ProfessionalPreview key={detail.id} profile={detail} options={options} shareableBusiness />}
+      {detailError ? <p role="alert">{t('directory_search.unavailable')}</p> : detailLoading || !detail ? <p role="status">{t('directory_search.loading')}</p> : <ProfessionalPreview key={detail.id} profile={detail} options={options} />}
     </ProfessionalDialog>}
   </div>
 }

@@ -7,7 +7,6 @@
   "name": "Name / business",
   "email": "Email",
   "phone": "Phone",
-  "listing": "Public listing",
   "unavailable": "Unavailable or invalid",
   "permission": "I have permission to share the selected person's contact details with my chosen recipient.",
   "permission_needed": "Confirm permission before opening a composer or copying the contact.",

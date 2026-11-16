@@ -494,6 +494,7 @@ export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: stri
       </div>
 
       <LeadDetailPanel
+        allowContactShare
         lead={selectedLead}
         realtors={realtors}
         onClose={() => setSelectedLead(null)}

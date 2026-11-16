@@ -48,10 +48,11 @@ interface Props {
   allowedStatuses?: readonly string[]
   updateStatusFn?: (leadId: string, status: string) => Promise<void>
   calendlyUrl?: string
+  allowContactShare?: boolean
   onOpenDelivery?: (leadId: string) => void
 }
 
-export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, onOpenDelivery }: Props) {
+export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false, onOpenDelivery }: Props) {
   const { t } = useTranslation('admin')
 
   const TYPE_LABEL: Record<string, string> = {
@@ -214,7 +215,11 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
             {/* Contact */}
             <div>
               <div className="text-[10.5px] font-bold uppercase tracking-widest text-dim mb-4">{t('lead_panel.section_contact')}</div>
-              <div className="mb-4"><ShareContactButton key={lead.id} contact={{ name: lead.name, email: lead.email, phone: lead.phone }} /></div>
+              {allowContactShare ? (
+                <div className="mb-4">
+                  <ShareContactButton key={lead.id} contact={{ name: lead.name, email: lead.email, phone: lead.phone }} />
+                </div>
+              ) : null}
               <div className="space-y-3.5">
 
                 {lead.from_user_name && (

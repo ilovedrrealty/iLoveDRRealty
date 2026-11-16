@@ -8,18 +8,17 @@ export function ContactSharePreview({ text, empty }: { text: string; empty: stri
   return <pre className="min-h-24 whitespace-pre-wrap break-words rounded-xl border border-line bg-white p-4 font-sans text-sm text-ink">{text || empty}</pre>
 }
 
-function ShareContactDialog({ contact, privateContact, onClose }: { contact: ShareContact; privateContact: boolean; onClose: () => void }) {
+function ShareContactDialog({ contact, onClose }: { contact: ShareContact; onClose: () => void }) {
   const { t } = useTranslation('contact_share')
   const [selected, setSelected] = useState(minimalContactSelection)
-  const [permission, setPermission] = useState(!privateContact)
+  const [permission, setPermission] = useState(false)
   const [copyResult, setCopyResult] = useState('')
   const panel = useRef<HTMLDivElement>(null)
   const titleId = useId(), noteId = useId(), previewId = useId()
   const close = useRef(onClose); close.current = onClose
   const safe = shareableContact(contact)
-  const preview = contactPreview(safe, selected, { name: t('name'), email: t('email'), phone: t('phone'), listing: '' })
+  const preview = contactPreview(safe, selected, { name: t('name'), email: t('email'), phone: t('phone') })
   const links = permission ? contactComposeLinks(preview, t('subject')) : null
-  const readyLinks = links
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const overflow = document.body.style.overflow
@@ -41,7 +40,7 @@ function ShareContactDialog({ contact, privateContact, onClose }: { contact: Sha
   }, [])
   const change = (key: keyof typeof selected, checked: boolean) => { setSelected(current => ({ ...current, [key]: checked })); setCopyResult('') }
   async function copy() {
-    if (!readyLinks) return
+    if (!links) return
     try { await navigator.clipboard.writeText(preview); setCopyResult(t('copied')) }
     catch { setCopyResult(t('copy_failed')) }
   }
@@ -50,16 +49,18 @@ function ShareContactDialog({ contact, privateContact, onClose }: { contact: Sha
       <div className="flex items-start justify-between gap-4"><h2 id={titleId} className="text-xl font-bold text-ink">{t('title')}</h2><button type="button" onClick={onClose} aria-label={t('close')} className="min-h-11 min-w-11 shrink-0 rounded-lg border border-line grid place-items-center"><X size={20} /></button></div>
       <p id={noteId} className="mt-3 text-sm leading-relaxed text-ink2">{t('explanation')}</p>
       <fieldset className="mt-5 space-y-2"><legend className="mb-2 text-sm font-bold text-ink">{t('choose_fields')}</legend>{(['name', 'email', 'phone'] as const).map(key => <label key={key} className="flex min-h-11 items-center gap-3 text-sm text-ink"><input type="checkbox" checked={selected[key]} disabled={!safe[key]} onChange={event => change(key, event.target.checked)} /><span className="min-w-0 break-words">{t(key)}: {safe[key] || t('unavailable')}</span></label>)}</fieldset>
-      {privateContact ? <label className="mt-3 flex min-h-11 items-start gap-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-950"><input className="mt-1" type="checkbox" checked={permission} onChange={event => { setPermission(event.target.checked); setCopyResult('') }} />{t('permission')}</label> : null}
+      <label className="mt-3 flex min-h-11 items-start gap-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-950"><input className="mt-1" type="checkbox" checked={permission} onChange={event => { setPermission(event.target.checked); setCopyResult('') }} />{t('permission')}</label>
       <section className="mt-5" aria-labelledby={previewId}><h3 id={previewId} className="mb-2 text-sm font-bold text-ink">{t('preview')}</h3><ContactSharePreview text={preview} empty={t('empty')} /></section>
-      <div className="mt-4 flex flex-wrap gap-3">{readyLinks ? <><a href={readyLinks.email} className="inline-flex min-h-11 items-center rounded-xl bg-sea px-4 text-sm font-bold text-white">{t('compose_email')}</a><a href={readyLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold text-ink">{t('compose_whatsapp')}</a></> : <p className="text-sm text-dim">{t(privateContact && !permission ? 'permission_needed' : 'empty')}</p>}<button type="button" disabled={!readyLinks} onClick={() => void copy()} className="min-h-11 rounded-xl border border-line px-4 text-sm font-semibold text-ink disabled:opacity-50">{t('copy')}</button></div>
+      <div className="mt-4 flex flex-wrap gap-3">{links ? <><a href={links.email} className="inline-flex min-h-11 items-center rounded-xl bg-sea px-4 text-sm font-bold text-white">{t('compose_email')}</a><a href={links.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold text-ink">{t('compose_whatsapp')}</a></> : <p className="text-sm text-dim">{t(!permission ? 'permission_needed' : 'empty')}</p>}<button type="button" disabled={!links} onClick={() => void copy()} className="min-h-11 rounded-xl border border-line px-4 text-sm font-semibold text-ink disabled:opacity-50">{t('copy')}</button></div>
       {copyResult ? <p role="status" className="mt-3 text-sm text-ink2">{copyResult}</p> : null}<p className="mt-4 text-xs leading-relaxed text-dim">{t('no_delivery_claim')}</p>
     </div>
   </div>, document.body)
 }
 
-export function ShareContactButton({ contact, privateContact = true }: { contact: ShareContact; privateContact?: boolean }) {
+export function ShareContactButton({ contact }: { contact: ShareContact }) {
   const { t } = useTranslation('contact_share')
   const [open, setOpen] = useState(false)
-  return <><button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-ink"><Share2 size={16} aria-hidden="true" />{t('open')}</button>{open ? <ShareContactDialog contact={contact} privateContact={privateContact} onClose={() => setOpen(false)} /> : null}</>
+  const safe = shareableContact(contact)
+  if (!safe.name && !safe.email && !safe.phone) return null
+  return <><button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-ink"><Share2 size={16} aria-hidden="true" />{t('open')}</button>{open ? <ShareContactDialog contact={contact} onClose={() => setOpen(false)} /> : null}</>
 }
