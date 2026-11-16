@@ -6,6 +6,7 @@ import type { AdminAgent } from '../../api/admin'
 import { TONE } from '../../pages/admin/shared'
 import { parsePhone } from '../../utils/phone'
 import { ConfirmModal } from '../shared/ConfirmModal'
+import { ShareContactButton } from '../shared/ShareContactDialog'
 import { RealtorCombobox } from './RealtorCombobox'
 import { LeadTrackingDetails } from './LeadTrackingOverview'
 
@@ -47,9 +48,10 @@ interface Props {
   allowedStatuses?: readonly string[]
   updateStatusFn?: (leadId: string, status: string) => Promise<void>
   calendlyUrl?: string
+  allowContactShare?: boolean
 }
 
-export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl }: Props) {
+export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false }: Props) {
   const { t } = useTranslation('admin')
 
   const TYPE_LABEL: Record<string, string> = {
@@ -212,6 +214,11 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
             {/* Contact */}
             <div>
               <div className="text-[10.5px] font-bold uppercase tracking-widest text-dim mb-4">{t('lead_panel.section_contact')}</div>
+              {allowContactShare ? (
+                <div className="mb-4">
+                  <ShareContactButton key={lead.id} contact={{ name: lead.name, email: lead.email, phone: lead.phone }} />
+                </div>
+              ) : null}
               <div className="space-y-3.5">
 
                 {lead.from_user_name && (

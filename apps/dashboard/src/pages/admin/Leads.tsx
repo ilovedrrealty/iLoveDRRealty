@@ -491,6 +491,7 @@ export function AdminLeads() {
       </div>
 
       <LeadDetailPanel
+        allowContactShare
         lead={selectedLead}
         realtors={realtors}
         onClose={() => setSelectedLead(null)}
