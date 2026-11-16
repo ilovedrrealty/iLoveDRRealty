@@ -141,7 +141,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
       case 'submit-listing':  return role === 'Owner' ? <OwnerSubmitListing go={go} tone={tone} isAdmin={user.role === 'admin'} /> : <SubmitListing go={go} tone={tone} isAdmin={user.role === 'admin'} />
       case 'calendar':   return role === 'Owner' ? <OwnerCalendar user={user} go={go} /> : <RealtorCalendar user={user} go={go} />
       case 'bookings':        return role === 'Admin' ? <AdminBookings /> : <BuyerBookings />
-      case 'owner-bookings':    return <OwnerBookings go={go} />
+      case 'owner-bookings':    return <OwnerBookings go={go} canManageArrivalGuide={user.role === 'owner'} />
       case 'realtor-bookings':  return <RealtorBookings />
       case 'leads':      return role === 'Owner' ? <OwnerLeads tone={tone} go={go} isAdmin={user.role === 'admin'} /> : <RealtorLeads go={go} user={user} />
       case 'settings':

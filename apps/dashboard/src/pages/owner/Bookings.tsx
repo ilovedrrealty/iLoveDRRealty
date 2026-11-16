@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { StatusPill, fmtPrice } from '../../components/dashboard/shared'
 import { getOwnerBookings, acceptBooking, declineBooking, requestPayout, type Booking } from '../../api/bookings'
 import { BookingDetailPanel } from '../../components/dashboard/BookingDetailPanel'
+import { OwnerArrivalGuideEditor } from '../../components/dashboard/ArrivalGuide'
+import { allowNetworkNavigation } from '../../components/network/NetworkShared'
 import { PAYPAL_ENABLED } from '../../lib/features'
 
 function fmtDate(s: string): string {
@@ -182,7 +184,11 @@ function BookingRow({
 
 const TONE = '#f0a800'
 
-export function OwnerBookings({ go, isAdmin }: { go?: (v: string) => void; isAdmin?: boolean }) {
+export function OwnerBookings({ go, isAdmin, canManageArrivalGuide }: {
+  go?: (v: string) => void
+  isAdmin?: boolean
+  canManageArrivalGuide?: boolean
+}) {
   const { t } = useTranslation('owner')
   const [bookings, setBookings]   = useState<Booking[]>([])
   const [loading, setLoading]     = useState(true)
@@ -344,9 +350,14 @@ export function OwnerBookings({ go, isAdmin }: { go?: (v: string) => void; isAdm
 
       <BookingDetailPanel
         booking={panelBooking}
-        onClose={() => setSelectedId(null)}
+        onClose={() => {
+          if (!canManageArrivalGuide || allowNetworkNavigation()) setSelectedId(null)
+        }}
         accentColor={TONE}
         isAdmin={isAdmin}
+        afterStay={canManageArrivalGuide && panelBooking
+          ? <OwnerArrivalGuideEditor key={panelBooking.id} listingId={panelBooking.listing_id} />
+          : undefined}
         onAccept={panelBooking?.status === 'pending' ? () => handleAccept(panelBooking.id) : undefined}
         onDecline={panelBooking?.status === 'pending' ? () => handleDecline(panelBooking.id) : undefined}
         onRequestPayout={
