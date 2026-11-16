@@ -8,7 +8,10 @@ const ts = require('typescript')
 const root = path.resolve(__dirname, '..')
 function loadTS(relative, globals = {}, imports = {}) {
   const source = fs.readFileSync(path.join(root, relative), 'utf8')
-  const result = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } })
+  const result = ts.transpileModule(source, {
+    fileName: relative,
+    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  })
   const exports = {}
   vm.runInNewContext(result.outputText, { exports, URL, URLSearchParams, Date, ...globals, require: id => {
     if (Object.hasOwn(imports, id)) return imports[id]
@@ -92,6 +95,31 @@ test('member directory intent survives signup and verification without accepting
   assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com/professional-directory')
   assert.equal(values.size, 0)
   assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com')
+})
+
+test('professional landing leads with member signup in both languages and keeps provider applications separate', () => {
+  const element = (type, props) => ({ type, props })
+  function links(node) {
+    if (!node || typeof node !== 'object') return []
+    if (node.type === 'a') return [{ href: node.props.href, label: node.props.children }]
+    return [].concat(node.props?.children ?? []).flatMap(links)
+  }
+  for (const language of ['en', 'es']) {
+    const copy = JSON.parse(fs.readFileSync(path.join(root, 'apps/landing/src/locales', language, 'professionals.json'), 'utf8'))
+    const page = loadTS('apps/landing/src/views/Professionals.tsx', {}, {
+      'react/jsx-runtime': { jsx: element, jsxs: element },
+      'next/link': { __esModule: true, default: 'a' },
+      'lucide-react': { BriefcaseBusiness: 'svg', House: 'svg', ShieldCheck: 'svg', Wrench: 'svg' },
+      'react-i18next': { useTranslation: () => ({ t: key => copy[key] }) },
+    })
+    const [header] = page.default().props.children
+    assert.ok(copy.provider_signup && copy.provider_signup !== copy.member_signup)
+    assert.deepEqual(links(header), [
+      { href: '/signup/?directory=professionals', label: copy.member_signup },
+      { href: '/login/?directory=professionals', label: copy.member_login },
+      { href: '/signup/?join=professional', label: copy.provider_signup },
+    ])
+  }
 })
 
 test('an explicit directory or profile choice replaces the previous professional destination', () => {

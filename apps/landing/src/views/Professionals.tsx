@@ -17,10 +17,13 @@ export default function Professionals() {
       <h1 className="mt-4 max-w-4xl text-3xl sm:text-5xl font-extrabold leading-tight">{t('title')}</h1>
       <p className="mt-5 max-w-3xl text-white/75 leading-relaxed">{t('intro')}</p>
       <div className="flex flex-wrap gap-3 mt-7">
-        <Link href="/signup/?join=professional" className="inline-flex rounded-full bg-coral text-white px-6 py-3 text-sm font-bold focus-visible:outline-gold">{t('join')}</Link>
+        <Link href="/signup/?directory=professionals" className="inline-flex rounded-full bg-coral text-white px-6 py-3 text-sm font-bold focus-visible:outline-gold">{t('member_signup')}</Link>
         <Link href="/login/?directory=professionals" className="inline-flex rounded-full border border-white/40 px-6 py-3 text-sm font-bold focus-visible:outline-gold">{t('member_login')}</Link>
       </div>
-      <p className="mt-4 max-w-2xl text-sm text-white/65">{t('join_intro')}</p>
+      <p className="mt-4 max-w-2xl text-sm text-white/75">
+        {t('join_intro')}{' '}
+        <Link href="/signup/?join=professional" className="font-bold text-gold underline underline-offset-4 focus-visible:outline-gold">{t('provider_signup')}</Link>
+      </p>
     </div></header>
     <main className="max-w-310 mx-auto px-4 sm:px-7 py-10 sm:py-14 space-y-10 min-w-0">
       <section aria-labelledby="professional-benefits-heading">
