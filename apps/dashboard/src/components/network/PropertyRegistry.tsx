@@ -130,7 +130,7 @@ export function PrivatePropertyDetail({ id, options, actorRole, actorCode = null
       {currentRecord?.status === 'active' && currentRecord.can_manage && actorRole !== 'admin' && onCustodySent ? <CustodyTransferControl
         propertyId={id} propertyVersion={currentRecord.version} actorCode={actorCode} classes={options.property_classes}
         parentFresh={!read.stale && !read.error && !requiresRefresh && !busy && !dirty} onSent={onCustodySent} /> : null}
-      {record && !requiresRefresh ? <ServiceHistory propertyId={record.id} /> : null}
+      {record && !requiresRefresh ? <ServiceHistory propertyId={record.id} categories={options.categories} /> : null}
     </>}
   </div>
 }

@@ -14,6 +14,7 @@ const fixtureId = number => `00000000-0000-4000-8000-${String(number).padStart(1
 const ID = fixtureId(1), LISTING = fixtureId(2), PHOTO1 = fixtureId(3), PHOTO2 = fixtureId(4), ENTRY = fixtureId(5)
 const page = items => ({ items, total: items.length, page: 1, page_size: 30 })
 const author = { user_code: 71, display_name: 'Synthetic member' }
+const serviceCategories = [{ id: 'air_conditioning', label: { en: 'Air conditioning', es: 'Aire acondicionado' } }]
 const profile = changes => ({ user_code: 71, display_name: 'Synthetic member', bio: 'Synthetic biography', status_text: '', visibility: 'private', wall_policy: 'own_only', comments_enabled: true, version: 0, can_edit: true, ...changes })
 const project = changes => ({ id: ID, listing_id: LISTING, listing_title: 'Synthetic listing', title: 'Synthetic repair', summary: 'Synthetic project summary', property_class: 'house_villa', service_category_ids: ['air_conditioning'], status: 'open', version: 1, my_role: 'viewer', can_manage: false, can_assign: false, can_update: false, progress: { total: 0, completed: 0, percent: null }, created_at: '2026-01-01T12:00:00Z', updated_at: '2026-01-01T12:00:00Z', ...changes })
 
@@ -426,14 +427,15 @@ test('actual project controls follow server capabilities rather than a selected 
 })
 
 test('actual service history displays authorized work and server progress without leaking unrelated fixture fields', async () => {
-  const h = ui('components/network/ProjectWorkspace.tsx', 'ProjectDetail', { id: ID, onBack() {} }, {
+  const h = ui('components/network/ProjectWorkspace.tsx', 'ProjectDetail', { id: ID, onBack() {}, historyCategories: serviceCategories }, {
     getProject: async () => project({ progress: { total: 4, completed: 1, percent: 25 } }), getProjectUpdates: async () => page([]),
-    getPropertyServiceHistory: async listingId => { assert.equal(listingId, LISTING); return page([{ id: ENTRY, project_title: 'Synthetic service', occurred_on: '2026-01-01', body: 'Synthetic work completed', media_ids: [], tenant_email: 'DO-NOT-RENDER@example.invalid', ledger: 'DO-NOT-RENDER-LEDGER', raw_snapshot: 'DO-NOT-RENDER-SNAPSHOT' }]) },
+    getPropertyServiceHistory: async listingId => { assert.equal(listingId, LISTING); return page([{ id: ENTRY, project_title: 'Synthetic service', occurred_on: '2026-01-01', body: 'Synthetic work completed', service_category_ids: ['air_conditioning', 'retired_category'], media_ids: [], tenant_email: 'DO-NOT-RENDER@example.invalid', ledger: 'DO-NOT-RENDER-LEDGER', raw_snapshot: 'DO-NOT-RENDER-SNAPSHOT' }]) },
   })
   try {
     await h.settle(); assert.ok(h.html.includes('25%'))
     await h.fire(h.find('button', node => h.text(node) === h.t('tabs.history')), 'onClick')
     assert.ok(h.html.includes('Synthetic work completed')); assert.ok(h.html.includes(h.t('service_history_note')))
+    assert.match(h.html, /<time datetime="2026-01-01"[^>]*>.*<\/time><span> · Air conditioning<\/span><span> · retired_category<\/span>/i)
     assert.ok(!h.html.includes('DO-NOT-RENDER'))
     assert.ok(h.calls.every(call => !/statement|ledger|lease|tenant/i.test(String(call.name))))
   } finally { h.dispose() }
@@ -647,7 +649,7 @@ test('separate keyed timeline entries keep independent comment drafts when reord
   } finally { h.dispose() }
 })
 
-const registryCatalog = { categories: [{ id: 'air_conditioning', label: { en: 'Air conditioning', es: 'Aire acondicionado' } }], areas: [], languages: [], property_classes: [{ id: 'house_villa', label: { en: 'House or villa', es: 'Casa o villa' } }] }
+const registryCatalog = { categories: serviceCategories, areas: [], languages: [], property_classes: [{ id: 'house_villa', label: { en: 'House or villa', es: 'Casa o villa' } }] }
 const privateRecord = changes => ({ id: LISTING, title: 'Private synthetic property', location: 'Synthetic town', address: 'Private address kept out of project views', property_class: 'house_villa', relationship: 'manager', notes: 'Private notes kept out of project views', status: 'active', version: 1, can_manage: true, can_create_project: true, created_at: '2026-01-01T12:00:00Z', updated_at: '2026-01-01T12:00:00Z', ...changes })
 const registryPage = (items, canCreate = true) => ({ ...page(items), can_create: canCreate })
 function registryField(h, key, type) {
@@ -713,7 +715,7 @@ test('actual explicit private property retry reuses the original payload after a
 
 test('actual registry conflict clears previous results but retains a locked draft until an explicit actual refresh', async () => {
   let current = privateRecord(), attempts = 0
-  const history = { id: ENTRY, project_id: ID, project_title: 'Old authorized service', body: 'Old authorized history body', occurred_on: '2026-01-01', media_ids: [] }
+  const history = { id: ENTRY, project_id: ID, project_title: 'Old authorized service', body: 'Old authorized history body', occurred_on: '2026-01-01', service_category_ids: [], media_ids: [] }
   const h = ui('components/network/PropertyRegistry.tsx', 'PrivatePropertyDetail', { id: LISTING, options: registryCatalog, onBack() {}, onCreateProject() {} }, {
     getPrivateProperty: async () => current,
     getPrivatePropertyServiceHistory: async () => page([history]),
@@ -743,12 +745,12 @@ test('actual registry conflict clears previous results but retains a locked draf
 
 test('actual archive retains authorized history and removes new-project controls without claiming deletion', async () => {
   let current = privateRecord()
-  const history = { id: ENTRY, project_id: ID, project_title: 'Retained service', body: 'History survives archive', occurred_on: '2026-01-01', media_ids: [] }
+  const history = { id: ENTRY, project_id: ID, project_title: 'Retained service', body: 'History survives archive', occurred_on: '2026-01-01', service_category_ids: ['air_conditioning'], media_ids: [] }
   const h = ui('components/network/PropertyRegistry.tsx', 'PrivatePropertyDetail', { id: LISTING, options: registryCatalog, onBack() {}, onCreateProject() {} }, {
     getPrivateProperty: async () => current,
     getPrivatePropertyServiceHistory: async () => page([history]),
     updatePrivateProperty: async (id, input) => { current = privateRecord({ ...input, id, version: 2, can_create_project: false }); return current },
-  })
+  }, 'es')
   try {
     await h.settle()
     assert.ok(h.visibleText.includes(h.t('registry.create_project')))
@@ -757,6 +759,7 @@ test('actual archive retains authorized history and removes new-project controls
     assert.equal(write.args[1].status, 'archived'); assert.equal(write.args[1].expected_version, 1)
     assert.equal(h.confirmations, 1)
     assert.ok(h.visibleText.includes(history.body))
+    assert.ok(h.visibleText.includes('Aire acondicionado'))
     assert.ok(h.visibleText.includes(h.t('registry.archived_note')))
     assert.ok(!h.visibleText.includes(h.t('registry.create_project')))
     assert.equal(Object.hasOwn(write.args[1], 'custodian_id'), false)
@@ -854,7 +857,7 @@ test('actual project source switching drops the listing reference and submits on
 })
 
 test('actual private-project participants read scoped history without fetching full registry records', async () => {
-  const history = { id: ENTRY, project_id: ID, project_title: 'Assigned synthetic project', body: 'Only accessible service history', occurred_on: '2026-01-01', media_ids: [] }
+  const history = { id: ENTRY, project_id: ID, project_title: 'Assigned synthetic project', body: 'Only accessible service history', occurred_on: '2026-01-01', service_category_ids: [], media_ids: [] }
   const h = ui('components/network/ProjectWorkspace.tsx', 'ProjectDetail', { id: ID, onBack() {} }, {
     getProject: async () => project({ listing_id: null, property_id: LISTING, property_title: 'Authorized private property title', listing_title: 'Authorized private property title', address: 'Forbidden full registry address', notes: 'Forbidden full registry notes' }),
     getProjectUpdates: async () => page([]),
@@ -865,6 +868,7 @@ test('actual private-project participants read scoped history without fetching f
     assert.ok(h.visibleText.includes('Authorized private property title'))
     await h.fire(h.find('button', node => h.text(node) === h.t('tabs.history')), 'onClick')
     assert.ok(h.visibleText.includes(history.body))
+    assert.match(h.html, /<time datetime="2026-01-01"[^>]*>[^<]+<\/time><\/p>/i)
     assert.equal(h.calls.find(call => call.name === 'getPrivatePropertyServiceHistory').args[0], LISTING)
     assert.ok(!h.calls.some(call => call.name === 'getPrivateProperty' || call.name === 'getPrivateProperties' || call.name === 'getPropertyServiceHistory'))
     assert.ok(!h.html.includes('Forbidden full registry'))

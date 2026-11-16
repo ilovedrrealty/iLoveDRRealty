@@ -8,6 +8,7 @@ import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkComments, NetworkComposer, NetworkDate, NetworkFreshness, NetworkPagination, NetworkPanel, PrivatePhotos, networkError, useNetworkDraftGuard, allowNetworkNavigation } from './NetworkShared'
 import { DueWorkReminders } from './DueWorkReminders'
 import { HistoryShareCreateControl } from './HistoryShareCreate'
+import { HistoryWorkMetadata } from './HistorySharing'
 import type { HistoryShareSource } from '../../api/historyShares'
 
 type Catalog = ProfessionalOptions & { property_classes?: { id: string; label: { en: string; es: string } }[] }
@@ -110,7 +111,7 @@ export function ProjectDetail({ id, onBack, onHistorySent, historyCategories = [
       {project.my_role === 'owner' && onHistorySent ? <HistoryShareCreateControl source={historySource} categories={historyCategories}
         parentFresh={!read.stale && !read.error} onSent={onHistorySent} /> : null}
       <ServiceHistory key={`${historySource.kind}:${historySource.id}`}
-        propertyId={project.property_id ?? undefined} listingId={project.listing_id ?? undefined} />
+        propertyId={project.property_id ?? undefined} listingId={project.listing_id ?? undefined} categories={historyCategories} />
     </> : null}
     {tab === 'details' ? <ProjectEdit key={project.id} project={project} onChanged={reload} /> : null}
   </>}</div>
@@ -170,10 +171,14 @@ function ProjectMembers({ project, onChanged }: { project: NetworkProject; onCha
     {project.can_assign ? <form className="mt-5 space-y-3" onSubmit={event => { event.preventDefault(); void change('add', Number(code)) }}><fieldset disabled={busy || !!error} className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-semibold">{t('member_code')}<input type="number" min="1" max="999999999" step="1" required className={NETWORK_FIELD} value={code} onChange={event => setCode(event.target.value)} /></label><label className="block text-sm font-semibold">{t('member_role')}<select className={NETWORK_FIELD} value={role} onChange={event => setRole(event.target.value as typeof role)}>{(['professional', 'manager', 'viewer'] as const).map(value => <option key={value} value={value}>{t(`roles.${value}`)}</option>)}</select></label><button className={NETWORK_PRIMARY} type="submit">{t(busy ? 'saving' : 'add_member')}</button></fieldset></form> : null}{error ? <p role="alert" className="mt-4 text-sm text-red-800">{t(error)} {t('reload_to_continue')}</p> : null}
   </NetworkPanel>
 }
-export function ServiceHistory({ listingId, propertyId }: { listingId?: string; propertyId?: string }) {
+export function ServiceHistory({ listingId, propertyId, categories }: {
+  listingId?: string; propertyId?: string; categories: ProfessionalOptions['categories']
+}) {
   const { t } = useTranslation('property_network')
   const [page, setPage] = useState(1)
   const read = useNetworkRead(`history:${propertyId ? 'private' : 'listing'}:${propertyId ?? listingId}:${page}`, signal => propertyId ? getPrivatePropertyServiceHistory(propertyId, { page }, signal) : getPropertyServiceHistory(listingId!, { page }, signal))
   const data = read.data, error = read.error ? networkError(read.error) : ''
-  return <NetworkPanel title={t('service_history')}><NetworkFreshness read={read} /><p className="mb-4 text-xs text-dim">{t(propertyId ? 'registry.history_note' : 'service_history_note')}</p>{error ? <p role="alert">{t(error)}</p> : null}{!data ? !error ? <p role="status">{t('loading')}</p> : null : <><ol className="space-y-4">{data.items.map(item => <li key={item.id} className="rounded-xl border border-line p-4"><p className="font-semibold text-ink">{item.project_title}</p><p className="mt-1 text-xs text-dim"><NetworkDate value={item.occurred_on} /></p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink2">{item.body}</p><PrivatePhotos ids={item.media_ids} /></li>)}</ol>{!data.items.length ? <p className="text-sm text-dim">{t('history_empty')}</p> : null}<NetworkPagination page={page} total={data.total} busy={false} onChange={setPage} /></>}</NetworkPanel>
+  return <NetworkPanel title={t('service_history')}><NetworkFreshness read={read} /><p className="mb-4 text-xs text-dim">{t(propertyId ? 'registry.history_note' : 'service_history_note')}</p>{error ? <p role="alert">{t(error)}</p> : null}{!data ? !error ? <p role="status">{t('loading')}</p> : null : <><ol className="space-y-4">{data.items.map(item => <li key={item.id} className="rounded-xl border border-line p-4"><p className="font-semibold text-ink">{item.project_title}</p><p className="mt-1 break-words text-xs text-dim">
+    <HistoryWorkMetadata date={item.occurred_on} ids={item.service_category_ids} categories={categories} />
+  </p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink2">{item.body}</p><PrivatePhotos ids={item.media_ids} /></li>)}</ol>{!data.items.length ? <p className="text-sm text-dim">{t('history_empty')}</p> : null}<NetworkPagination page={page} total={data.total} busy={false} onChange={setPage} /></>}</NetworkPanel>
 }
