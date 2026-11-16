@@ -108,7 +108,7 @@ test('professional landing leads with member signup in both languages and keeps 
     const copy = JSON.parse(fs.readFileSync(path.join(root, 'apps/landing/src/locales', language, 'professionals.json'), 'utf8'))
     const page = loadTS('apps/landing/src/views/Professionals.tsx', {}, {
       'react/jsx-runtime': { jsx: element, jsxs: element },
-      'next/link': { default: 'a' },
+      'next/link': { __esModule: true, default: 'a' },
       'lucide-react': { BriefcaseBusiness: 'svg', House: 'svg', ShieldCheck: 'svg', Wrench: 'svg' },
       'react-i18next': { useTranslation: () => ({ t: key => copy[key] }) },
     })
