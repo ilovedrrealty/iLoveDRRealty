@@ -34,8 +34,24 @@ test('only checked valid contacts enter the exact preview; unsafe header data an
   for (const email of ['x@example.com\r\nBcc: secret@example.com', '<img>@example.com', 'x@example.com?bcc=secret@example.com', 'x@example.com\u0000', 'invalid']) {
     assert.equal(model.shareableContact({ name: 'A', email }).email, '')
   }
-  for (const phone of ['+1', 'not a phone', '8095550101', '+18095550101\nBcc: a@b.co']) assert.equal(model.shareableContact({ name: 'A', phone }).phone, '')
+  for (const phone of ['+1', 'not a phone', '123456', '1234567890123456', '(809 555-0101', '8095550101 x42', '8095550101'.padEnd(51),
+    '+18095550101\nBcc: a@b.co', '8095550101\r\nBcc: a@b.co']) assert.equal(model.shareableContact({ name: 'A', phone }).phone, '')
   assert.equal(model.shareableContact({ name: 'A\nPhone: private' }).name, '')
+})
+
+test('national phone numbers keep their entered format in draft bodies only', () => {
+  const selected = { name: false, email: false, phone: true }
+  for (const phone of ['8095550101', '(809) 555-0101', '020 7946 0101', '809.555.0101']) {
+    const preview = model.contactPreview({ name: 'A', phone }, selected, labels)
+    assert.equal(preview, `Teléfono: ${phone}`)
+    const draft = model.contactComposeLinks(preview, 'Contacto')
+    const email = new URL(draft.email), whatsapp = new URL(draft.whatsapp)
+    assert.equal(email.pathname, '')
+    assert.equal(whatsapp.pathname, '/')
+    assert.equal(email.searchParams.get('body'), preview)
+    assert.equal(whatsapp.searchParams.get('text'), preview)
+  }
+  assert.equal(model.shareableContact({ name: 'A', phone: '+1 (809) 555-0101' }).phone, '+18095550101')
 })
 
 test('email and WhatsApp links round-trip exactly, without recipient or header injection', () => {

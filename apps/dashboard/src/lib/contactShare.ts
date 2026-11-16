@@ -11,9 +11,16 @@ export function shareableContact(value: ShareContact): { name: string; email: st
   const email = typeof value.email === 'string' && value.email.length <= 254
     && /^[^<>()\[\]\\,;:\s@?&#"\u0000-\u001f\u007f]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}$/i.test(value.email) ? value.email : ''
   let phone = ''
-  if (typeof value.phone === 'string' && value.phone.trim().startsWith('+') && !/[\r\n\u0000-\u001f\u007f]/.test(value.phone)) {
-    const parsed = parsePhoneNumberFromString(value.phone)
-    if (parsed?.isValid()) phone = parsed.number
+  if (typeof value.phone === 'string' && value.phone.length <= 50 && !/[\u0000-\u001f\u007f]/.test(value.phone)) {
+    const entered = value.phone.trim()
+    if (entered.startsWith('+')) {
+      const parsed = parsePhoneNumberFromString(entered)
+      if (parsed?.isValid()) phone = parsed.number
+    } else if (/^(?:\([0-9]+\)|[0-9 .-])+$/.test(entered)) {
+      // Legacy national numbers are draft text only. Preserve their format without guessing a country.
+      const digits = entered.replace(/[^0-9]/g, '').length
+      if (digits >= 7 && digits <= 15) phone = entered
+    }
   }
   return { name, email, phone }
 }
