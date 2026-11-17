@@ -9,6 +9,7 @@ export interface MapListing {
 }
 export interface ListingMapData {
   items: MapListing[]; total: number; mapped_total: number; unmapped_total: number
+  spatial_excluded_unlocated?: number
   areas: { location: string; count: number }[]; ungrouped_total: number
   viewport_total: number; returned: number; limit: number; truncated: boolean; bounds: MapBounds | null
 }

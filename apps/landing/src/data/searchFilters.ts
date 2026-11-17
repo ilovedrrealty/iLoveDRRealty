@@ -1,4 +1,5 @@
 import { FEATURES } from './searchData'
+import { parseSpatialSearch, serializeSpatialSearch, type SpatialSearch } from './spatialSearch'
 
 export const PROPERTY_TYPES = ['Villa', 'Apartment', 'Condo', 'Land', 'Commercial']
 export type SearchPurpose = 'sale' | 'rent' | 'investment'
@@ -15,6 +16,8 @@ export interface SearchFilters {
   rentalPeriod: 'month' | 'day'
   sort: SearchSort
   page: number
+  spatial: SpatialSearch | null
+  spatialInvalid: boolean
 }
 
 const nonnegative = (value: string | null, fallback: number) => {
@@ -32,6 +35,8 @@ export function readSearchFilters(params: URLSearchParams): SearchFilters {
     return type ? [type] : []
   })
   const beds = params.get('beds') ?? 'any'
+  const spatialValues = params.getAll('spatial')
+  const spatial = spatialValues.length === 1 ? parseSpatialSearch(spatialValues[0]) : null
   return {
     purpose: purpose === 'rent' || purpose === 'investment' ? purpose : 'sale',
     types: unique(types),
@@ -44,6 +49,8 @@ export function readSearchFilters(params: URLSearchParams): SearchFilters {
     rentalPeriod: params.get('rentalPeriod') === 'day' ? 'day' : 'month',
     sort: sort === 'low' || sort === 'high' || sort === 'roi' ? sort : 'new',
     page: Math.max(1, Math.min(1_000_000, Math.floor(nonnegative(params.get('page'), 1)))),
+    spatial,
+    spatialInvalid: spatialValues.length > 0 && !spatial,
   }
 }
 
@@ -61,6 +68,11 @@ export function writeSearchFilters(filters: SearchFilters, current = new URLSear
   if (filters.purpose === 'rent' && filters.rentalPeriod === 'day') params.set('rentalPeriod', 'day')
   if (filters.sort !== 'new') params.set('sort', filters.sort)
   if (filters.page > 1) params.set('page', String(filters.page))
+  if (!filters.spatialInvalid) {
+    params.delete('spatial')
+    const spatial = filters.spatial && serializeSpatialSearch(filters.spatial)
+    if (spatial) params.set('spatial', spatial)
+  }
   return params
 }
 
