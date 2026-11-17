@@ -11,6 +11,7 @@ import {
   STEPS, STEP_COLORS, FAQ_COLORS,
 } from '../data/blogData'
 import { CARDS_ES } from '../data/blogData.es'
+import { marketReportLink } from '../api/marketReports'
 
 export default function Blog() {
   const resourcesHero = useWebsiteImage('resources_hero', 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80&auto=format&fit=crop')
@@ -69,10 +70,14 @@ export default function Blog() {
 
       <ProfessionalResourceCard />
       <WebsiteResources />
-      <div className="mx-auto max-w-310 px-4 pt-6 sm:px-7">
+      <div className="mx-auto flex max-w-310 flex-wrap gap-2 px-4 pt-6 sm:px-7">
         <a href={isEs ? '/local-guides/?lang=es' : '/local-guides/'}
           className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 py-2 font-semibold text-ink hover:bg-paper2">
           {t('editorial.directory')}
+        </a>
+        <a href={marketReportLink(isEs ? 'es' : 'en')}
+          className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 py-2 font-semibold text-ink hover:bg-paper2">
+          {t('market_report.title')}
         </a>
       </div>
 

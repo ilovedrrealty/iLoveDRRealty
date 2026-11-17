@@ -9,6 +9,7 @@ import {
   type EditorialLocale, type PublishedEditorial,
 } from '../api/editorial'
 import { neighborhoodCompareLink } from '../api/neighborhoods'
+import { marketReportLink } from '../api/marketReports'
 
 const action = 'inline-flex min-h-11 items-center rounded-lg border border-line px-3 py-2 font-semibold text-ink hover:bg-paper2'
 type Directory = Awaited<ReturnType<typeof listPublishedEditorial>>
@@ -19,7 +20,7 @@ type Result =
 
 export default function Editorial({ reader = false }: { reader?: boolean }) {
   const params = useSearchParams()
-  const { t, i18n } = useTranslation('blog', { keyPrefix: 'editorial' })
+  const { t, i18n } = useTranslation('blog')
   const langs = params.getAll('lang')
   const locale: EditorialLocale = langs.length === 1 && (langs[0] === 'es' || langs[0] === 'en')
     ? langs[0] : i18n.language.startsWith('es') ? 'es' : 'en'
@@ -33,7 +34,7 @@ export default function Editorial({ reader = false }: { reader?: boolean }) {
   const [result, setResult] = useState<Result | null>(null)
   const current = result?.key === key ? result : null
   const missing = reader && !slug || current?.state === 'missing'
-  const copy = (name: string) => t(name, { lng: locale })
+  const copy = (name: string) => t(`editorial.${name}`, { lng: locale })
 
   useEffect(() => {
     if (reader && !slug) return
@@ -72,7 +73,10 @@ export default function Editorial({ reader = false }: { reader?: boolean }) {
       {!reader && <header className="space-y-2">
         <h1 className="font-sans text-3xl font-bold tracking-tight text-ink sm:text-5xl">{copy('directory')}</h1>
         <p className="text-dim">{copy('description')}</p>
-        <Link href={neighborhoodCompareLink(locale)} className={action}>{copy('compare_neighborhoods')}</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={neighborhoodCompareLink(locale)} className={action}>{copy('compare_neighborhoods')}</Link>
+          <Link href={marketReportLink(locale)} className={action}>{t('market_report.title', { lng: locale })}</Link>
+        </div>
       </header>}
       {missing ? <p role="status" className="text-ink">{copy('unavailable')}</p>
         : !current ? <p role="status" className="text-dim">{copy('loading')}</p>

@@ -31,6 +31,8 @@ export const LOCATION_GROUPS: { key: Exclude<LocationGroupKey, 'other'>; values:
 const canonicalLocations = new Map([...POPULAR_AREAS, ...DR_PROVINCES]
   .map(value => [normalizeLocation(value), value]))
 
+export const SEARCH_CATALOG_LOCATIONS = [...canonicalLocations.values()]
+
 /** Merge active inventory with the form choices, including destinations with no listings yet. */
 export function groupLocations(options: SearchLocationOption[], areas: WebsiteArea[] = []): SearchLocationGroup[] {
   const merged = new Map<string, SearchLocationOption>([...canonicalLocations]
