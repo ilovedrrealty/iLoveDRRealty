@@ -1,3 +1,5 @@
+import { readShortlistGrant, shortlistPath } from '../../../../packages/shortlist-links'
+
 const JOIN_KEY = 'ildr.professional-join.v1'
 const DIRECTORY_KEY = 'ildr.professional-directory.v1'
 const JOIN_TTL = 60 * 60 * 1000
@@ -38,6 +40,10 @@ export function professionalAuthParams(): Record<string, string> | undefined {
 
 /** A join hint selects a fixed screen. It never changes account permissions. */
 export function dashboardAfterAuth(dashboardURL: string): string {
+  if (typeof window !== 'undefined') {
+    const grant = readShortlistGrant(new URLSearchParams(window.location.search), 'shortlist')
+    if (grant) return new URL(shortlistPath(grant), dashboardURL).toString()
+  }
   const destination = rememberProfessionalJoin() ? '/professional-profile' : rememberProfessionalDirectory() ? '/professional-directory' : null
   if (!destination) return dashboardURL
   try { sessionStorage.removeItem(JOIN_KEY); sessionStorage.removeItem(DIRECTORY_KEY) } catch { /* Navigation still works without storage. */ }

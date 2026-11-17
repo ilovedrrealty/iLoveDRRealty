@@ -20,6 +20,7 @@ function loadTS(relative, globals = {}, imports = {}) {
   return exports
 }
 const model = loadTS('packages/professionals/src/index.ts')
+const shortlistLinks = loadTS('packages/shortlist-links/index.ts')
 const complete = () => ({ ...model.emptyProfessionalDraft(), business_name: 'Synthetic services', category_ids: ['example'], service_area_ids: ['example'], descriptions: { en: 'Property services.', es: '' }, public_phone: '+18095550101', public_contact_consent: true })
 
 test('submission accepts a contact person instead of a business name and one translated description', () => {
@@ -60,7 +61,8 @@ function intentHarness(search = '', blockedStorage = false) {
     removeItem: key => values.delete(key),
   }
   const window = { location: { search } }
-  const api = loadTS('apps/landing/src/lib/professionalJoin.ts', { window, sessionStorage: storage })
+  const api = loadTS('apps/landing/src/lib/professionalJoin.ts', { window, sessionStorage: storage },
+    { '../../../../packages/shortlist-links': shortlistLinks })
   return { api, window, values }
 }
 test('professional intent chooses a fixed dashboard screen and ignores arbitrary redirect targets', () => {
@@ -95,6 +97,23 @@ test('member directory intent survives signup and verification without accepting
   assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com/professional-directory')
   assert.equal(values.size, 0)
   assert.equal(api.dashboardAfterAuth('https://app.ilovedrrealty.com'), 'https://app.ilovedrrealty.com')
+})
+
+test('an explicit shortlist link returns to the fixed signed-in screen without browser storage', () => {
+  const grant = '80B0E1BC-9E28-4B24-82A7-64118D900BD4'
+  const dashboard = 'https://app.ilovedrrealty.com'
+  const { api, values } = intentHarness(`?shortlist=${grant}&redirect=https://example.invalid`, true)
+  assert.equal(api.dashboardAfterAuth(dashboard), `${dashboard}/shortlists?grant=${grant.toLowerCase()}`)
+  assert.equal(shortlistLinks.readShortlistGrant(new URLSearchParams({ grant }), 'grant'), grant.toLowerCase())
+  assert.equal(values.size, 0)
+})
+
+test('shortlist login rejects duplicate, malformed and arbitrary redirect hints', () => {
+  const id = '80b0e1bc-9e28-4b24-82a7-64118d900bd4'
+  const dashboard = 'https://app.ilovedrrealty.com'
+  for (const query of [`shortlist=${id}&shortlist=${id}`, `shortlist=${id}%0A`, 'shortlist=%2F%2Fexample.invalid', 'shortlist=professional']) {
+    assert.equal(intentHarness('?' + query).api.dashboardAfterAuth(dashboard), dashboard)
+  }
 })
 
 test('professional landing leads with member signup in both languages and keeps provider applications separate', () => {
