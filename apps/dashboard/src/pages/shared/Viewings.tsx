@@ -2,7 +2,8 @@ import { isAxiosError } from 'axios'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
-import { shortlistCatalog } from '../../api/shortlists'
+import { viewingShortlistSource, type ViewingShortlistSource } from '../../../../../packages/dashboard-links'
+import { readViewingShortlist, shortlistCatalog, shortlistExpiryAt } from '../../api/shortlists'
 import {
   VIEWING_DURATION_MINUTES, VIEWING_PAGE_SIZE, VIEWING_STOP_LIMIT, VIEWING_ZONE, getAssignedViewings, getMyViewings, getViewingContact,
   prepareViewingStops, submitViewing, updateViewing, viewingActions, viewingId, viewingMeetingUrl,
@@ -14,9 +15,12 @@ import {
   NETWORK_PRIMARY as Primary, useNetworkDraftGuard,
 } from '../../components/network/NetworkShared'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
+import { useShortlistExpired } from '../../hooks/useShortlistExpired'
 import type { UserInfo } from '../../lib/auth'
+import { landingBaseUrl } from '../../lib/siteUrls'
 
 type Problem = 'unavailable' | 'conflict' | 'validation' | 'uncertain'
+const LANDING = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 const status = (error: unknown) => isAxiosError(error) ? error.response?.status : undefined
 const errorKey = (error: unknown): Problem => {
   const code = status(error)
@@ -28,22 +32,30 @@ export function Viewings({ user }: { user: UserInfo }) {
   const { t } = useTranslation('common', { keyPrefix: 'viewings' })
   const [params, setParams] = useSearchParams()
   const selected = params.getAll('listing')
-  const initial = selected.length === 1 ? viewingId(selected[0]) : null
+  const linkedShortlist = params.has('shortlist') || params.has('shortlist_scope')
+  const source = viewingShortlistSource(params)
+  const initial = !linkedShortlist && selected.length === 1 ? viewingId(selected[0]) : null
   const buyer = user.role === 'buyer'
   const assigned = user.role === 'realtor' || user.role === 'admin'
-  const [draft, setDraft] = useState(buyer && !!initial)
+  const [draft, setDraft] = useState(false)
   const [saved, setSaved] = useState(false)
   function close(submitted = false) {
     if (!submitted && !allowNetworkNavigation()) return
     setDraft(false); setSaved(submitted)
-    if (selected.length) setParams({}, { replace: true })
+    if (selected.length || linkedShortlist) {
+      const next = new URLSearchParams(params)
+      for (const key of ['listing', 'shortlist', 'shortlist_scope']) next.delete(key)
+      setParams(next, { replace: true })
+    }
   }
   if (!buyer && !assigned) return <p>{t('unavailable')}</p>
   return <div className="min-w-0 space-y-4">
-    {saved && <p role="status" className="text-sm font-semibold text-sea">{t('submitted')}</p>}
-    {draft && buyer
-      ? <ViewingForm key={initial ?? 'new'} initialListing={initial} onClose={() => close()} onSaved={() => close(true)} />
+    {saved && !source && !initial && <p role="status" className="text-sm font-semibold text-sea">{t('submitted')}</p>}
+    {buyer && (draft || source || initial)
+      ? <ViewingForm key={`${user.id}:${source?.scope ?? ''}:${source?.id ?? initial ?? 'new'}`}
+          actorId={user.id} initialListing={initial} source={source} onClose={() => close()} onSaved={() => close(true)} />
       : <>
+        {buyer && linkedShortlist && <p role="status" className="text-sm text-dim">{t('shortlist_unavailable')}</p>}
         {buyer && <button type="button" className={Primary} onClick={() => { setSaved(false); setDraft(true) }}>{t('create')}</button>}
         {buyer ? <BuyerItineraries actorId={user.id} /> : <AssignedViewings actorId={user.id} />}
       </>}
@@ -55,10 +67,12 @@ function emptyStop(contact: ViewingContact): StopDraft {
   return { listing_id: contact.listing.id, mode: 'in_person', local_start: '', note: '', contact }
 }
 
-function ViewingForm({ initialListing, onClose, onSaved }: {
-  initialListing: string | null; onClose: () => void; onSaved: () => void
+function ViewingForm({ actorId, initialListing, source, onClose, onSaved }: {
+  actorId: string; initialListing: string | null; source: ViewingShortlistSource | null; onClose: () => void; onSaved: () => void
 }) {
-  const { t } = useTranslation('common', { keyPrefix: 'viewings' })
+  const { t, i18n } = useTranslation('common', { keyPrefix: 'viewings' })
+  const guides = new URL('/local-guides/compare/', LANDING)
+  guides.searchParams.set('lang', i18n.language.startsWith('es') ? 'es' : 'en')
   const [title, setTitle] = useState('')
   const [stops, setStops] = useState<StopDraft[]>([])
   const [picker, setPicker] = useState(false)
@@ -71,7 +85,15 @@ function ViewingForm({ initialListing, onClose, onSaved }: {
   const writing = useRef(false)
   const request = useRef<{ id: string; content: string } | null>(null)
   const catalog = useNetworkRead(`viewing-listings:${page}`, signal => shortlistCatalog(page, signal), picker)
+  const shortlist = useNetworkRead(`viewing-shortlist:${actorId}:${source?.scope}:${source?.id}`, signal => {
+    if (!source) throw new Error('Missing shortlist source')
+    return readViewingShortlist(source, signal)
+  }, !!source)
+  const expired = useShortlistExpired(shortlist.data?.expires_at)
+  const unavailable = expired || [401, 403, 404].includes(status(shortlist.error) ?? 0)
+  const shortlistChoices = !unavailable && !shortlist.error && !shortlist.stale && !shortlist.checking ? shortlist.data : null
   const choices = !catalog.error && !catalog.stale && !catalog.checking ? catalog.data : null
+  const cannotAdd = (id: string) => !!pendingListing || stops.length >= VIEWING_STOP_LIMIT || stops.some(stop => stop.listing_id === id)
   const frozen = busy || problem === 'uncertain'
   const prepared = prepareViewingStops(stops)
   useNetworkDraftGuard(!!title || stops.length > 0, busy)
@@ -118,6 +140,7 @@ function ViewingForm({ initialListing, onClose, onSaved }: {
   return <section className="min-w-0 space-y-4 rounded-xl border border-line bg-paper p-4">
     <h2 className="text-lg font-bold text-ink">{t('create')}</h2>
     <p className="text-sm text-dim">{t('request_hint', { duration: VIEWING_DURATION_MINUTES })}</p>
+    <a className={Button} href={guides.href} target="_blank" rel="noopener noreferrer">{t('compare_neighborhoods')}</a>
     <form className="space-y-4" onSubmit={submit}>
       <fieldset className="min-w-0 space-y-4" disabled={frozen}>
         <label className="block text-sm font-semibold">{t('title')}
@@ -148,6 +171,25 @@ function ViewingForm({ initialListing, onClose, onSaved }: {
         {contactError && <p role="alert" className="text-sm text-ink">{t('contact_unavailable')}</p>}
         {!prepared && stops.length > 0 && stops.every(stop => stop.local_start)
           && <p className="text-sm text-ink">{t('invalid_slots')}</p>}
+        {source && <section className="min-w-0 space-y-2 rounded-lg border border-line p-3">
+          <h3 className="font-semibold text-ink">{t('shortlist_properties')}</h3>
+          {unavailable && <p role="status">{t('shortlist_unavailable')}</p>}
+          {!unavailable && !!shortlist.error && <>
+            <p role="alert">{t('shortlist_problem')}</p>
+            <button type="button" className={Button} onClick={shortlist.refresh}>{t('refresh')}</button>
+          </>}
+          {!unavailable && !shortlist.error && !shortlistChoices && <p role="status">{t('shortlist_loading')}</p>}
+          {shortlistChoices && (shortlistChoices.items.length ? <ul className="space-y-2">
+            {shortlistChoices.items.map(listing => <li key={listing.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+              <span className="min-w-0 break-words text-sm">{listing.title} · {listing.location}</span>
+              <button type="button" className={Button} aria-label={t('add_named', { title: listing.title })}
+                disabled={cannotAdd(listing.id)} onClick={() => {
+                  const expiry = shortlistChoices.expires_at
+                  if (!expiry || Date.now() < shortlistExpiryAt(expiry)) setPendingListing(listing.id)
+                }}>{t('add')}</button>
+            </li>)}
+          </ul> : <p>{t('shortlist_empty')}</p>)}
+        </section>}
         <button type="button" className={Button} aria-expanded={picker} disabled={stops.length >= VIEWING_STOP_LIMIT}
           onClick={() => setPicker(value => !value)}>{t('choose_properties')}</button>
         {picker && <section className="min-w-0 space-y-2 rounded-lg border border-line p-3">
@@ -157,7 +199,7 @@ function ViewingForm({ initialListing, onClose, onSaved }: {
             {choices.items.map(listing => <li key={listing.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2">
               <span className="min-w-0 break-words text-sm">{listing.title} · {listing.location}</span>
               <button type="button" className={Button} aria-label={t('add_named', { title: listing.title })}
-                disabled={!!pendingListing || stops.length >= VIEWING_STOP_LIMIT || stops.some(stop => stop.listing_id === listing.id)}
+                disabled={cannotAdd(listing.id)}
                 onClick={() => setPendingListing(listing.id)}>{t('add')}</button>
             </li>)}
           </ul>}

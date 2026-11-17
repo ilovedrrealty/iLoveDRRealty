@@ -11,6 +11,10 @@ const source = read('apps/dashboard/src/api/shortlists.ts')
 const code = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
 }).outputText
+const links = { exports: {} }
+vm.runInNewContext(ts.transpileModule(read('packages/dashboard-links/index.ts'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: links.exports })
 const documentId = '00000000-0000-4000-8000-000000000001'
 const grantId = '00000000-0000-4000-8000-000000000002'
 const listingId = '00000000-0000-4000-8000-000000000003'
@@ -53,6 +57,35 @@ test('a private link holds the grant UUID and uses the fixed dashboard route', (
   assert.throws(() => api.shortlistShareUrl('https://app.example.com', '%2F%2Fother.example.com'), /Invalid shortlist grant/)
   assert.ok(Number.isNaN(api.shortlistExpiryAt('2026-11-24T19:00:00')))
   assert.equal(api.shortlistExpiryAt('2026-11-24T15:00:00-04:00'), Date.parse(expiry))
+})
+
+test('viewing links reselect one actor-scoped shortlist without copying private fields', async () => {
+  const h = load()
+  const controller = new AbortController()
+  for (const [scope, record] of [['owned', owned], ['received', received]]) {
+    const href = links.exports.viewingShortlistLink({ id: record.id, scope })
+    assert.equal(href, `/viewings?workspace=buyer&shortlist=${record.id}&shortlist_scope=${scope}`)
+    const params = new URL(href, 'https://app.example.com/').searchParams
+    const source = links.exports.viewingShortlistSource(params)
+    assert.deepEqual(plain(source), { id: record.id, scope })
+    h.reply(record)
+    assert.deepEqual(plain(await h.api.readViewingShortlist(source, controller.signal)),
+      scope === 'owned' ? { items: [listing] } : { items: [listing], expires_at: expiry })
+    const path = `/shortlists/${scope}/${record.id}`
+    assert.deepEqual(h.calls.at(-1).slice(0, 2), ['get', path])
+    assert.equal(h.calls.at(-1)[2].signal, controller.signal)
+  }
+  for (const query of [
+    `shortlist=${grantId}`,
+    `shortlist=bad&shortlist_scope=received`,
+    `shortlist=${grantId}&shortlist=${grantId}&shortlist_scope=received`,
+    `shortlist=${grantId}&shortlist_scope=received&shortlist_scope=owned`,
+    `shortlist=${grantId}&shortlist_scope=received&listing=${listingId}`,
+    `shortlist=${grantId}&shortlist_scope=admin`,
+  ]) {
+    assert.equal(links.exports.viewingShortlistSource(new URLSearchParams(query)), null)
+  }
+  assert.equal(h.calls.length, 2)
 })
 
 test('draft writes include the selected IDs only after an explicit change', () => {

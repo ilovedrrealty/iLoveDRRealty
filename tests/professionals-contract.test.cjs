@@ -137,6 +137,27 @@ test('viewing login ignores malformed, duplicate and conflicting intents', () =>
   }
 })
 
+test('a shortlist viewing link returns to the fixed buyer planner after sign-in', () => {
+  const id = '80b0e1bc-9e28-4b24-82a7-64118d900bd4'
+  const dashboard = 'https://app.ilovedrrealty.com'
+  for (const scope of ['owned', 'received']) {
+    const params = new URLSearchParams({ workspace: 'buyer', shortlist: id, shortlist_scope: scope })
+    const hint = dashboardLinks.dashboardLoginHint('viewings', params)
+    assert.equal(hint, `?viewing_shortlist=${id}&shortlist_scope=${scope}`)
+    const { api, values } = intentHarness(hint + '&redirect=https://untrusted.invalid', true)
+    assert.equal(api.dashboardAfterAuth(dashboard), dashboard + '/viewings?' + params)
+    assert.equal(values.size, 0)
+    params.set('listing', id)
+    assert.equal(dashboardLinks.dashboardLoginHint('viewings', params), null)
+  }
+  for (const hint of [
+    `?viewing_shortlist=${id}&shortlist_scope=admin`,
+    `?viewing_shortlist=${id}&shortlist_scope=owned&shortlist_scope=received`,
+    `?viewing_shortlist=${id}&shortlist_scope=owned&viewing=${id}`,
+    `?viewing_shortlist=${id}&shortlist_scope=owned&shortlist=${id}`,
+  ]) assert.equal(intentHarness(hint).api.dashboardAfterAuth(dashboard), dashboard)
+})
+
 test('professional landing leads with member signup in both languages and keeps provider applications separate', () => {
   const element = (type, props) => ({ type, props })
   function links(node) {

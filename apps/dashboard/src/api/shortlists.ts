@@ -1,4 +1,5 @@
 import client from './axios'
+import type { ViewingShortlistSource } from '../../../../packages/dashboard-links'
 
 export const SHORTLIST_LIMIT = 20
 export const SHORTLIST_TITLE_LIMIT = 100
@@ -127,6 +128,15 @@ export async function readOwnedShortlist(id: string, signal: AbortSignal): Promi
 
 export async function readReceivedShortlist(id: string, signal: AbortSignal): Promise<ReceivedShortlist> {
   return received(privateData(await client.get(`/shortlists/received/${idValue(id)}`, { signal })), id)
+}
+
+export async function readViewingShortlist({ id, scope }: ViewingShortlistSource, signal: AbortSignal) {
+  if (scope === 'owned') {
+    const { items } = await readOwnedShortlist(id, signal)
+    return { items }
+  }
+  const { items, expires_at } = await readReceivedShortlist(id, signal)
+  return { items, expires_at }
 }
 
 export async function editOwnedShortlist(id: string, expectedVersion: number, input: ShortlistWrite): Promise<OwnedShortlist> {

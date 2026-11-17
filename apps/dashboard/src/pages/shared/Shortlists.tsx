@@ -1,7 +1,8 @@
 import { isAxiosError } from 'axios'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { viewingShortlistLink } from '../../../../../packages/dashboard-links'
 import {
   archiveShortlist, createShortlist, editOwnedShortlist, editReceivedShortlist,
   listShortlists, prepareShortlist, readOwnedShortlist, readReceivedShortlist, revokeShortlist,
@@ -14,6 +15,7 @@ import {
   allowNetworkNavigation, NETWORK_BUTTON as Button, NETWORK_FIELD as Field, NETWORK_PRIMARY as Primary, useNetworkDraftGuard,
 } from '../../components/network/NetworkShared'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
+import { useShortlistExpired } from '../../hooks/useShortlistExpired'
 import type { UserInfo } from '../../lib/auth'
 import { landingBaseUrl } from '../../lib/siteUrls'
 
@@ -32,31 +34,6 @@ function Expiry({ value }: { value: string }) {
       dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Santo_Domingo',
     }).format(shortlistExpiryAt(value))}
   </time></p>
-}
-
-/** Expired data stays hidden when a throttled tab becomes visible again. */
-function useExpired(value?: string) {
-  const [, setTick] = useState(0)
-  const expiry = value === undefined ? Infinity : shortlistExpiryAt(value)
-  useEffect(() => {
-    if (!Number.isFinite(expiry)) return
-    let timer: number
-    function update() {
-      window.clearTimeout(timer)
-      const delay = expiry - Date.now()
-      if (delay > 0) timer = window.setTimeout(update, Math.min(delay, 2_147_483_647))
-      setTick(tick => tick + 1)
-    }
-    update()
-    document.addEventListener('visibilitychange', update)
-    window.addEventListener('pageshow', update)
-    return () => {
-      window.clearTimeout(timer)
-      document.removeEventListener('visibilitychange', update)
-      window.removeEventListener('pageshow', update)
-    }
-  }, [expiry])
-  return !(Date.now() < expiry)
 }
 
 export function Shortlists({ user }: { user: UserInfo }) {
@@ -119,7 +96,7 @@ function ShortlistList({ actorId, view, onCreate, onOpen }: {
 
 function ShortlistListItem({ item, view, onOpen }: { item: ShortlistSummary; view: ShortlistView; onOpen: (id: string) => void }) {
   const { t } = useTranslation('common', { keyPrefix: 'shortlists' })
-  const expired = useExpired(view === 'received' ? item.expires_at ?? undefined : undefined)
+  const expired = useShortlistExpired(view === 'received' ? item.expires_at ?? undefined : undefined)
   if (expired) return null
   return <li className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-line p-3">
     <div className="min-w-0 space-y-1">
@@ -139,7 +116,7 @@ function ShortlistRecord({ id, user, scope, onBack, onArchived }: {
   const [editing, setEditing] = useState(false)
   const [versionFloor, setVersionFloor] = useState(0)
   const received = read.data && 'expires_at' in read.data ? read.data : null
-  const expired = useExpired(received?.expires_at)
+  const expired = useShortlistExpired(received?.expires_at)
   const blocked = inaccessible(read.error) || expired
   const current = !blocked && read.data && read.data.version >= versionFloor ? read.data : null
   const visible = !!current && !read.error && !read.stale && (scope === 'owned' || !read.checking)
@@ -170,7 +147,12 @@ function ShortlistRecord({ id, user, scope, onBack, onArchived }: {
           </div>)}
         </dl>
         <ListingChoices items={current.items} />
-        <button type="button" className={Button} disabled={!ready} onClick={() => setEditing(true)}>{t('edit')}</button>
+        <div className="flex flex-wrap gap-2">
+          {user.role === 'buyer' && ready && current.items.length > 0
+            && <Link to={viewingShortlistLink({ id, scope })} className={Primary}
+              onClick={event => { if (!allowNetworkNavigation()) event.preventDefault() }}>{t('plan_viewings')}</Link>}
+          <button type="button" className={Button} disabled={!ready} onClick={() => setEditing(true)}>{t('edit')}</button>
+        </div>
         {'share' in current && <ShareControls shortlist={current} actorCode={user.user_code} ready={ready}
           onUpdated={accept} onRefresh={read.refresh} onArchived={onArchived ?? onBack} />}
       </>}
@@ -313,7 +295,7 @@ function ShareControls({ shortlist, actorCode, ready, onUpdated, onRefresh, onAr
   const [busy, setBusy] = useState(false)
   const inFlight = useRef(false)
   const active = shortlist.share?.state === 'active' ? shortlist.share : null
-  const expired = useExpired(active?.expires_at)
+  const expired = useShortlistExpired(active?.expires_at)
   const grant = expired ? null : active
   const code = shortlistMemberCode(codeDraft)
   const link = grant ? shortlistShareUrl(window.location.origin, grant.id) : ''
