@@ -66,6 +66,33 @@
       "followup": "Registrar la revisión profesional y las tareas de seguimiento pendientes"
     }
   },
+  "purchase_costs": {
+    "heading": "Hoja de costos de compra",
+    "intro": "Registra cada costo en su moneda original como estimación, cotización o pago. Guarda esta revisión para conservar la hoja.",
+    "amount_help": "Usa hasta dos decimales. Deja en blanco un monto pendiente de registrar. Ingresa 0.00 para registrar un cero.",
+    "row": "Costo {{number}}",
+    "category": "Categoría del costo",
+    "currency": "Moneda",
+    "basis_label": "Tipo de monto",
+    "amount": "Monto",
+    "label": "Descripción (opcional)",
+    "add": "Agregar costo",
+    "remove": "Quitar costo {{number}}",
+    "invalid": "Verifica que cada monto esté dentro del límite permitido y tenga hasta dos decimales.",
+    "totals": "Totales de costos de compra",
+    "total": "Total en {{currency}}",
+    "empty": "Sin montos",
+    "categories": {
+      "transfer_tax": "Impuesto de transferencia",
+      "legal": "Honorarios legales",
+      "notary_registry": "Gastos notariales y registrales",
+      "survey": "Mensura",
+      "inspection": "Inspección",
+      "financing": "Financiamiento",
+      "other": "Otro"
+    },
+    "basis": { "estimate": "Estimación", "quote": "Cotización", "paid": "Pagado" }
+  },
   "saved": {
     "intro": "Guarda una lista, notas y enlaces de documentos para cada revisión de propiedad. Vuelve a esta cuenta para continuar después.",
     "privacy": "Se guarda de forma privada en tu cuenta. Otros miembros no pueden abrir tus revisiones. Guarda antes de salir de esta página. Los enlaces conservan sus permisos originales; evita enlaces públicos a documentos confidenciales.",
@@ -91,6 +118,7 @@
     "discard": "Descartar cambios sin guardar y recargar",
     "load_error": "No se pudieron cargar tus revisiones. Comprueba tu sesión y vuelve a intentarlo.",
     "save_error": "No se guardó la revisión. Comprueba tu sesión, los límites y los enlaces HTTPS. Los cambios siguen en esta página.",
+    "costs_unconfirmed": "No se pudieron verificar los costos de compra guardados. Tus cambios siguen en esta página.",
     "conflict": "La revisión cambió en otra pestaña o la cuenta alcanzó su límite de revisiones. Los cambios siguen aquí. Copia las notas necesarias antes de descartar y recargar."
   }
 }
