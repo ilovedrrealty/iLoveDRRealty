@@ -6,6 +6,45 @@
     "rent": "¿Buscas alquilar en República Dominicana?"
   },
   "intro": "Habla con nuestro equipo sobre tu próximo paso inmobiliario.",
+  "valuation": {
+    "heading": "Solicita una valoración gratuita de tu propiedad",
+    "intro": "Comparte algunos datos de la propiedad para que nuestro equipo pueda revisar tu solicitud y contactarte.",
+    "fields_heading": "Datos de la propiedad",
+    "property_type": "Tipo de propiedad",
+    "choose_type": "Elige un tipo de propiedad",
+    "types": {
+      "villa": "Villa o casa",
+      "apartment": "Apartamento",
+      "condo": "Condominio",
+      "land": "Terreno",
+      "commercial": "Propiedad comercial"
+    },
+    "location": "Ciudad, municipio o sector",
+    "location_hint": "Indica solo la zona general.",
+    "area_m2": "Superficie de la propiedad (m²) (opcional)",
+    "area_hint": "Si es un terreno, indica la superficie del solar.",
+    "bedrooms": "Habitaciones (opcional)",
+    "bathrooms": "Baños (opcional)",
+    "condition": "Estado de la propiedad (opcional)",
+    "choose_condition": "Elige el estado de la propiedad",
+    "conditions": {
+      "new": "Nueva",
+      "good": "En buen estado",
+      "fair": "En estado regular",
+      "needs_repairs": "Necesita reparaciones",
+      "under_construction": "En construcción"
+    },
+    "submit": "Solicitar valoración",
+    "unconfirmed_receipt": "No pudimos confirmar tu solicitud de valoración. Tus respuestas se conservaron. Inténtalo de nuevo.",
+    "errors": {
+      "property_type": "Elige un tipo de propiedad.",
+      "location": "Indica una ciudad, municipio o sector de entre 2 y 80 caracteres.",
+      "area_m2": "Ingresa una superficie positiva en metros cuadrados con hasta dos decimales.",
+      "bedrooms": "Ingresa un número entero de habitaciones entre 0 y 1.000.",
+      "bathrooms": "Ingresa un número entre 0 y 1.000 en incrementos de medio baño, por ejemplo 2,5.",
+      "condition": "Elige el estado de la propiedad de la lista."
+    }
+  },
   "intent_label": "Me interesa",
   "intents": {
     "buy": "Comprar",

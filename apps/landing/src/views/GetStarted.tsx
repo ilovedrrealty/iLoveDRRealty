@@ -9,6 +9,8 @@ import { PhoneInput } from 'react-international-phone'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import 'react-international-phone/style.css'
 import { submitContactLead, type LeadSubmissionAttempt } from '../api/inquiries'
+import { SellerValuationFields } from '../components/SellerValuationFields'
+import { blankSellerValuation, isSellerValuationRoute, prepareSellerValuation } from '../data/sellerValuation'
 
 type Intent = 'buy' | 'sell' | 'rent'
 const INTENTS = [{ value: 'buy', Icon: Home }, { value: 'sell', Icon: TrendingUp }, { value: 'rent', Icon: KeyRound }] as const
@@ -19,7 +21,9 @@ export default function GetStarted() {
   const preset = params.get('intent')
   const [selectedIntent, setSelectedIntent] = useState<Intent | null>(null)
   const intent = selectedIntent ?? (preset === 'sell' || preset === 'rent' ? preset : 'buy')
+  const valuation = intent === 'sell' && isSellerValuationRoute(params)
   const [form, setForm] = useState({ name: '', phone: '', dialCode: '1', email: '', message: '' })
+  const [valuationDraft, setValuationDraft] = useState(blankSellerValuation)
   const [consent, setConsent] = useState(false)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
@@ -38,27 +42,31 @@ export default function GetStarted() {
     if (!phone && !email) { setError(t('errors.contact')); return }
     if (phone && !isValidPhoneNumber(phone)) { setError(t('errors.phone')); return }
     if (!consent) { setError(t('errors.consent')); return }
+    const prepared = valuation ? prepareSellerValuation(valuationDraft) : null
+    if (prepared && 'issue' in prepared) { setError(t(`valuation.errors.${prepared.issue}`)); return }
     setError('')
     submitting.current = true
     setSending(true)
     try {
       const notes = [
         '[Get Started inquiry]',
-        form.message.trim(),
+        valuation ? '' : form.message.trim(),
       ].filter(Boolean).join('\n\n')
       await submitContactLead({
         tab: intent === 'sell' ? 'seller' : intent === 'rent' ? 'renter' : 'buyer',
         name: form.name.trim(), email, phone,
-        interest: intent === 'sell' ? 'Selling a property' : intent === 'rent' ? 'Renting a property' : 'Buying a property',
+        interest: valuation ? 'Property valuation' : intent === 'sell' ? 'Selling a property' : intent === 'rent' ? 'Renting a property' : 'Buying a property',
         message: notes, form: 'get_started', locale: i18n.language.startsWith('es') ? 'es' : 'en',
+        valuationSubject: prepared?.subject,
         contactConsent: consent, attempt: attempt.current,
       })
       setFollowUp(phone ? 'phone' : 'email')
       setSent(true)
+      if (valuation) setValuationDraft(blankSellerValuation())
       // Tracking or browser storage failure must not turn an accepted lead into an error.
       try { sessionStorage.setItem('lead_modal_dismissed', '1') } catch { /* storage unavailable */ }
     } catch {
-      setError(t('errors.send'))
+      setError(t(valuation ? 'valuation.unconfirmed_receipt' : 'errors.send'))
     } finally {
       submitting.current = false
       setSending(false)
@@ -79,8 +87,8 @@ export default function GetStarted() {
         <section className="order-1 overflow-hidden rounded-3xl border border-line bg-white shadow-sm lg:order-2" aria-label={t('form_label')}>
           <header className="bg-ink px-5 py-6 text-white sm:px-7">
             <p className="text-xs font-bold tracking-[.14em] text-coral">I LOVE DR REALTY</p>
-            <h1 className="mt-3 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{t(`headlines.${intent}`)}</h1>
-            <p className="mt-3 text-sm leading-relaxed text-white/75">{t('intro')}</p>
+            <h1 className="mt-3 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{t(valuation ? 'valuation.heading' : `headlines.${intent}`)}</h1>
+            <p className="mt-3 text-sm leading-relaxed text-white/75">{t(valuation ? 'valuation.intro' : 'intro')}</p>
           </header>
           {sent ? <div className="px-6 py-10 text-center" role="status" aria-live="polite">
             <CheckCircle2 size={42} aria-hidden="true" className="mx-auto text-green" />
@@ -88,10 +96,15 @@ export default function GetStarted() {
             <p className="mt-3 text-ink2">{t(`success.${followUp}`)}</p>
             <Link href={intent === 'rent' ? '/search/?purpose=rent' : intent === 'buy' ? '/search/' : '/selling/'} className="mt-6 inline-flex rounded-full bg-coral px-6 py-3 font-semibold text-white">{t(intent === 'sell' ? 'success.selling' : 'success.browse')}</Link>
           </div> : <form onSubmit={submit} className="space-y-4 px-5 py-6 sm:px-7" aria-busy={sending}>
-            <fieldset>
+            <fieldset disabled={sending}>
               <legend className="mb-2 text-sm font-semibold text-ink">{t('intent_label')}</legend>
-              <div className="grid grid-cols-3 gap-2">{INTENTS.map(({ value, Icon }) => <button key={value} type="button" aria-pressed={intent === value} onClick={() => setSelectedIntent(value)} className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-sm font-semibold ${intent === value ? 'border-coral bg-coral text-white' : 'border-line bg-paper2/50 text-ink2'}`}><Icon size={15} aria-hidden="true" />{t(`intents.${value}`)}</button>)}</div>
+              <div className="grid grid-cols-3 gap-2">{INTENTS.map(({ value, Icon }) => <button key={value} type="button" aria-pressed={intent === value} onClick={() => {
+                setSelectedIntent(value)
+                setError('')
+              }} className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-sm font-semibold ${intent === value ? 'border-coral bg-coral text-white' : 'border-line bg-paper2/50 text-ink2'}`}><Icon size={15} aria-hidden="true" />{t(`intents.${value}`)}</button>)}</div>
             </fieldset>
+            {valuation && <SellerValuationFields draft={valuationDraft} fieldClass={field} disabled={sending}
+              onChange={(key, value) => setValuationDraft(previous => ({ ...previous, [key]: value }))} />}
             <label className="block text-sm font-semibold text-ink">{t('name')} <span aria-hidden="true">*</span><input name="name" className={field} autoComplete="name" required maxLength={200} value={form.name} onChange={event => setForm(previous => ({ ...previous, name: event.target.value }))} /></label>
             <div>
               <label htmlFor="get-started-phone" className="mb-2 block text-sm font-semibold text-ink">{t('phone')} <span className="ml-1 text-xs font-normal text-ink2">{t('preferred')}</span></label>
@@ -99,10 +112,10 @@ export default function GetStarted() {
             </div>
             <label className="block text-sm font-semibold text-ink">{t('email')}<input name="email" className={field} type="email" autoComplete="email" maxLength={254} aria-describedby="get-started-contact-help" value={form.email} onChange={event => setForm(previous => ({ ...previous, email: event.target.value }))} /></label>
             <p id="get-started-contact-help" className="text-xs leading-relaxed text-ink2">{t('contact_help')}</p>
-            <label className="block text-sm font-semibold text-ink">{t('comments')}<textarea name="message" className={`${field} resize-y`} rows={3} maxLength={1500} placeholder={t('comments_placeholder')} value={form.message} onChange={event => setForm(previous => ({ ...previous, message: event.target.value }))} /></label>
+            {!valuation && <label className="block text-sm font-semibold text-ink">{t('comments')}<textarea name="message" className={`${field} resize-y`} rows={3} maxLength={1500} placeholder={t('comments_placeholder')} value={form.message} onChange={event => setForm(previous => ({ ...previous, message: event.target.value }))} /></label>}
             <label className="flex items-start gap-2.5 text-xs leading-relaxed text-ink2"><input name="consent" className="mt-0.5 h-4 w-4 shrink-0 accent-coral" type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} /><span>{t('consent')} <Link className="underline" href="/privacy-policy/">{t('privacy')}</Link></span></label>
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-            <button type="submit" disabled={sending} className="min-h-12 w-full rounded-full bg-coral px-5 py-3 font-bold text-white disabled:opacity-60">{t(sending ? 'sending' : 'submit')}</button>
+            <button type="submit" disabled={sending} className="min-h-12 w-full rounded-full bg-coral px-5 py-3 font-bold text-white disabled:opacity-60">{t(sending ? 'sending' : valuation ? 'valuation.submit' : 'submit')}</button>
           </form>}
         </section>
       </div>

@@ -6,6 +6,45 @@
     "rent": "Looking to rent in the Dominican Republic?"
   },
   "intro": "Connect with our team about your next property move.",
+  "valuation": {
+    "heading": "Request a free property valuation",
+    "intro": "Share a few details about the property so our team can review your request and follow up.",
+    "fields_heading": "Property details",
+    "property_type": "Property type",
+    "choose_type": "Choose a property type",
+    "types": {
+      "villa": "Villa or house",
+      "apartment": "Apartment",
+      "condo": "Condo",
+      "land": "Land",
+      "commercial": "Commercial property"
+    },
+    "location": "City, town, or neighborhood",
+    "location_hint": "Share the general area only.",
+    "area_m2": "Property size (m²) (optional)",
+    "area_hint": "For land, enter the lot size.",
+    "bedrooms": "Bedrooms (optional)",
+    "bathrooms": "Bathrooms (optional)",
+    "condition": "Property condition (optional)",
+    "choose_condition": "Choose a condition",
+    "conditions": {
+      "new": "New",
+      "good": "Good condition",
+      "fair": "Fair condition",
+      "needs_repairs": "Needs repairs",
+      "under_construction": "Under construction"
+    },
+    "submit": "Request valuation",
+    "unconfirmed_receipt": "We couldn’t confirm your valuation request. Your answers are still here. Please try again.",
+    "errors": {
+      "property_type": "Choose a property type.",
+      "location": "Enter a city, town, or neighborhood between 2 and 80 characters.",
+      "area_m2": "Enter the property size as a positive number in square meters, with up to two decimal places.",
+      "bedrooms": "Enter a whole number of bedrooms from 0 to 1,000.",
+      "bathrooms": "Enter a number from 0 to 1,000 in half-bath increments, such as 2.5.",
+      "condition": "Choose a property condition from the list."
+    }
+  },
   "intent_label": "I’m interested in",
   "intents": {
     "buy": "Buying",
