@@ -34,6 +34,7 @@ import ProfessionalDirectory from './shared/ProfessionalDirectory'
 import { ToolHub } from './shared/ToolHub'
 import { PropertyManagement } from './shared/PropertyManagement'
 import { PropertyNetwork } from './shared/PropertyNetwork'
+import { Shortlists } from './shared/Shortlists'
 import { TOOL_WORKSPACE_VIEW, type ToolWorkspace } from '../data/toolHubs'
 
 const ROLE_ORDER: Role[] = ['Buyer', 'Owner', 'Realtor']
@@ -70,11 +71,13 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
   const [activeTab, setActiveTab] = useState<Role>(role)
 
   const isLocked = (tab: Role) => user.role !== 'admin' && !ROLE_ACCESS[role]?.includes(tab)
+  const canUseShortlists = user.role === 'buyer' || user.role === 'realtor'
   const tone = ROLE_TONE[role]
   const tabTone = ROLE_TONE[activeTab]
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function getPageTitle(v: string): string {
+    if (v === 'shortlists' && canUseShortlists) return tNav('shortlists')
     if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'property-management', 'property-network'].includes(v)) return tNav(v)
     const key = `pages.${v}`
     if (role === 'Buyer')   return tBuyer(key,   { defaultValue: tBuyer('pages.home') })
@@ -119,7 +122,8 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
 
     switch (view) {
       // Buyer
-      case 'saved':      return <SavedHomes />
+      case 'saved':      return <SavedHomes openShortlists={canUseShortlists ? () => go('shortlists') : undefined} />
+      case 'shortlists': return canUseShortlists ? <Shortlists user={user} /> : <p>{tNav('section_unavailable')}</p>
       case 'inquiries':  return <Inquiries />
       case 'calculator': return <ROICalculator />
       case 'resources':  return <Resources go={go} />

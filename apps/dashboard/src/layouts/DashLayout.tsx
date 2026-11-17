@@ -57,6 +57,7 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
   ],
   Realtor: [
     { Icon: Building2,     view: 'listings'          },
+    { Icon: Heart,         view: 'shortlists'        },
     { Icon: ClipboardList, view: 'property-management' },
     { Icon: ClipboardList, view: 'leads'             },
     { Icon: Bell,          view: 'realtor-bookings'  },
@@ -209,7 +210,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
               )}
             </button>
 
-            {isExpanded && NAV[r as Exclude<Role, 'Admin'>].map(item => {
+            {isExpanded && NAV[r as Exclude<Role, 'Admin'>].filter(item => item.view !== 'shortlists' || user.role === 'realtor').map(item => {
               const active = !sectionLocked && view === item.view
               return (
                 <button

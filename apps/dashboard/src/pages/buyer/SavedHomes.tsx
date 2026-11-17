@@ -6,8 +6,9 @@ import { getMySavedHomes, unsaveHome, type SavedHome } from '../../api/savedHome
 
 const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
 
-export function SavedHomes() {
+export function SavedHomes({ openShortlists }: { openShortlists?: () => void } = {}) {
   const { t } = useTranslation('buyer')
+  const { t: tNav } = useTranslation('nav')
   const [homes, setHomes] = useState<SavedHome[]>([])
   const [loading, setLoading] = useState(true)
   const [removing, setRemoving] = useState<string | null>(null)
@@ -32,6 +33,9 @@ export function SavedHomes() {
   }
 
   return (
+    <>
+    {openShortlists && <button type="button" className="mb-3 min-h-11 rounded-lg border border-line bg-paper px-3 py-2 text-sm font-semibold text-sea"
+      onClick={openShortlists}>{tNav('shortlists')}</button>}
     <Card
       title={<><Heart size={14} />{t('saved_homes_page.title', { count: homes.length })}</>}
       action={<CardLink>{t('saved_homes_page.browse_more')}</CardLink>}
@@ -98,5 +102,6 @@ export function SavedHomes() {
         </div>
       )}
     </Card>
+    </>
   )
 }
