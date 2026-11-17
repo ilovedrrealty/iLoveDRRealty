@@ -16,6 +16,7 @@ import { AdminSettings } from './admin/Settings'
 import { BulkImportListings } from './admin/BulkImportListings'
 import { ResearchTools } from './shared/ResearchTools'
 import { WebsiteEditor } from './admin/WebsiteEditor'
+import { Editorial } from './admin/Editorial'
 import { AdminProfessionals } from './admin/Professionals'
 import { ProfessionalProfile } from './shared/ProfessionalProfile'
 import { Viewings } from './shared/Viewings'
@@ -32,7 +33,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
   const [searchParams] = useSearchParams()
 
   const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'professional-profile'].includes(view) ? view : 'home'
-  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network', 'viewings'].includes(view)
+  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network', 'viewings', 'editorial'].includes(view)
   const title = sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
   const sub = sharedTitle ? '' : t(`pages.${pageKey}.sub`)
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
@@ -60,6 +61,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
       case 'tools': return <ToolHub workspace="Realtor" user={user} go={goToTool} />
       case 'calculator': return <ROICalculator />
       case 'website-editor': return <WebsiteEditor userId={user.id} />
+      case 'editorial': return user.role === 'admin' ? <Editorial /> : null
       case 'professionals': return <AdminProfessionals />
       case 'professional-profile': return <ProfessionalProfile />
       case 'professional-directory': return <ProfessionalDirectory />

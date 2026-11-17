@@ -92,6 +92,7 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Users,           view: 'professional-directory' },
   { Icon: BookOpen,        view: 'research' },
   { Icon: Globe,           view: 'website-editor' },
+  { Icon: BookOpen,        view: 'editorial' },
   { Icon: Settings,        view: 'settings'  },
 ]
 
