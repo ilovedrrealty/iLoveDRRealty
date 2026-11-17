@@ -19,7 +19,7 @@
       { "title": "Global reach from day one", "desc": "Your listing appears across our platform, partner sites, AI search engines, and our social channels — reaching buyers in the diaspora and beyond, not just the local market." },
       { "title": "Verified, trust-first", "desc": "Every listing on our platform is reviewed for accuracy. That gatekeeping protects buyers — which is exactly why serious buyers come here first." },
       { "title": "Lead management built in", "desc": "Inquiries route to your dashboard and into GoHighLevel automatically. Hot leads tagged, follow-ups scheduled, nothing slips through." },
-      { "title": "Data-backed pricing", "desc": "We benchmark your property against recent comparable sales in your neighborhood — not aspirational asking prices, actual closings." }
+      { "title": "Data-backed pricing", "desc": "We review comparable listings and include verified sale data when it is available." }
     ]
   },
   "reach": {
@@ -42,11 +42,11 @@
     "heading": "From valuation to closing",
     "sub": "Most listings close in 90–180 days. Here's exactly how we get you there.",
     "steps": [
-      { "title": "Free home valuation", "desc": "Tell us about your property. We pull comparable sales, neighborhood trends, and current demand to give you a realistic price range — not an inflated number to win your listing." },
+      { "title": "Free home valuation", "desc": "Tell us about your property. An agent reviews comparable listings, neighborhood demand, and any verified sales before preparing a price range." },
       { "title": "Listing prep", "desc": "Professional-grade listing with optimized photos, bilingual copy, location map, amenities, and pricing strategy. Reviewed by our admin team before going live." },
       { "title": "Marketing launch", "desc": "Listing pushed to our platform, partner sites, social channels, and the buyer-request database for instant matching with qualified leads." },
       { "title": "Lead qualification", "desc": "Inquiries filtered. You only spend time on serious buyers — pre-approved, budget-confirmed, and matched to your property's profile." },
-      { "title": "Offers & negotiation", "desc": "We handle the back-and-forth, surface comparable closings to back your position, and protect your interests through the negotiation." },
+      { "title": "Offers & negotiation", "desc": "We help with offers and use documented comparable properties to support your position." },
       { "title": "Closing support", "desc": "Attorney coordination, title transfer, escrow, deposit handling, and final handover — managed and tracked end to end." }
     ]
   },
