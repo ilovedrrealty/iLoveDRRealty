@@ -7,6 +7,7 @@ import { fmt, fmtDOP, type Listing } from '../data/listings'
 import { areaSummaryPoints, type ListingMapData, type MapBounds } from '../data/searchMap'
 import { SearchInventoryMap } from './SearchInventoryMap'
 import { supabaseImgUrl } from '../api/imgUrl'
+import type { SpatialSearch } from '../data/spatialSearch'
 
 const titleCase = (s: string) =>
   s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s
@@ -33,7 +34,7 @@ function Insight({ label, value, tone }: { label: string; value: string | number
   )
 }
 
-function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChange, locations, inventory, expanded = false, onExpand }: {
+function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChange, locations, inventory, spatial, onSpatialChange, expanded = false, onExpand }: {
   hovered: Listing | null
   listings: Listing[]
   onSelect: (l: Pick<Listing, 'id'>) => void
@@ -42,6 +43,8 @@ function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChang
   onCurrencyChange: (c: 'USD' | 'DOP') => void
   locations: string[]
   inventory: MapInventoryState
+  spatial: SpatialSearch | null
+  onSpatialChange?: (value: SpatialSearch | null) => void
   expanded?: boolean
   onExpand?: () => void
 }) {
@@ -50,9 +53,10 @@ function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChang
   const hasKey = Boolean(apiKey && apiKey !== 'YOUR_KEY_HERE')
   const { data, loading, error, scope, retry, onAreaSelect, onViewportChange } = inventory
   const unplaced = data.ungrouped_total + data.areas.reduce((sum, area) => sum + (areaSummaryPoints([area]).length ? 0 : area.count), 0)
+  const excluded = data.spatial_excluded_unlocated ?? 0
 
   return (
-    <div className={`bg-paper overflow-hidden ${expanded ? 'h-full flex flex-col' : 'rounded-2xl border border-line'}`}>
+    <div className={`min-w-0 bg-paper ${expanded ? 'flex h-full flex-col overflow-y-auto' : 'overflow-hidden rounded-2xl border border-line'}`}>
       <div className="p-4 flex flex-wrap items-start justify-between gap-3 shrink-0">
         <div>
           <div className="font-sans text-4.25 font-semibold text-ink">{t('map.country')}</div>
@@ -70,22 +74,27 @@ function DRMap({ hovered, listings, onSelect, currency, dopRate, onCurrencyChang
           ))}
         </div>
       </div>
-      <div className={expanded ? 'min-h-0 flex-1' : 'h-[420px]'}>
+      <div className={expanded ? 'min-h-[23rem] flex-1' : 'h-[420px]'}>
         {hasKey ? (
           <SearchInventoryMap apiKey={apiKey} data={data} scope={scope} hoveredId={hovered?.id} locations={locations} expanded={expanded}
+            spatial={spatial} onSpatialChange={onSpatialChange}
             onSelect={id => onSelect({ id })} onAreaSelect={onAreaSelect} onViewportChange={onViewportChange} />
         ) : (
-          <div role="status" className="h-full flex items-center justify-center bg-ink text-white/80 p-6 text-center text-sm">
-            {t('map.unavailable')}
+          <div className="flex h-full flex-col items-center justify-center gap-3 bg-ink p-6 text-center text-sm text-white/80">
+            <p role="status">{t('map.unavailable')}</p>
+            {spatial && onSpatialChange && <button type="button" className="min-h-11 rounded-lg border border-white px-4 text-white"
+              onClick={() => onSpatialChange(null)}>{t('spatial.clear')}</button>}
           </div>
         )}
       </div>
       <div className="p-4 border-t border-line-soft shrink-0">
         {loading ? <p className="text-xs text-dim m-0" role="status">{t('map.inventory_loading')}</p> : null}
         {error ? <div role="alert" className="text-xs text-red-800"><p>{t('map.inventory_error')}</p><button type="button" onClick={retry} className="underline font-semibold">{t('retry')}</button></div> : <>
-          <p className="text-xs text-dim leading-relaxed m-0">{t('map.coverage', { total: data.total, exact: data.mapped_total, approximate: data.unmapped_total })}</p>
-          <p className="text-xs leading-relaxed text-[#5b21b6] mt-2 mb-0">{t('map.area_legend')}</p>
-          {unplaced > 0 && <p className="text-xs text-dim leading-relaxed mt-1 mb-0">{t('map.unplaced', { count: unplaced })}</p>}
+          {spatial ? (!loading && excluded > 0 && <p className="m-0 text-xs leading-relaxed text-dim">{t('spatial.excluded', { count: excluded })}</p>) : <>
+            <p className="text-xs text-dim leading-relaxed m-0">{t('map.coverage', { total: data.total, exact: data.mapped_total, approximate: data.unmapped_total })}</p>
+            <p className="text-xs leading-relaxed text-[#5b21b6] mt-2 mb-0">{t('map.area_legend')}</p>
+            {unplaced > 0 && <p className="text-xs text-dim leading-relaxed mt-1 mb-0">{t('map.unplaced', { count: unplaced })}</p>}
+          </>}
           {data.mapped_total > data.limit && <p className="text-xs text-dim leading-relaxed mt-2 mb-0">{t('map.point_limit', { count: data.returned, total: data.mapped_total })}</p>}
         </>}
         {onExpand && <button type="button" onClick={onExpand} aria-haspopup="dialog" className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-ink text-paper px-4 py-2.5 text-sm font-semibold focus-visible:outline-coral cursor-pointer"><Maximize2 size={16} aria-hidden="true" />{t('map.expand')}</button>}
@@ -109,6 +118,8 @@ export interface MapSidebarProps {
   dopRate: number
   locations: string[]
   locationLabel: string | null
+  spatial: SpatialSearch | null
+  onSpatialChange: (value: SpatialSearch | null) => void
   expanded: boolean
   onExpand: () => void
   onClose: () => void
@@ -117,8 +128,8 @@ export interface MapSidebarProps {
   go: (path: string) => void
 }
 
-function ExpandedSearchMap({ hovered, results, inventory, currency, dopRate, locations, locationLabel, onCurrencyChange, onSelect, onClose }: Pick<MapSidebarProps,
-  'hovered' | 'results' | 'inventory' | 'currency' | 'dopRate' | 'locations' | 'locationLabel' | 'onCurrencyChange' | 'onSelect' | 'onClose'>) {
+function ExpandedSearchMap({ hovered, results, inventory, currency, dopRate, locations, locationLabel, spatial, onSpatialChange, onCurrencyChange, onSelect, onClose }: Pick<MapSidebarProps,
+  'hovered' | 'results' | 'inventory' | 'currency' | 'dopRate' | 'locations' | 'locationLabel' | 'spatial' | 'onSpatialChange' | 'onCurrencyChange' | 'onSelect' | 'onClose'>) {
   const { t } = useTranslation('search')
   const dialogRef = useRef<HTMLDialogElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -145,17 +156,19 @@ function ExpandedSearchMap({ hovered, results, inventory, currency, dopRate, loc
       className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-paper p-0 text-ink font-sans backdrop:bg-black/50">
       <div className="h-full flex flex-col overflow-hidden">
         <header className="border-b border-line px-4 py-3 sm:px-6 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="min-w-0"><h2 id={titleId} className="text-lg font-bold m-0">{t('map.title')}</h2><p className="text-xs text-dim mt-1 mb-0">{locationLabel || t('location_across')}</p></div>
+          <div className="min-w-0"><h2 id={titleId} className="text-lg font-bold m-0">{t('map.title')}</h2>
+            <p className="text-xs text-dim mt-1 mb-0">{spatial ? t('spatial.selected_area') : locationLabel || t('location_across')}</p></div>
           <button ref={closeRef} type="button" onClick={onClose} className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-sm font-semibold focus-visible:outline-coral cursor-pointer"><ArrowLeft size={17} aria-hidden="true" />{t('map.return_to_results')}</button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto md:grid md:grid-cols-[minmax(0,1fr)_300px] md:overflow-hidden">
-          <section aria-label={t('map.title')} className="h-[75dvh] min-h-[520px] md:h-full md:min-h-0">
-            <DRMap inventory={inventory} hovered={hovered} listings={results} onSelect={onSelect} currency={currency} dopRate={dopRate} onCurrencyChange={onCurrencyChange} locations={locations} expanded />
+          <section aria-label={t('map.title')} className="h-[78dvh] min-h-[560px] min-w-0 md:h-full md:min-h-0">
+            <DRMap inventory={inventory} hovered={hovered} listings={results} onSelect={onSelect} currency={currency} dopRate={dopRate}
+              onCurrencyChange={onCurrencyChange} locations={locations} spatial={spatial} onSpatialChange={onSpatialChange} expanded />
           </section>
           <section aria-label={t('map.page_results')} className="min-w-0 border-t md:border-t-0 md:border-l border-line p-4 md:overflow-y-auto">
             <h3 className="font-bold text-sm m-0">{t('map.page_results')}</h3>
             <p className="text-xs text-dim mt-1 mb-3">{t('results_count', { count: results.length })}</p>
-            {!results.length && <p className="text-sm text-dim">{t('empty')}</p>}
+            {!results.length && <p className="text-sm text-dim">{t(spatial ? 'spatial.empty' : 'empty')}</p>}
             <div className="space-y-3">
               {results.map(listing => <button key={listing.id} type="button" onClick={() => onSelect(listing)} className="w-full overflow-hidden rounded-xl border border-line bg-white text-left text-ink focus-visible:outline-coral cursor-pointer">
                 <img src={supabaseImgUrl(listing.img, 400)} alt="" loading="lazy" className="h-28 w-full object-cover bg-paper2" />
@@ -170,7 +183,7 @@ function ExpandedSearchMap({ hovered, results, inventory, currency, dopRate, loc
 }
 
 export function SearchMapSidebar({
-  hovered, results, alsoLike, insights, inventory, currency, dopRate, locations, locationLabel,
+  hovered, results, alsoLike, insights, inventory, currency, dopRate, locations, locationLabel, spatial, onSpatialChange,
   expanded, onExpand, onClose, onCurrencyChange, onSelect, go,
 }: MapSidebarProps) {
   const { t } = useTranslation('search')
@@ -201,6 +214,7 @@ export function SearchMapSidebar({
         dopRate={dopRate}
         onCurrencyChange={onCurrencyChange}
         locations={locations}
+        spatial={spatial}
         onExpand={onExpand}
       />
 
@@ -208,7 +222,7 @@ export function SearchMapSidebar({
         <div className="bg-paper border border-line-soft rounded-2xl py-4 px-4.5">
           <div className="text-2.75 font-bold tracking-[.12em] uppercase text-dim mb-1">{t('map.snapshot')}</div>
           <div className="text-[11.5px] text-dim mb-2.5 leading-[1.45]">
-            {locationLabel ? t('map.snapshot_in', { region: locationLabel }) : t('map.snapshot_across')}
+            {spatial ? t('spatial.selected_area') : locationLabel ? t('map.snapshot_in', { region: locationLabel }) : t('map.snapshot_across')}
           </div>
           <Insight label={t('map.insight_count')} value={insights.count} />
           {insights.median   > 0 && <Insight label={t('map.insight_median')} value={fmtMedian(insights.median)} />}
@@ -216,7 +230,7 @@ export function SearchMapSidebar({
         </div>
       )}
 
-      {alsoLike.length > 0 && (
+      {!spatial && alsoLike.length > 0 && (
         <div className="bg-paper border border-line-soft rounded-2xl py-4 px-4.5">
           <div className="text-2.75 font-bold tracking-[.12em] uppercase text-dim mb-1">{t('map.also_like')}</div>
           <div className="text-[11.5px] text-dim mb-3 leading-[1.45]">{t('map.also_like_sub')}</div>
@@ -261,7 +275,9 @@ export function SearchMapSidebar({
       </div>
 
     </aside>
-    {expanded && <ExpandedSearchMap inventory={inventory} hovered={hovered} results={results} currency={currency} dopRate={dopRate} locations={locations} locationLabel={locationLabel} onCurrencyChange={onCurrencyChange} onSelect={onSelect} onClose={onClose} />}
+    {expanded && <ExpandedSearchMap inventory={inventory} hovered={hovered} results={results} currency={currency}
+      dopRate={dopRate} locations={locations} locationLabel={locationLabel} spatial={spatial} onSpatialChange={onSpatialChange}
+      onCurrencyChange={onCurrencyChange} onSelect={onSelect} onClose={onClose} />}
     </>
   )
 }
