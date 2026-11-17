@@ -15,7 +15,37 @@
     "retry": "Intentar de nuevo",
     "previous": "Página anterior",
     "next": "Página siguiente",
-    "sources": "Fuentes"
+    "sources": "Fuentes",
+    "compare_neighborhoods": "Comparar zonas"
+  },
+  "comparison": {
+    "title": "Comparar zonas",
+    "directory": "Volver a las guías locales",
+    "language": "Idioma de la comparación",
+    "intro": "Compara datos publicados sobre las zonas y consulta cuándo se verificó cada fuente.",
+    "choose": "Elige 2 o 3 zonas",
+    "loading_areas": "Cargando zonas…",
+    "loading_comparison": "Cargando comparación…",
+    "empty": "Aún no hay zonas para comparar en esta página.",
+    "error": "No se pudo cargar la información de las zonas.",
+    "retry": "Volver a intentar",
+    "pages": "Páginas de zonas",
+    "previous": "Página anterior",
+    "next": "Página siguiente",
+    "selected": "{{count}} de 3 seleccionadas",
+    "selection": "Zonas seleccionadas",
+    "remove": "Quitar {{area}}",
+    "compare": "Comparar zonas seleccionadas",
+    "results": "Comparación de zonas",
+    "withdrawn": "Una de las zonas seleccionadas ya no está disponible. Puedes cambiar tu selección.",
+    "read_profile": "Leer sobre {{area}}",
+    "property_search": "Buscar propiedades en {{location}}",
+    "checked_on": "Verificado el",
+    "unknown": "No hay datos con fuente.",
+    "topics": {
+      "access": "Acceso", "utilities": "Servicios básicos", "internet": "Internet",
+      "services": "Servicios cercanos", "transport": "Transporte", "lifestyle": "Estilo de vida"
+    }
   },
   "hero": {
     "tag": "📚 Centro de Educación y Reubicación",

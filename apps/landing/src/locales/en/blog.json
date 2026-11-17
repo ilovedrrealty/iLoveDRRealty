@@ -15,7 +15,37 @@
     "retry": "Try again",
     "previous": "Previous page",
     "next": "Next page",
-    "sources": "Sources"
+    "sources": "Sources",
+    "compare_neighborhoods": "Compare neighborhoods"
+  },
+  "comparison": {
+    "title": "Compare neighborhoods",
+    "directory": "Back to local guides",
+    "language": "Comparison language",
+    "intro": "Compare published neighborhood facts and see when each source was checked.",
+    "choose": "Choose 2 or 3 neighborhoods",
+    "loading_areas": "Loading neighborhoods…",
+    "loading_comparison": "Loading comparison…",
+    "empty": "There are no comparable neighborhoods on this page yet.",
+    "error": "Could not load neighborhood information.",
+    "retry": "Try again",
+    "pages": "Neighborhood pages",
+    "previous": "Previous page",
+    "next": "Next page",
+    "selected": "{{count}} of 3 selected",
+    "selection": "Selected neighborhoods",
+    "remove": "Remove {{area}}",
+    "compare": "Compare selected neighborhoods",
+    "results": "Neighborhood comparison",
+    "withdrawn": "A selected neighborhood is no longer available. You can change your selection.",
+    "read_profile": "Read about {{area}}",
+    "property_search": "Search listings in {{location}}",
+    "checked_on": "Checked on",
+    "unknown": "No sourced fact available.",
+    "topics": {
+      "access": "Access", "utilities": "Utilities", "internet": "Internet",
+      "services": "Nearby services", "transport": "Transportation", "lifestyle": "Lifestyle"
+    }
   },
   "hero": {
     "tag": "📚 Education & Relocation Hub",

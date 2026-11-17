@@ -46,6 +46,27 @@
   "unpublished": "Sin publicar",
   "publish_requirement": "Completa ambas traducciones y añade una fuente pública antes de revisar.",
   "public_link": { "en": "Abrir versión pública en inglés", "es": "Abrir versión pública en español" },
+  "neighborhood_comparison": {
+    "heading": "Datos para comparar zonas",
+    "help": "Agrega datos con fuentes en inglés y español sobre los temas que quieres comparar.",
+    "location": "Ubicación para buscar propiedades (opcional)",
+    "location_help": "Usa el nombre que aparece en la búsqueda de propiedades para enlazar con los anuncios de esta zona.",
+    "fact": "Dato comparativo {{number}}",
+    "topic": "Tema",
+    "checked_on": "Fecha de verificación",
+    "source": "Fuente pública",
+    "choose_source": "Elige una fuente de este borrador",
+    "source_removed": "Selecciona una fuente actual",
+    "add": "Agregar dato comparativo",
+    "remove": "Quitar dato {{number}}",
+    "clear": "Eliminar datos comparativos",
+    "future_date": "Para revisar, todas las fechas de verificación deben corresponder al día de hoy o a un día anterior en Santo Domingo.",
+    "text": { "en": "Dato en inglés", "es": "Dato en español" },
+    "topics": {
+      "access": "Acceso", "utilities": "Servicios básicos", "internet": "Internet",
+      "services": "Servicios cercanos", "transport": "Transporte", "lifestyle": "Estilo de vida"
+    }
+  },
   "actions": {
     "review": { "title": "Revisar la revisión", "confirm": "Confirmar revisión", "details": "Marcar la revisión {{revision}} guardada como revisada y lista para publicar.", "done": "Revisión confirmada." },
     "publish": { "title": "Publicar la revisión", "confirm": "Confirmar publicación", "details": "Publicar las versiones en inglés y español de la revisión {{revision}} en el sitio público.", "done": "Se publicó la revisión." },
@@ -60,6 +81,7 @@
     "slug_taken": "Este identificador ya está en uso. Elige otro.",
     "validation": "Revisa la longitud y el formato de los campos, incluidos los enlaces de las fuentes.",
     "sources": "Ingresa un nombre y una URL HTTPS pública válida para cada fuente.",
+    "neighborhood": "Agrega ambas traducciones, una fecha del calendario y una fuente pública del borrador para cada dato.",
     "uncertain": "No se pudo confirmar el resultado. Verifica la revisión actual antes de reintentar."
   }
 }

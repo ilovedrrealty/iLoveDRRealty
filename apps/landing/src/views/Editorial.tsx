@@ -8,6 +8,7 @@ import {
   EDITORIAL_PAGE_SIZE, editorialLink, editorialSlug, getPublishedEditorial, listPublishedEditorial,
   type EditorialLocale, type PublishedEditorial,
 } from '../api/editorial'
+import { neighborhoodCompareLink } from '../api/neighborhoods'
 
 const action = 'inline-flex min-h-11 items-center rounded-lg border border-line px-3 py-2 font-semibold text-ink hover:bg-paper2'
 type Directory = Awaited<ReturnType<typeof listPublishedEditorial>>
@@ -71,6 +72,7 @@ export default function Editorial({ reader = false }: { reader?: boolean }) {
       {!reader && <header className="space-y-2">
         <h1 className="font-sans text-3xl font-bold tracking-tight text-ink sm:text-5xl">{copy('directory')}</h1>
         <p className="text-dim">{copy('description')}</p>
+        <Link href={neighborhoodCompareLink(locale)} className={action}>{copy('compare_neighborhoods')}</Link>
       </header>}
       {missing ? <p role="status" className="text-ink">{copy('unavailable')}</p>
         : !current ? <p role="status" className="text-dim">{copy('loading')}</p>

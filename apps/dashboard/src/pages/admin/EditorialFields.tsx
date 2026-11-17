@@ -3,18 +3,19 @@ import { useTranslation } from 'react-i18next'
 import {
   EDITORIAL_LANGUAGES, EDITORIAL_REVIEW_NOTE_LIMIT, EDITORIAL_SOURCE_LABEL_LIMIT, EDITORIAL_SOURCE_LIMIT,
   EDITORIAL_SOURCE_URL_LIMIT, EDITORIAL_TEXT_LIMITS,
-  isTranslationComplete, type EditorialDraft, type EditorialLanguage, type EditorialPreview,
+  isTranslationComplete, type EditorialDraft, type EditorialKind, type EditorialLanguage, type EditorialPreview,
   type EditorialSource, type EditorialText,
 } from '../../api/editorial'
 import { isPublicHttps } from '../../data/websiteEditorDefaults'
 import { editorButton, editorInput, TextField } from './WebsiteEditorFields'
+import { NeighborhoodEditorialFields, NeighborhoodEditorialPreview } from './NeighborhoodEditorialFields'
 
 export const editorialPrimary = 'inline-flex min-h-11 items-center justify-center rounded-lg bg-sea px-4 py-2.5 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral disabled:opacity-50 disabled:cursor-not-allowed'
 const panel = 'min-w-0 space-y-3 rounded-xl border border-line bg-white p-4'
 const legend = 'px-1 text-base font-bold text-ink'
 const emptySource = { label: '', url: '' }
 
-export function EditorialFields({ draft, change }: { draft: EditorialDraft; change: (draft: EditorialDraft) => void }) {
+export function EditorialFields({ draft, change, kind }: { draft: EditorialDraft; change: (draft: EditorialDraft) => void; kind: EditorialKind }) {
   const { t } = useTranslation('editorial')
   const rows = draft.sources.length ? draft.sources : [emptySource]
   function changeTranslation(language: EditorialLanguage, field: keyof EditorialText, value: string) {
@@ -62,6 +63,8 @@ export function EditorialFields({ draft, change }: { draft: EditorialDraft; chan
       <button type="button" className={editorButton} disabled={rows.length >= EDITORIAL_SOURCE_LIMIT}
         onClick={() => change({ ...draft, sources: [...rows, emptySource] })}>{t('source_add')}</button>
     </fieldset>
+    {kind === 'neighborhood' ? <NeighborhoodEditorialFields value={draft.content.neighborhood} sources={draft.sources}
+      onChange={neighborhood => change({ ...draft, content: { ...draft.content, neighborhood } })} /> : null}
     <div className={panel}>
       <label className="block text-sm font-medium text-ink2">
         <span className="mb-1.5 block">{t('review_note')}</span>
@@ -92,6 +95,8 @@ export function EditorialPreviewContent({ entry, initialLanguage }: { entry: Edi
       {text.title && <h3 className="break-words text-xl font-bold text-ink">{text.title}</h3>}
       {text.summary && <p className="whitespace-pre-wrap break-words text-sm text-ink2">{text.summary}</p>}
       {text.body && <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink">{text.body}</p>}
+      {entry.content.neighborhood ? <NeighborhoodEditorialPreview value={entry.content.neighborhood}
+        sources={entry.sources} language={language} /> : null}
       {entry.sources.length > 0 && <>
         <h4 className="text-sm font-bold text-ink">{t('source_heading')}</h4>
         <ul className="list-disc space-y-1 pl-5 text-sm">

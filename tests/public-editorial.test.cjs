@@ -29,6 +29,26 @@ function response(data, status = 200) {
   return { ok: status === 200, status, json: async () => data }
 }
 
+function neighborhoodApi(fetch) {
+  const shared = {}
+  function compile(file) {
+    return ts.transpileModule(source(file), {
+      compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
+    }).outputText
+  }
+  vm.runInNewContext(compile('packages/editorial-neighborhoods/index.ts'), { exports: shared })
+  const exports = {}
+  vm.runInNewContext(compile('apps/landing/src/api/neighborhoods.ts'), {
+    exports, fetch, URL, URLSearchParams, process: { env: { NEXT_PUBLIC_API_URL: 'https://api.example.test/api/' } },
+    require(name) {
+      if (name === './editorial') return api(fetch)
+      if (name === '../../../../packages/editorial-neighborhoods') return shared
+      assert.fail(name)
+    },
+  })
+  return exports
+}
+
 test('edition URLs get stable safe slug, language and page values', () => {
   const { editorialSlug, editorialLink } = api()
   assert.equal(editorialSlug('local-public-guide'), 'local-public-guide')
@@ -88,4 +108,51 @@ test('the fixed reader remains outside the sitemap and renders owner-written fie
   const reader = source('apps/landing/src/views/Editorial.tsx')
   assert.doesNotMatch(reader, /dangerouslySetInnerHTML|\.innerHTML/)
   assert.match(reader, /getPublishedEditorial/)
+})
+
+test('published neighborhood discovery and detail use anonymous current reads and narrow projections', async () => {
+  const calls = []
+  const signal = new AbortController().signal
+  const neighborhood = { ...model, listing_location: 'Sosúa & Cabarete' }
+  const facts = [{ topic: 'access', text: 'Synthetic reviewed fact', checked_on: '2026-11-17', source: model.sources[0] }]
+  let withdrawn = false
+  const client = neighborhoodApi(async (url, options) => {
+    calls.push(url)
+    assert.equal(options.cache, 'no-store')
+    assert.equal(options.credentials, 'omit')
+    assert.equal(options.redirect, 'error')
+    assert.equal(options.signal, signal)
+    if (url.includes('/' + model.slug + '?')) return withdrawn ? response({}, 404) : response({ ...neighborhood, facts })
+    return response({ items: [neighborhood], total: 21 })
+  })
+  const catalog = await client.listNeighborhoods('es', 2, signal)
+  const detail = await client.getNeighborhood(model.slug, 'es', signal)
+  assert.deepEqual(calls, [
+    'https://api.example.test/api/site/neighborhoods?locale=es&page=2&page_size=20',
+    'https://api.example.test/api/site/neighborhoods/synthetic-neighborhood?locale=es',
+  ])
+  assert.equal(Object.keys(catalog.items[0]).sort().join(','), 'listing_location,published_at,slug,summary,title')
+  assert.equal(Object.keys(detail).sort().join(','), 'facts,listing_location,published_at,slug,summary,title')
+  assert.equal(detail.facts[0].checked_on, '2026-11-17')
+  assert.equal(detail.facts[0].source.url, model.sources[0].url)
+  assert.equal(client.neighborhoodCompareLink('es'), '/local-guides/compare/?lang=es')
+  assert.equal(client.neighborhoodListingLink(detail.listing_location), '/search/?location=Sos%C3%BAa+%26+Cabarete')
+  assert.equal(client.neighborhoodListingLink(null), null)
+  assert.equal(client.neighborhoodListingLink('x'.repeat(81)), null)
+  withdrawn = true
+  assert.equal(await client.getNeighborhood(model.slug, 'es', signal), null)
+})
+
+test('neighborhood source URLs, explicit calendar dates and unique supported topics are required', async () => {
+  const signal = new AbortController().signal
+  const fact = { topic: 'transport', text: 'Synthetic checked route', checked_on: '2026-11-17', source: model.sources[0] }
+  const detail = { ...model, listing_location: null, facts: [fact] }
+  for (const next of [
+    { ...detail, slug: 'different-area' },
+    { ...detail, facts: [] },
+    { ...detail, facts: [fact, fact] },
+    { ...detail, facts: [{ ...fact, topic: 'private_note' }] },
+    { ...detail, facts: [{ ...fact, checked_on: '2026-04-31' }] },
+    { ...detail, facts: [{ ...fact, source: { label: 'Private', url: 'https://user:token@example.org/' } }] },
+  ]) await assert.rejects(neighborhoodApi(async () => response(next)).getNeighborhood(model.slug, 'en', signal))
 })

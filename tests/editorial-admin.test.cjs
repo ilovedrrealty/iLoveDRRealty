@@ -39,6 +39,7 @@ function harness() {
   const api = load(`${dashboard}/api/editorial.ts`, {
     './axios': client,
     '../lib/siteUrls': siteUrls,
+    '../../../../packages/editorial-neighborhoods': load('packages/editorial-neighborhoods/index.ts'),
     '../data/websiteEditorDefaults': {
       isPublicHttps(url) {
         try {
@@ -91,6 +92,30 @@ test('draft and lifecycle requests send the precise compare-and-swap payloads', 
     ['post', `/admin/editorial/${id}/restore`, { expected_version: 7, revision: 1 }],
   ]))
   assert.ok(calls.every(call => call[3].signal === signal))
+})
+
+test('neighborhood drafts preserve optional data or explicitly clear it and validate selected source, dates, and topics', async () => {
+  const { api, calls } = harness()
+  const { signal } = new AbortController()
+  const draft = api.blankEditorialDraft()
+  const fact = { topic: 'internet', en: ' Synthetic English fact ', es: ' Dato sintético ', checked_on: '2026-11-17', source_url: source.url }
+  const withFact = { ...draft.content, neighborhood: { listing_location: ' Sosúa ', facts: [fact] } }
+  const content = api.normalizeEditorialContent(withFact, 'neighborhood', [source])
+  assert.equal(content.neighborhood.listing_location, 'Sosúa')
+  assert.equal(content.neighborhood.facts[0].en, 'Synthetic English fact')
+  assert.equal(api.editorialNeighborhoodDatesCurrent(content, '2026-11-16'), false)
+  assert.equal(api.editorialNeighborhoodDatesCurrent(content, '2026-11-17'), true)
+  assert.equal(api.normalizeEditorialContent(withFact, 'neighborhood', []), null)
+  assert.equal(api.normalizeEditorialContent({ ...withFact, neighborhood: { listing_location: null, facts: [fact, fact] } }, 'neighborhood', [source]), null)
+  assert.equal(api.normalizeEditorialContent({ ...withFact, neighborhood: { listing_location: null, facts: [{ ...fact, checked_on: '2026-02-30' }] } }, 'neighborhood', [source]), null)
+  assert.equal(api.normalizeEditorialContent({ ...withFact, neighborhood: { listing_location: null, facts: [{ ...fact, es: '' }] } }, 'neighborhood', [source]), null)
+  assert.equal(Object.hasOwn(api.normalizeEditorialContent(withFact, 'article', [source]), 'neighborhood'), false)
+  assert.equal(Object.hasOwn(api.normalizeEditorialContent(draft.content, 'neighborhood', [source]), 'neighborhood'), false)
+  const cleared = api.normalizeEditorialContent({ ...draft.content, neighborhood: null }, 'neighborhood', [source])
+  await api.saveEditorialDraft(id, 3, { ...draft, content, sources: [source] }, signal)
+  await api.saveEditorialDraft(id, 4, { ...draft, content: cleared, sources: [source] }, signal)
+  assert.equal(calls[0][2].content.neighborhood.facts[0].source_url, source.url)
+  assert.equal(calls[1][2].content.neighborhood, null)
 })
 
 test('review needs both complete translations and a source while publication requires the exact reviewed revision', () => {

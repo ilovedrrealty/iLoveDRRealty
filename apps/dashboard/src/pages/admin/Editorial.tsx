@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import {
   EDITORIAL_KINDS, EDITORIAL_LANGUAGES, EDITORIAL_PAGE_SIZE, EDITORIAL_SLUG_LIMIT,
   blankEditorialDraft, changeEditorialStatus, createEditorial,
-  draftFromEditorial, editorialActions, getEditorial, listEditorial, listEditorialRevisions,
-  normalizeEditorialSources, previewEditorialRevision, publicEditorialLink, saveEditorialDraft,
+  draftFromEditorial, editorialActions, editorialNeighborhoodDatesCurrent, getEditorial, listEditorial, listEditorialRevisions,
+  normalizeEditorialContent, normalizeEditorialSources, previewEditorialRevision, publicEditorialLink, saveEditorialDraft,
   type EditorialAction, type EditorialDetail, type EditorialDraft, type EditorialKind, type EditorialLanguage,
 } from '../../api/editorial'
 import { allowNetworkNavigation, useNetworkDraftGuard } from '../../components/network/NetworkShared'
@@ -15,7 +15,7 @@ import { EditorialFields, EditorialPreviewContent, editorialPrimary } from './Ed
 import { editorButton, editorInput } from './WebsiteEditorFields'
 
 type Screen = { kind: 'list' | 'new' } | { kind: 'saved'; id: string; initial?: EditorialDetail }
-type Problem = 'conflict' | 'missing' | 'slug_taken' | 'sources' | 'uncertain' | 'validation'
+type Problem = 'conflict' | 'missing' | 'slug_taken' | 'sources' | 'neighborhood' | 'uncertain' | 'validation'
 type EditorialRead<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T }
 
 const status = (error: unknown) => isAxiosError(error) ? error.response?.status : undefined
@@ -155,6 +155,7 @@ function EditorialForm({ initial, created, onCreated, onReload, onDenied }: {
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline) || (!saved && (slug !== '' || kind !== 'article'))
   const stale = problem === 'conflict' || problem === 'uncertain' || problem === 'missing'
   const actions = saved ? editorialActions(saved) : null
+  const factDatesCurrent = !saved || editorialNeighborhoodDatesCurrent(saved.content)
   useNetworkDraftGuard(dirty, busy)
 
   async function write(pending: (signal: AbortSignal) => Promise<EditorialDetail>, success: string) {
@@ -200,7 +201,12 @@ function EditorialForm({ initial, created, onCreated, onReload, onDenied }: {
       setProblem('sources')
       return
     }
-    const payload = { ...draft, sources }
+    const content = normalizeEditorialContent(draft.content, kind, sources)
+    if (!content) {
+      setProblem('neighborhood')
+      return
+    }
+    const payload = { ...draft, content, sources }
     return saved
       ? void write(signal => saveEditorialDraft(saved.id, saved.version, payload, signal), 'saved')
       : void write(signal => createEditorial(slug.trim(), kind, payload, signal), 'saved')
@@ -246,7 +252,7 @@ function EditorialForm({ initial, created, onCreated, onReload, onDenied }: {
             </select>
           </label>
         </div>}
-        <EditorialFields draft={draft} change={setDraft} />
+        <EditorialFields draft={draft} change={setDraft} kind={kind} />
         <div className="flex flex-wrap gap-2">
           <button className={editorialPrimary} type="submit" disabled={!dirty}>{t(busy ? 'saving' : 'save')}</button>
           {saved && <button className={editorButton} type="button" disabled={dirty}
@@ -255,7 +261,9 @@ function EditorialForm({ initial, created, onCreated, onReload, onDenied }: {
       </fieldset>
     </form>
     {saved && actions && <div className="space-y-3">
-      {!actions.review && saved.reviewed_revision !== saved.draft_revision && <p className="text-sm text-dim">{t('publish_requirement')}</p>}
+      {!actions.review && saved.reviewed_revision !== saved.draft_revision && <p className="text-sm text-dim">
+        {t(factDatesCurrent ? 'publish_requirement' : 'neighborhood_comparison.future_date')}
+      </p>}
       <div className="flex flex-wrap gap-2">
         <button type="button" className={editorButton} disabled={dirty || busy || stale || !actions.review}
           onClick={() => setIntent({ action: 'review', revision: saved.draft_revision })}>{t('actions.review.title')}</button>

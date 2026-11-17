@@ -1,6 +1,10 @@
 import client from './axios'
 import { isPublicHttps } from '../data/websiteEditorDefaults'
 import { landingBaseUrl } from '../lib/siteUrls'
+import {
+  isNeighborhoodDate, isNeighborhoodTopic, neighborhoodToday, NEIGHBORHOOD_FACT_LIMIT,
+  NEIGHBORHOOD_LOCATION_LIMIT, NEIGHBORHOOD_TOPICS, type NeighborhoodTopic,
+} from '../../../../packages/editorial-neighborhoods'
 
 export const EDITORIAL_KINDS = ['article', 'guide', 'neighborhood'] as const
 export const EDITORIAL_LANGUAGES = ['en', 'es'] as const
@@ -16,8 +20,13 @@ export type EditorialKind = typeof EDITORIAL_KINDS[number]
 export type EditorialLanguage = typeof EDITORIAL_LANGUAGES[number]
 export type EditorialText = Record<keyof typeof EDITORIAL_TEXT_LIMITS, string>
 export type EditorialSource = { label: string; url: string }
+export type EditorialNeighborhood = {
+  listing_location: string | null
+  facts: { topic: NeighborhoodTopic; en: string; es: string; checked_on: string; source_url: string }[]
+}
+export type EditorialContent = Record<EditorialLanguage, EditorialText> & { neighborhood?: EditorialNeighborhood | null }
 export type EditorialDraft = {
-  content: Record<EditorialLanguage, EditorialText>
+  content: EditorialContent
   sources: EditorialSource[]
   review_note: string
 }
@@ -86,9 +95,30 @@ export function isTranslationComplete(text: EditorialText): boolean {
   return Object.values(text).every(value => value.trim().length > 0)
 }
 
+export function normalizeEditorialContent(content: EditorialContent, kind: EditorialKind, sources: EditorialSource[]): EditorialContent | null {
+  const { neighborhood, ...article } = content
+  if (kind !== 'neighborhood' || neighborhood === undefined) return article
+  if (neighborhood === null) return { ...article, neighborhood: null }
+  const listing_location = neighborhood.listing_location?.trim() || null
+  if (listing_location && (listing_location.length > NEIGHBORHOOD_LOCATION_LIMIT || /[\x00-\x1f\x7f]/.test(listing_location))) return null
+  const urls = new Set(sources.map(source => source.url))
+  const topics = new Set(neighborhood.facts.map(fact => fact.topic))
+  if (!neighborhood.facts.length || neighborhood.facts.length > NEIGHBORHOOD_TOPICS.length
+    || topics.size !== neighborhood.facts.length) return null
+  const facts = neighborhood.facts.map(fact => ({ ...fact, en: fact.en.trim(), es: fact.es.trim() }))
+  if (!facts.every(fact => isNeighborhoodTopic(fact.topic) && isNeighborhoodDate(fact.checked_on)
+    && urls.has(fact.source_url) && isPublicHttps(fact.source_url) && EDITORIAL_LANGUAGES.every(language =>
+      fact[language] && [...fact[language]].length <= NEIGHBORHOOD_FACT_LIMIT))) return null
+  return { ...article, neighborhood: { listing_location, facts } }
+}
+
+export function editorialNeighborhoodDatesCurrent(content: EditorialContent, today = neighborhoodToday()): boolean {
+  return content.neighborhood?.facts.every(fact => fact.checked_on <= today) ?? true
+}
+
 export function editorialActions(document: EditorialDetail) {
   const reviewable = EDITORIAL_LANGUAGES.every(language => isTranslationComplete(document.content[language]))
-    && document.sources.length > 0
+    && document.sources.length > 0 && editorialNeighborhoodDatesCurrent(document.content)
   return {
     review: reviewable && document.reviewed_revision !== document.draft_revision,
     publish: document.reviewed_revision === document.draft_revision && document.published_revision !== document.draft_revision,

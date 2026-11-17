@@ -45,6 +45,27 @@
   "published": "Published revision {{revision}}",
   "unpublished": "Unpublished",
   "publish_requirement": "Complete both translations and add a public source before reviewing.",
+  "neighborhood_comparison": {
+    "heading": "Neighborhood comparison facts",
+    "help": "Add sourced facts in English and Spanish for the topics you want to compare.",
+    "location": "Listing search location (optional)",
+    "location_help": "Use the location label from property search to link to listings in this area.",
+    "fact": "Comparison fact {{number}}",
+    "topic": "Topic",
+    "checked_on": "Date checked",
+    "source": "Public source",
+    "choose_source": "Choose a source from this draft",
+    "source_removed": "Select a current source",
+    "add": "Add comparison fact",
+    "remove": "Remove fact {{number}}",
+    "clear": "Clear comparison facts",
+    "future_date": "Each verification date must be today or earlier in Santo Domingo before review.",
+    "text": { "en": "Fact in English", "es": "Fact in Spanish" },
+    "topics": {
+      "access": "Access", "utilities": "Utilities", "internet": "Internet",
+      "services": "Nearby services", "transport": "Transportation", "lifestyle": "Lifestyle"
+    }
+  },
   "public_link": { "en": "Open public English", "es": "Open public Spanish" },
   "actions": {
     "review": { "title": "Review revision", "confirm": "Confirm review", "details": "Mark saved revision {{revision}} as reviewed and ready to publish.", "done": "Revision reviewed." },
@@ -60,6 +81,7 @@
     "slug_taken": "This slug is already in use. Choose a different one.",
     "validation": "Check the length and format of your fields, including the source links.",
     "sources": "Enter a label and a valid public HTTPS URL for each source.",
+    "neighborhood": "Add both translations, a calendar date, and a listed public source for each comparison fact.",
     "uncertain": "The result could not be confirmed. Check the current revision before trying again."
   }
 }

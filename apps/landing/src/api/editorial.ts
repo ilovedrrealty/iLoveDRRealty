@@ -33,7 +33,7 @@ function field(value: unknown, limit: number): string {
   return value
 }
 
-function sourceUrl(value: unknown): string {
+export function editorialSourceUrl(value: unknown): string {
   const href = field(value, 800)
   let parsed: URL
   try { parsed = new URL(href) } catch { return badResponse() }
@@ -81,7 +81,7 @@ export async function getPublishedEditorial(slug: string, locale: EditorialLocal
   if (item.slug !== slug || !Array.isArray(row.sources) || row.sources.length > 8) return badResponse()
   const sources = row.sources.map(value => {
     const source = record(value)
-    return { label: field(source.label, 120), url: sourceUrl(source.url) }
+    return { label: field(source.label, 120), url: editorialSourceUrl(source.url) }
   })
   return { ...item, body: field(row.body, 12000), sources }
 }
