@@ -707,6 +707,7 @@ export function OwnerListings({ tone, go, user }: { tone: string; go: (v: string
           listing={selected}
           tone={tone}
           role="owner"
+          canOpenPerformance={user.role === 'admin' || (user.role === 'owner' && (selected.owner_id ?? selected.submitted_by) === user.id)}
           openDeal={openDeal}
           realtorCalendlyUrl={agent?.calendly_url ?? null}
           selfManaged={selected.submitted_by === currentUserId}

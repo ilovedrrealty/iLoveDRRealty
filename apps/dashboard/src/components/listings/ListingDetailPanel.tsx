@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import type { Listing } from '../../api/listings'
 import { submitDealRequest } from '../../api/listings'
 import { PAYPAL_ENABLED } from '../../lib/features'
+import { ListingPerformanceAction } from './ListingPerformanceDialog'
 
 const STATUS_CHIP_DARK: Record<string, { bg: string; color: string; label: string }> = {
   active:           { bg: '#16a34a', color: 'white',   label: 'Active'   },
@@ -58,9 +59,10 @@ interface Props {
   onClose: () => void
   onEdit?: () => void
   selfManaged?: boolean
+  canOpenPerformance?: boolean
 }
 
-export function ListingDetailPanel({ listing, tone, role, openDeal, realtorCalendlyUrl, onClose, onEdit, selfManaged }: Props) {
+export function ListingDetailPanel({ listing, tone, role, openDeal, realtorCalendlyUrl, onClose, onEdit, selfManaged, canOpenPerformance }: Props) {
   const { t } = useTranslation('common')
   const [imgIdx,        setImgIdx]        = useState(0)
   const [dealOpen,      setDealOpen]      = useState(false)
@@ -712,7 +714,8 @@ export function ListingDetailPanel({ listing, tone, role, openDeal, realtorCalen
         )}
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
-        <div className="border-t border-line px-5 py-4 flex gap-3 shrink-0 bg-paper">
+        <div className="border-t border-line px-5 py-4 flex flex-wrap gap-3 shrink-0 bg-paper">
+          {canOpenPerformance && <ListingPerformanceAction listingId={listing.id} />}
           {role === 'owner' && !selfManaged && realtorCalendlyUrl && safeUrl(realtorCalendlyUrl) && (
             <a
               href={safeUrl(realtorCalendlyUrl)!}

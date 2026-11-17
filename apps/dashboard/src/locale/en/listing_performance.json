@@ -1,0 +1,88 @@
+{
+  "action": "Performance",
+  "title": "Listing performance",
+  "close": "Close listing performance",
+  "loading": "Loading listing performance…",
+  "retry": "Try again",
+  "unavailable": "Unavailable",
+  "dates": {
+    "start": "Start date",
+    "end": "End date",
+    "apply": "Apply dates",
+    "time_zone": "Santo Domingo time"
+  },
+  "views": {
+    "lifetime": "Lifetime view requests",
+    "lifetime_help": "Accepted view requests in the listing’s lifetime counter. Repeat requests can count.",
+    "tracked": "Tracked view requests",
+    "coverage": {
+      "complete": "Counts cover all dates in this report.",
+      "partial": "Counts cover the tracked dates only. Some dates are missing or still in progress.",
+      "unavailable": "Dated view counts are unavailable for these dates."
+    },
+    "recording": "View recording",
+    "began": "Daily recording began",
+    "no_tracking": "Daily view recording has yet to start.",
+    "daily": "Daily view counts",
+    "count": "Requests",
+    "coverage_title": "Coverage",
+    "states": { "complete": "Complete", "partial": "Partial", "unavailable": "Unavailable" }
+  },
+  "inquiries": {
+    "title": "Property inquiries",
+    "help": "Property inquiries received for this listing in the selected period. Known internal tests are excluded."
+  },
+  "confirmed": {
+    "title": "Confirmed appointments",
+    "help": "Appointments currently confirmed for dates in this report."
+  },
+  "completed": {
+    "title": "Recorded completed showings",
+    "help": "Showings staff recorded as completed on dates in this report.",
+    "record_help": "Select the date the showing took place.",
+    "entries": "Completed showing dates"
+  },
+  "milestones": {
+    "heading": "Listing milestones",
+    "empty": "There are no listing milestones for these dates.",
+    "truncated": "Showing the most recent milestones in this period. Choose a shorter range to see more.",
+    "kinds": {
+      "submitted": "Listing submitted",
+      "approved": "Listing approved",
+      "archived": "Listing archived",
+      "rejected": "Listing rejected",
+      "edit_approved": "Listing edit approved"
+    }
+  },
+  "entries": {
+    "record": "Record performance entry",
+    "type": "Entry type",
+    "date": "Date",
+    "note": "Owner-visible note",
+    "share": "Share this note with the owner",
+    "sharing_help": "Summarize the feedback or progress. Leave out visitor names, contact details and private links.",
+    "save": "Save entry",
+    "saving": "Saving entry…",
+    "retry": "Retry entry",
+    "saved": "Performance entry saved.",
+    "cancel": "Cancel entry",
+    "discard": "Close and discard the unsaved entry?",
+    "notes": "Feedback and marketing progress",
+    "notes_empty": "There are no owner-visible notes for these dates.",
+    "notes_recent_empty": "The latest displayed entries contain no owner-visible notes.",
+    "truncated": "Showing the most recent entries in this period. Choose a shorter range to see more.",
+    "kinds": {
+      "completed_showing": "Completed showing",
+      "owner_feedback": "Feedback for owner",
+      "marketing_update": "Marketing update"
+    }
+  },
+  "errors": {
+    "access": "This report is unavailable for your account.",
+    "read": "Could not refresh listing performance.",
+    "range": "Choose a valid date range of up to 366 days.",
+    "validation": "Check the date and any owner-visible note, then try again.",
+    "conflict": "This entry reference is already in use. Cancel and check the report before creating a new entry.",
+    "uncertain": "The save could not be confirmed. Retry the same entry to check its status."
+  }
+}

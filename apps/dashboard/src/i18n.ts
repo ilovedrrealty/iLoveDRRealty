@@ -24,6 +24,8 @@ import enDevelopmentInventory from './locale/en/development_inventory.json'
 import esDevelopmentInventory from './locale/es/development_inventory.json'
 import enSellerValuation from './locale/en/seller_valuation.json'
 import esSellerValuation from './locale/es/seller_valuation.json'
+import enListingPerformance from './locale/en/listing_performance.json'
+import esListingPerformance from './locale/es/listing_performance.json'
 import enResearchTools from './locale/en/research_tools.json'
 import esResearchTools from './locale/es/research_tools.json'
 import enProfessionals from './locale/en/professionals.json'
@@ -61,6 +63,7 @@ i18n.use(initReactI18next).init({
       editorial: enEditorial,
       development_inventory: enDevelopmentInventory,
       seller_valuation: enSellerValuation,
+      listing_performance: enListingPerformance,
       research_tools: enResearchTools,
       professionals: enProfessionals,
       tool_hubs: enToolHubs,
@@ -84,6 +87,7 @@ i18n.use(initReactI18next).init({
       editorial: esEditorial,
       development_inventory: esDevelopmentInventory,
       seller_valuation: esSellerValuation,
+      listing_performance: esListingPerformance,
       research_tools: esResearchTools,
       professionals: esProfessionals,
       tool_hubs: esToolHubs,
@@ -98,7 +102,7 @@ i18n.use(initReactI18next).init({
   },
   lng: savedLang,
   fallbackLng: 'en',
-  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'editorial', 'development_inventory', 'seller_valuation', 'research_tools', 'professionals', 'tool_hubs', 'lead_delivery', 'location_review', 'management', 'inquiry_feeds', 'contact_share', 'property_network', 'communications'],
+  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'editorial', 'development_inventory', 'seller_valuation', 'listing_performance', 'research_tools', 'professionals', 'tool_hubs', 'lead_delivery', 'location_review', 'management', 'inquiry_feeds', 'contact_share', 'property_network', 'communications'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })

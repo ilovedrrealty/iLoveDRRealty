@@ -573,6 +573,7 @@ export function RealtorListings({ tone, go, user }: { tone: string; go: (v: stri
           listing={selected}
           tone={tone}
           role="realtor"
+          canOpenPerformance={user?.role === 'realtor' || user?.role === 'admin'}
           openDeal={openDeal}
           onClose={() => { setSelected(null); setOpenDeal(false) }}
           onEdit={() => setEditing(true)}
