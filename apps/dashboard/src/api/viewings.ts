@@ -66,7 +66,7 @@ export function viewingSchedulingUrl(value: string | null): string | null {
   const url = value && httpsUrl(value)
   if (!url) return null
   const { hostname, pathname } = url
-  if (['calendly.com', 'www.calendly.com', 'calendar.app.google'].includes(hostname) && pathname.replaceAll('/', '')) return value
+  if (['calendly.com', 'www.calendly.com', 'calendar.app.google'].includes(hostname) && /[^/]/.test(pathname)) return value
   return hostname === 'calendar.google.com' && /^\/calendar\/(?:u\/\d+\/)?appointments\/schedules\/[^/]+\/?$/.test(pathname) ? value : null
 }
 
