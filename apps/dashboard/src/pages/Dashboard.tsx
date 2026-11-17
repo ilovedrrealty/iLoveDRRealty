@@ -139,7 +139,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
       case 'bookings':        return role === 'Admin' ? <AdminBookings /> : <BuyerBookings />
       case 'owner-bookings':    return <OwnerBookings go={go} />
       case 'realtor-bookings':  return <RealtorBookings />
-      case 'leads':      return role === 'Owner' ? <OwnerLeads tone={tone} go={go} /> : <RealtorLeads go={go} user={user} />
+      case 'leads':      return role === 'Owner' ? <OwnerLeads tone={tone} go={go} isAdmin={user.role === 'admin'} /> : <RealtorLeads go={go} user={user} />
       case 'settings':
       case 'settings:connections':
         return <UserSettings user={user} role={role} tone={tone} onUserUpdate={onUserUpdate} initialTab={view === 'settings:connections' ? 'connections' : undefined} />

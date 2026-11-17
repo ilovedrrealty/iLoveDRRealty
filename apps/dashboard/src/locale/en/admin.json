@@ -181,6 +181,8 @@
     "discount_off_pct":         "−{{value}}% off"
   },
   "leads_page": {
+    "delivery_hint": "Review CRM and email acceptance, worker status and any follow-up needed.",
+    "open_delivery": "Open lead delivery",
     "title":              "All leads",
     "search_ph":          "Search leads…",
     "kpi_new":            "New",

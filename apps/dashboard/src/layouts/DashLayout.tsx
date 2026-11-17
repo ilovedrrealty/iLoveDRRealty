@@ -71,6 +71,8 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Users,           view: 'professional-profile' },
   { Icon: Building2,       view: 'listings'  },
   { Icon: Inbox,           view: 'leads'     },
+  { Icon: Inbox,           view: 'lead-delivery' },
+  { Icon: Inbox,           view: 'communications' },
   { Icon: Upload,          view: 'bulk-import' },
   { Icon: Bell,            view: 'bookings'  },
   { Icon: BookOpen,        view: 'resources' },

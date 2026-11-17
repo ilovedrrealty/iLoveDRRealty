@@ -39,6 +39,7 @@ function harness(clientId, language = 'en') {
     '@react-oauth/google': sdk, 'react-i18next': translate,
     'react-hot-toast': { default: { success() {}, error() {} } },
     '../api/auth': authAPI, '../lib/googleAuth': config,
+    '../lib/authLocale': load('apps/landing/src/lib/authLocale.ts'),
     '../lib/professionalJoin': { dashboardAfterAuth: () => 'https://app.ilovedrrealty.com/professional-profile' },
   }, { process: { env: {} } }).default
   const provider = load('apps/landing/src/components/GoogleAuthProvider.tsx', {

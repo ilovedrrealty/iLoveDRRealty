@@ -7,7 +7,7 @@ export interface Inquiry {
   name: string
   email: string
   phone: string | null
-  message: string
+  message: string | null
   created_at: string
 }
 
@@ -24,13 +24,13 @@ export async function submitInquiry(data: InquiryCreate): Promise<Inquiry> {
   return res.data
 }
 
-export async function getMyInquiries(): Promise<Inquiry[]> {
-  const res = await client.get<Inquiry[]>('/inquiries/mine')
+export async function getMyInquiries(signal?: AbortSignal): Promise<Inquiry[]> {
+  const res = await client.get<Inquiry[]>('/inquiries/mine', { signal })
   return res.data
 }
 
-export async function getOwnerInquiries(): Promise<Inquiry[]> {
-  const res = await client.get<Inquiry[]>('/inquiries/for-owner')
+export async function getOwnerInquiries(signal?: AbortSignal): Promise<Inquiry[]> {
+  const res = await client.get<Inquiry[]>('/inquiries/for-owner', { signal })
   return res.data
 }
 

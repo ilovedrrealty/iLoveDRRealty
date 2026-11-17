@@ -181,6 +181,8 @@
     "discount_off_pct":         "−{{value}}% de descuento"
   },
   "leads_page": {
+    "delivery_hint": "Revisa la aceptación del CRM y los correos, el estado del proceso y cualquier seguimiento pendiente.",
+    "open_delivery": "Abrir entrega de contactos",
     "title":              "Todos los contactos",
     "search_ph":          "Buscar contactos…",
     "kpi_new":            "Nuevos",

@@ -29,8 +29,10 @@ import { fmt } from "../data/listings";
 import { TONE_MAP } from "../data/propertyDetailData";
 import { fetchListingById, recordListingView } from "../api/listings";
 import type { ApiListingDetail } from "../api/listings";
-import { submitInquiry } from "../api/inquiries";
+import { isInquiryPropertyContext, observeInquiryProperty, preparePropertyInquiry, submitInquiry, type LeadSubmissionAttempt } from "../api/inquiries";
+import type { LeadReceipt } from "../lib/gtag";
 import { PhoneInput } from 'react-international-phone'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 import 'react-international-phone/style.css'
 import { createBooking, createPaymentAuth, getUnavailableDates, type BookedRange } from "../api/bookings";
 import { getMe } from "../api/auth";
@@ -289,6 +291,25 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
   const [inquiryPhoneDialCode, setInquiryPhoneDialCode] = useState('1');
   const [inquirySending, setInquirySending] = useState(false);
   const [inquirySent, setInquirySent] = useState(false);
+  const [inquiryConsent, setInquiryConsent] = useState(false);
+  const [inquiryError, setInquiryError] = useState<string | null>(null);
+  const [inquiryReceipt, setInquiryReceipt] = useState<LeadReceipt | null>(null);
+  const [inquiryFollowUp, setInquiryFollowUp] = useState<'phone' | 'email'>('phone');
+  const inquirySubmitting = useRef(false);
+  const inquiryAttempt = useRef<LeadSubmissionAttempt>({});
+  const inquiryVersion = useRef(0);
+  const inquiryStatus = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    const version = ++inquiryVersion.current;
+    inquirySubmitting.current = false;
+    inquiryAttempt.current = {};
+    setInquiryOpen(false); setInquirySending(false); setInquirySent(false);
+    setInquiryConsent(false); setInquiryError(null); setInquiryReceipt(null);
+    setInquiryForm({ name: '', email: '', phone: '', message: '' });
+    setInquiryPhoneDialCode('1');
+    return () => { if (inquiryVersion.current === version) inquiryVersion.current += 1; };
+  }, [id]);
+  useEffect(() => { if (inquiryError) inquiryStatus.current?.focus(); }, [inquiryError]);
 
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingForm, setBookingForm] = useState({ name: '', email: '', phone: '', checkIn: '', checkOut: '', guests: 1, notes: '' });
@@ -324,17 +345,15 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
   }, []);
 
   useEffect(() => {
-    if (!id) {
-      setLoadError(true);
-      return;
-    }
-    fetchListingById(id)
-      .then((data) => {
+    setListing(null);
+    setLoadError(false);
+    setAPrice(0);
+    setLightboxIdx(null);
+    return observeInquiryProperty(id, fetchListingById,
+      (data) => {
         setListing(data);
         setAPrice(Number(data.price));
-        recordListingView(id).catch(() => {});
-      })
-      .catch(() => setLoadError(true));
+      }, () => setLoadError(true), recordListingView);
   }, [id]);
 
   const fmtM = (v: number) => currency === 'DOP'
@@ -363,14 +382,32 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
 
   const handleInquiry = async (e: FormEvent) => {
     e.preventDefault()
+    if (inquirySubmitting.current || inquirySent) return
+    const prepared = preparePropertyInquiry({ ...inquiryForm, contactConsent: inquiryConsent }, inquiryPhoneDialCode, isValidPhoneNumber)
+    if (prepared.issue) { setInquiryError(prepared.issue); return }
+    if (!listing || !isInquiryPropertyContext(id, listing.id)) { setInquiryError('unavailable'); return }
+    const version = inquiryVersion.current
+    inquirySubmitting.current = true
+    setInquiryError(null)
     setInquirySending(true)
     try {
-      const phoneDigits = inquiryForm.phone.replace(/\D/g, '')
-      const phone = !phoneDigits || phoneDigits === inquiryPhoneDialCode ? undefined : inquiryForm.phone
-      await submitInquiry({ listing_id: id, name: inquiryForm.name, email: inquiryForm.email, phone, message: inquiryForm.message })
-      setInquirySent(true)
-    } catch { /* keep form open */ }
-    finally { setInquirySending(false) }
+      const receipt = await submitInquiry({
+        listing_id: listing.id, name: prepared.name, email: prepared.email, phone: prepared.phone, message: prepared.message,
+        contactConsent: inquiryConsent, locale: i18n.language.startsWith('es') ? 'es' : 'en',
+        conversionIntent: listing.transaction === 'sale' ? 'buy' : listing.transaction === 'rent' ? 'rent' : 'general',
+        attempt: inquiryAttempt.current,
+      })
+      if (inquiryVersion.current === version) {
+        setInquiryReceipt(receipt); setInquiryFollowUp(prepared.phone ? 'phone' : 'email'); setInquirySent(true)
+      }
+    } catch (reason) {
+      if (inquiryVersion.current === version) {
+        const status = (reason as { response?: { status?: number } } | null)?.response?.status
+        setInquiryError(status === 404 ? 'unavailable' : status === 409 ? 'conflict' : status === 429 ? 'rate' : status === 422 ? 'validation' : 'send')
+      }
+    } finally {
+      if (inquiryVersion.current === version) { inquirySubmitting.current = false; setInquirySending(false) }
+    }
   }
 
   const handleBooking = async (e: FormEvent) => {
@@ -1436,21 +1473,28 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
                 </div>
               </div>
               {inquirySent ? (
-                <div className="py-3 text-center text-[13px] text-emerald-700 font-semibold">
-                  <CheckCircle2 size={15} className="inline mr-1.5" />{t('sidebar.inquiry_sent')}
+                <div role="status" className="py-3 text-center text-[13px] text-emerald-700 font-semibold">
+                  <CheckCircle2 size={15} aria-hidden="true" className="inline mr-1.5" />{t('sidebar.inquiry_sent')}
+                  <p className="mt-2 text-ink2 font-normal">{t(`inquiry.follow_up_${inquiryFollowUp}`)}</p>
+                  {inquiryReceipt ? <p className="mt-2 break-all text-xs font-normal text-dim">{t('inquiry.reference', { id: inquiryReceipt.id })}</p> : null}
                 </div>
               ) : inquiryOpen ? (
-                <form onSubmit={handleInquiry} className="flex flex-col gap-2">
-                  <input required placeholder={t('inquiry.name')} value={inquiryForm.name}
+                <form onSubmit={handleInquiry} noValidate aria-busy={inquirySending} className="flex flex-col gap-3">
+                  <p id="property-inquiry-contact-help" className="text-xs leading-relaxed text-ink2">{t('inquiry.contact_help')}</p>
+                  {inquiryError ? <p ref={inquiryStatus} tabIndex={-1} role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-900 outline-none">{t(`inquiry.errors.${inquiryError}`)}</p> : null}
+                  <fieldset disabled={inquirySending} className="flex min-w-0 flex-col gap-3 disabled:opacity-70">
+                  <label htmlFor="property-inquiry-name" className="text-xs font-semibold text-ink2">{t('inquiry.name')} *</label>
+                  <input id="property-inquiry-name" name="name" required autoComplete="name" maxLength={200} value={inquiryForm.name}
                     onChange={e => setInquiryForm(f => ({ ...f, name: e.target.value }))}
+                    aria-invalid={inquiryError === 'name'}
                     className="w-full text-[13px] border border-line rounded-lg px-3 py-2 font-sans outline-none" />
-                  <input required type="email" placeholder={t('inquiry.email')} value={inquiryForm.email}
-                    onChange={e => setInquiryForm(f => ({ ...f, email: e.target.value }))}
-                    className="w-full text-[13px] border border-line rounded-lg px-3 py-2 font-sans outline-none" />
+                  <label htmlFor="property-inquiry-phone" className="text-xs font-semibold text-ink2">{t('inquiry.phone')}</label>
                   <PhoneInput
                     defaultCountry="us"
                     placeholder={t('inquiry.phone')}
                     value={inquiryForm.phone}
+                    disabled={inquirySending}
+                    inputProps={{ id: 'property-inquiry-phone', name: 'phone', autoComplete: 'tel', maxLength: 50, 'aria-describedby': 'property-inquiry-contact-help', 'aria-invalid': inquiryError === 'phone' || inquiryError === 'contact' }}
                     onChange={(phone, metadata) => {
                       setInquiryPhoneDialCode(metadata.country.dialCode)
                       setInquiryForm(f => ({ ...f, phone }))
@@ -1458,9 +1502,17 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
                     inputStyle={{ flex: 1, width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #e4ddcf', borderLeft: 'none', borderRadius: '0 0.5rem 0.5rem 0', backgroundColor: '#ffffff', fontFamily: 'inherit', fontSize: '0.8125rem', color: '#00102e', outline: 'none' }}
                     countrySelectorStyleProps={{ buttonStyle: { border: '1px solid #e4ddcf', borderRight: 'none', borderRadius: '0.5rem 0 0 0.5rem', backgroundColor: '#f3f1ea', padding: '0 0.5rem', cursor: 'pointer', height: '100%' } }}
                   />
-                  <textarea required rows={3} placeholder={t('inquiry.message')} value={inquiryForm.message}
+                  <label htmlFor="property-inquiry-email" className="text-xs font-semibold text-ink2">{t('inquiry.email')}</label>
+                  <input id="property-inquiry-email" name="email" type="email" autoComplete="email" maxLength={254} value={inquiryForm.email}
+                    onChange={e => setInquiryForm(f => ({ ...f, email: e.target.value }))}
+                    aria-describedby="property-inquiry-contact-help" aria-invalid={inquiryError === 'email' || inquiryError === 'contact'}
+                    className="w-full text-[13px] border border-line rounded-lg px-3 py-2 font-sans outline-none" />
+                  <label htmlFor="property-inquiry-comments" className="text-xs font-semibold text-ink2">{t('inquiry.message')}</label>
+                  <textarea id="property-inquiry-comments" name="message" rows={3} maxLength={2000} value={inquiryForm.message}
                     onChange={e => setInquiryForm(f => ({ ...f, message: e.target.value }))}
+                    aria-invalid={inquiryError === 'message'}
                     className="w-full text-[13px] border border-line rounded-lg px-3 py-2 font-sans outline-none resize-none" />
+                  <label className="flex items-start gap-2 text-xs leading-relaxed text-ink2"><input type="checkbox" name="contact_consent" checked={inquiryConsent} onChange={e => setInquiryConsent(e.target.checked)} required aria-invalid={inquiryError === 'consent'} className="mt-0.5 h-4 w-4 shrink-0 accent-sea" /><span>{t('inquiry.contact_consent')}</span></label>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => setInquiryOpen(false)}
                       className="flex-1 py-2 rounded-full border border-line text-[13px] font-semibold text-ink2 cursor-pointer bg-transparent font-sans">
@@ -1471,6 +1523,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
                       {inquirySending ? t('sidebar.sending') : t('sidebar.send')}
                     </button>
                   </div>
+                  </fieldset>
                 </form>
               ) : (
                 <button

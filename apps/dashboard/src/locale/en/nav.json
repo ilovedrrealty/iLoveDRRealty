@@ -48,5 +48,7 @@
     "Owner": "Owner",
     "Realtor": "Realtor",
     "Admin": "Admin"
-  }
+  },
+  "lead-delivery": "Lead delivery",
+  "communications": "Email operations"
 }

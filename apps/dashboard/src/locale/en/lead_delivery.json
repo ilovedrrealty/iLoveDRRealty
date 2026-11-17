@@ -1,0 +1,114 @@
+{
+  "intro": "Check each new inquiry’s CRM and notification steps. Open a lead to review its recorded outcomes.",
+  "manual_policy": "Failed requests are not resent automatically. An Admin can approve one safe attempt after its cooldown; uncertain outcomes stay held for review.",
+  "accepted_note": "Provider accepted means the provider acknowledged the request. It does not prove that an email arrived in an inbox or that someone contacted the lead.",
+  "refresh": "Refresh status",
+  "loading": "Loading recorded delivery status…",
+  "load_error": "Delivery status could not be loaded. Refresh to try again. No missing values have been replaced with zero.",
+  "not_yet": "Not recorded yet",
+  "updated": "Report updated",
+  "previous": "Previous",
+  "next": "Next",
+  "retry": "Approve one safe retry",
+  "inspect": "View steps",
+  "cancel": "Cancel",
+  "next_attempt": "Manual retry no earlier than: {{date}}",
+  "waiting_for_contact": "Waiting for a confirmed CRM contact before this step can run.",
+  "legacy_note": "Only inquiries accepted after delivery tracking was enabled have these records. Earlier leads are not queued or resent.",
+  "summary_scope": "These totals cover all tracked inquiries, regardless of the table filters. Step totals count requests, not unique leads. Refresh for the latest status.",
+  "counts": {
+    "tracked_leads": "Tracked inquiries",
+    "accepted": "Provider accepted steps",
+    "waiting": "Queued steps",
+    "failed": "Failed steps",
+    "needs_review": "Steps needing review"
+  },
+  "worker": {
+    "title": "Notification worker",
+    "paused": "Tracking worker paused",
+    "paused_help": "The durable delivery worker is disabled. New website inquiries use the existing immediate notification path; existing queued steps will not run until the worker is enabled.",
+    "error": "Worker needs attention",
+    "error_help": "The latest worker check recorded an internal error. Ask an administrator to review service configuration and the worker before expecting queued steps to run.",
+    "awaiting": "Awaiting first check",
+    "awaiting_help": "Delivery tracking is enabled, but no worker check has been recorded yet. Refresh after the service starts.",
+    "stale": "Worker check is overdue",
+    "stale_help": "No recent worker check was recorded when this report was generated. Queued steps may be delayed; inspect the service before requeuing work.",
+    "polling": "Recent check recorded",
+    "polling_help": "A recent worker check was recorded. Each step below still has its own outcome; a worker check alone does not prove delivery.",
+    "last_poll": "Last worker check",
+    "last_completed": "Last completed batch"
+  },
+  "statuses": {
+    "pending": "Queued",
+    "processing": "Processing",
+    "retry_wait": "Earlier retry held — manual action required",
+    "accepted": "Provider accepted",
+    "failed": "Failed",
+    "needs_review": "Needs review",
+    "skipped": "Skipped"
+  },
+  "steps": {
+    "crm_contact": "CRM contact",
+    "crm_tags": "CRM tags",
+    "crm_note": "CRM note",
+    "crm_task": "CRM follow-up task",
+    "email": "Notification recipient {{number}}",
+    "email_configuration": "Notification configuration"
+  },
+  "providers": { "ghl": "GoHighLevel", "resend": "Email provider" },
+  "queue": {
+    "title": "Delivery steps",
+    "status_filter": "Step status",
+    "all_statuses": "All statuses",
+    "lead_filter": "Filter by inquiry ID (optional)",
+    "lead_placeholder": "Paste an inquiry UUID",
+    "apply": "Apply filter",
+    "clear": "Clear inquiry filter",
+    "invalid_id": "Enter a complete inquiry UUID, or leave this filter blank.",
+    "caption": "Recorded delivery steps for the selected filters",
+    "empty": "No delivery steps match these filters.",
+    "total": "{{count}} matching step",
+    "total_one": "{{count}} matching step",
+    "total_other": "{{count}} matching steps"
+  },
+  "table": {
+    "lead": "Inquiry",
+    "step": "Step",
+    "status": "Recorded outcome",
+    "attempts": "Attempts",
+    "updated": "Latest attempt or creation",
+    "actions": "Actions"
+  },
+  "errors": {
+    "http": "{{provider}} rejected the request (HTTP {{status}}).",
+    "configuration": "Required delivery configuration is missing. Correct the configuration before a safe retry.",
+    "destination_changed": "The configured destination changed. Review the original request; it will not be redirected automatically.",
+    "payload_review": "The stored request needs review. It will not be sent with changed content.",
+    "expired_window": "The provider’s safe duplicate-protection window expired. Review the provider before taking further action.",
+    "not_connected": "A connection was not established. An Admin must approve any further attempt after the cooldown.",
+    "disabled": "This integration was disabled when the step was checked.",
+    "no_note": "There was no note content for this step.",
+    "uncertain": "The provider may have accepted this request. It must be reviewed to avoid a duplicate.",
+    "review": "This step needs an administrator’s review. Customer information and provider responses are not shown here."
+  },
+  "confirm": {
+    "title": "Approve one attempt for this step?",
+    "body": "Approve {{step}} only, for one attempt. The server rechecks the known failure, cooldown and attempt limit. This action queues work; it does not contact the provider immediately. Another failure requires a new Admin action. Accepted or uncertain steps are not replayed.",
+    "queue": "Approve one retry",
+    "queuing": "Queuing…"
+  },
+  "notices": {
+    "queued": "One safe retry was approved and queued. A further failure will wait for a new Admin action. Refresh to follow the recorded outcome.",
+    "not_retryable": "This step changed, is cooling down or is no longer safe to retry. The status has been refreshed; no retry was queued by this request.",
+    "retry_unconfirmed": "The requeue response could not be confirmed. Review the refreshed status before trying again; the server prevents a second requeue of an already queued step."
+  },
+  "detail": {
+    "title": "Inquiry delivery details",
+    "open_lead": "Open inquiry record",
+    "close": "Close inquiry delivery details",
+    "error": "This inquiry’s delivery details could not be loaded. Refresh to try again.",
+    "attempts": "{{count}} of {{max}} allowed attempts",
+    "accepted_at": "Provider acknowledged: {{date}}",
+    "review_note": "No automatic resend is allowed for an uncertain outcome. Check the provider’s records before deciding what to do next."
+  }
+}

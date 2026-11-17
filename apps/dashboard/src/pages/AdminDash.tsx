@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import type { UserInfo } from '../lib/auth'
 import { AdminHome } from './admin/Home'
 import { AdminUsers } from './admin/Users'
@@ -6,6 +7,8 @@ import { AdminListings } from './admin/Listings'
 import { AdminLeads } from './admin/Leads'
 import { AdminBookings } from './admin/Bookings'
 import { Analytics } from './admin/Analytics'
+import { LeadDelivery } from './admin/LeadDelivery'
+import { Communications } from './admin/Communications'
 import { AdminSettings } from './admin/Settings'
 import { BulkImportListings } from './admin/BulkImportListings'
 import { ResearchTools } from './shared/ResearchTools'
@@ -23,9 +26,10 @@ import type { ToolWorkspace } from '../data/toolHubs'
 export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { go: (v: string, openId?: string, workspace?: Role) => void; view?: string; user: UserInfo; onUserUpdate: (updates: Partial<UserInfo>) => void }) {
   const { t } = useTranslation('admin')
   const { t: tNav } = useTranslation('nav')
+  const [searchParams] = useSearchParams()
 
   const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'trade-contacts', 'professional-profile'].includes(view) ? view : 'home'
-  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator'].includes(view)
+  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications'].includes(view)
   const title = sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
   const sub = sharedTitle ? '' : t(`pages.${pageKey}.sub`)
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
@@ -34,7 +38,9 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
     switch (view) {
       case 'users':    return <AdminUsers />
       case 'listings': return <AdminListings />
-      case 'leads':    return <AdminLeads />
+      case 'leads':    return <AdminLeads onOpenDelivery={leadId => go('lead-delivery', leadId)} />
+      case 'lead-delivery': return <LeadDelivery initialLeadId={searchParams.get('openId') ?? ''} onOpenLead={leadId => go('leads', leadId)} />
+      case 'communications': return <Communications user={user} workspace="Admin" />
       case 'bookings': return <AdminBookings />
       case 'analytics': return <Analytics />
       case 'settings': return <AdminSettings user={user} onUserUpdate={onUserUpdate} />

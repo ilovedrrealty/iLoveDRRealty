@@ -83,14 +83,17 @@ test('actual React preview escapes hostile text and retains readable exact plain
   assert.ok(html.includes('whitespace-pre-wrap'))
 })
 
-test('only the Admin leads panel enables the private share control', () => {
+test('Admin and canonical owner inquiry projections enable scoped private sharing', () => {
   const read = relative => fs.readFileSync(path.join(root, 'apps/dashboard/src', relative), 'utf8')
   const panel = read('components/admin/LeadDetailPanel.tsx')
   assert.match(panel, /allowContactShare = false/)
   assert.match(panel, /allowContactShare \? \(/)
   assert.match(panel, /contact=\{\{ name: lead\.name, email: lead\.email, phone: lead\.phone \}\}/)
   assert.match(read('pages/admin/Leads.tsx'), /<LeadDetailPanel\s+allowContactShare\b/)
-  for (const relative of ['pages/realtor/Leads.tsx', 'pages/realtor/Pipeline.tsx', 'pages/owner/Leads.tsx', 'pages/buyer/Inquiries.tsx']) {
+  const owner = read('pages/owner/Leads.tsx')
+  assert.match(owner, /getOwnerLeads\(page, state, controller.signal\)/)
+  assert.match(owner, /contact=\{\{ name: lead\.name, email: lead\.email, phone: lead\.phone \}\}/)
+  for (const relative of ['pages/realtor/Leads.tsx', 'pages/realtor/Pipeline.tsx', 'pages/buyer/Inquiries.tsx']) {
     assert.doesNotMatch(read(relative), /allowContactShare|ShareContactButton/)
   }
   const dialog = read('components/shared/ShareContactDialog.tsx')

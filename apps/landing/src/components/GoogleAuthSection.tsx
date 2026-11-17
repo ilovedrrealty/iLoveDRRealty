@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { googleAuth } from '../api/auth'
 import { GOOGLE_CLIENT_ID } from '../lib/googleAuth'
 import { dashboardAfterAuth } from '../lib/professionalJoin'
+import { currentAuthLocale } from '../lib/authLocale'
 
 type Props = { mode: 'login' | 'signup' }
 const dashboardRaw = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'https://app.ilovedrrealty.com'
@@ -21,14 +22,14 @@ export default function GoogleAuthSection({ mode }: Props) {
 }
 
 function ConfiguredGoogleAuth({ mode }: Props) {
-  const { t } = useTranslation('auth')
+  const { t, i18n } = useTranslation('auth')
   const [loading, setLoading] = useState(false)
   const startGoogleAuth = useGoogleLogin({
     prompt: 'select_account',
     onSuccess: async tokenResponse => {
       setLoading(true)
       try {
-        await googleAuth(tokenResponse.access_token)
+        await googleAuth(tokenResponse.access_token, currentAuthLocale(i18n.language))
         toast.success(t(`${mode}.toast.success`))
         setTimeout(() => { window.location.href = dashboardAfterAuth(DASHBOARD_URL) }, 1500)
       } catch (error: unknown) {

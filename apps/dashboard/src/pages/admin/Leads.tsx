@@ -153,7 +153,7 @@ function LeadStatusBadge({ lead }: { lead: Lead }) {
 }
 
 
-export function AdminLeads() {
+export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: string) => void } = {}) {
   const { t } = useTranslation('admin')
   const [leads,        setLeads]        = useState<Lead[]>([])
   const [realtors,     setRealtors]     = useState<AdminAgent[]>([])
@@ -256,6 +256,14 @@ export function AdminLeads() {
   return (
     <div className="flex flex-col gap-4">
       <LeadTrackingOverview />
+      {onOpenDelivery ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-paper p-4">
+          <p className="text-sm text-ink2">{t('leads_page.delivery_hint')}</p>
+          <button type="button" onClick={() => onOpenDelivery(selectedLead?.id)} className="min-h-10 rounded-lg border border-line px-4 py-2 text-sm font-semibold text-sea">
+            {t('leads_page.open_delivery')}
+          </button>
+        </div>
+      ) : null}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

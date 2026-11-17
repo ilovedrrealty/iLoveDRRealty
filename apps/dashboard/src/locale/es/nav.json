@@ -48,5 +48,7 @@
     "Owner": "Propietario",
     "Realtor": "Agente",
     "Admin": "Admin"
-  }
+  },
+  "lead-delivery": "Entrega de contactos",
+  "communications": "Operaciones de correo"
 }
