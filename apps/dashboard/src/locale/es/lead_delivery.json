@@ -52,6 +52,7 @@
     "crm_tags": "Etiquetas del CRM",
     "crm_note": "Nota del CRM",
     "crm_task": "Tarea de seguimiento en CRM",
+    "customer_email": "Correo de confirmación al cliente",
     "email": "Destinatario de notificación {{number}}",
     "email_configuration": "Configuración de notificaciones"
   },

@@ -2,8 +2,10 @@ import client from './axios'
 
 export const DELIVERY_STATUSES = ['pending', 'processing', 'retry_wait', 'accepted', 'failed', 'needs_review', 'skipped'] as const
 export type DeliveryStatus = typeof DELIVERY_STATUSES[number]
+export type DeliveryStep = 'crm_contact' | 'crm_tags' | 'crm_note' | 'crm_task'
+  | 'email_configuration' | 'customer_email' | `email_${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10}`
 export type DeliveryJob = {
-  id: string; lead_id: string; step: string; provider: 'ghl' | 'resend'; status: DeliveryStatus
+  id: string; lead_id: string; step: DeliveryStep; provider: 'ghl' | 'resend'; status: DeliveryStatus
   attempts: number; max_attempts: number; created_at: string; first_attempt_at: string | null
   last_attempt_at: string | null; next_attempt_at: string; accepted_at: string | null
   error_code: string | null; blocked_by: 'crm_contact' | null; outcome_uncertain: boolean; can_retry: boolean
@@ -11,7 +13,7 @@ export type DeliveryJob = {
 export type DeliverySummary = {
   generated_at: string; enabled: boolean; total_jobs: number; tracked_leads: number
   status_counts: Record<DeliveryStatus, number>
-  by_step: { step: string; status: DeliveryStatus; count: number }[]
+  by_step: { step: DeliveryStep; status: DeliveryStatus; count: number }[]
   worker: { last_poll_at: string | null; last_completed_at: string | null; last_batch_count: number; error_code: string | null }
   note: string
 }
@@ -35,8 +37,8 @@ function nullableTime(value: unknown): value is string | null { return value ===
 function status(value: unknown): value is DeliveryStatus {
   return typeof value === 'string' && (DELIVERY_STATUSES as readonly string[]).includes(value)
 }
-function step(value: unknown): value is string {
-  return typeof value === 'string' && /^(?:crm_(?:contact|tags|note|task)|email_(?:[1-9]|10|configuration))$/.test(value)
+function step(value: unknown): value is DeliveryStep {
+  return typeof value === 'string' && /^(?:crm_(?:contact|tags|note|task)|email_(?:[1-9]|10|configuration)|customer_email)$/.test(value)
 }
 function safeCode(value: unknown): value is string | null {
   return value === null || typeof value === 'string' && /^[a-z\d_]{1,120}$/.test(value)

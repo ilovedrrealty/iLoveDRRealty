@@ -56,6 +56,27 @@ test('summary is a read-only request with cancellation and reconciled recorded c
   assert.equal(loaded.calls[0][2].signal, signal)
 })
 
+test('customer confirmation emails are valid summary, queue and inquiry-detail jobs', async () => {
+  const data = summary()
+  data.by_step[0].step = 'customer_email'
+  assert.equal(await load(data).getDeliverySummary(), data)
+  const customer = job({ step: 'customer_email' })
+  const detail = { lead_id: leadId, tracked: true, enabled: true, jobs: [customer], note: null }
+  assert.equal(await load(detail).getLeadDelivery(leadId), detail)
+  const queued = queue([customer])
+  assert.equal(await load(queued).getDeliveryQueue({}), queued)
+  for (const step of ['customer_sms', 'customer_email_extra']) {
+    assert.equal(load().isDeliveryJob(job({ step })), false)
+    const unknown = clone(data); unknown.by_step[0].step = step
+    assert.equal(load().isDeliverySummary(unknown), false)
+  }
+  for (const language of ['en', 'es']) {
+    const copy = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../apps/dashboard/src/locale/${language}/lead_delivery.json`), 'utf8'))
+    assert.equal(typeof copy.steps.customer_email, 'string')
+    assert.ok(copy.steps.customer_email.length > 0)
+  }
+})
+
 test('genuine empty tracking is accepted, while missing or inconsistent reports are unavailable', async () => {
   const empty = summary()
   empty.total_jobs = 0; empty.tracked_leads = 0; empty.status_counts.pending = 0; empty.by_step = []

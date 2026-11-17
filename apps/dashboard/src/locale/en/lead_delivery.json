@@ -52,6 +52,7 @@
     "crm_tags": "CRM tags",
     "crm_note": "CRM note",
     "crm_task": "CRM follow-up task",
+    "customer_email": "Customer confirmation email",
     "email": "Notification recipient {{number}}",
     "email_configuration": "Notification configuration"
   },
