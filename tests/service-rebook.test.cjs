@@ -115,7 +115,7 @@ function renderDraft(rebook, freshContext, error = null, language = 'en') {
     '../../api/propertyNetwork': { getPrivateProperties: never, getPrivateProperty: never, getNetworkProperties: never },
     '../../api/serviceRebook': api,
     '../../api/serviceFavorites': { saveServiceFavorite: never },
-    '../../api/serviceWorkflow': { getServiceProviders: never, ServiceContractError },
+    '../../api/serviceWorkflow': { getServiceProviders: never, getReviewedServiceProviders: never, ServiceContractError },
     '../../../../../packages/professionals/src': { professionalLabel: labels => labels[language] },
     '../../hooks/useNetworkRead': { useNetworkRead: (key, _load, enabled) => {
       queries.push({ key, enabled })
@@ -130,7 +130,9 @@ function renderDraft(rebook, freshContext, error = null, language = 'en') {
     './ServiceFavorites': { useFavoriteChange: () => ({ busy: false, run: never }), FavoriteChangeStatus: () => null },
   })
   const options = { property_classes: [{ id: 'house_villa', label: { en: 'House or villa', es: 'Casa o villa' } }],
-    categories: [{ id: 'pool', label: { en: 'Pool care', es: 'Cuidado de piscinas' } }] }
+    categories: [{ id: 'pool', label: { en: 'Pool care', es: 'Cuidado de piscinas' } }],
+    areas: [{ id: 'cabarete', label: { en: 'Cabarete', es: 'Cabarete' } }],
+    languages: [{ id: 'es', label: { en: 'Spanish', es: 'Español' } }] }
   const markup = renderToStaticMarkup(React.createElement(ServiceRequestCreate, { rebook, options, role: 'owner', actorCode: 10, onCreated: never }))
   return { markup, queries }
 }
@@ -158,6 +160,10 @@ test('unavailable and swapped providers show no source or substitute provider; n
   }
   const normal = renderDraft(null, null)
   assert.match(normal.markup, /<select/)
+  assert.match(normal.markup, /<option value="reviewed" selected="">Reviewed matches<\/option>/)
+  assert.match(normal.markup, /<option value="opt_in">Opt-in members<\/option>/)
+  assert.match(normal.markup, /Matching area/)
+  assert.match(normal.markup, /Preferred language \(optional\)/)
   assert.doesNotMatch(normal.markup, /Repeat service request/)
   assert.deepEqual(normal.queries.filter(row => row.enabled).map(row => row.key), ['service-source:private:1'])
 })

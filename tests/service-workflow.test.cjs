@@ -44,6 +44,26 @@ test('discovery accepts only the minimal opted-in alias projection and exact pag
     h.reply(page([{...item,...extra}]));await assert.rejects(h.api.getServiceProviders('air_conditioning','house_villa'),/Invalid private service data/)
   }
 })
+test('reviewed matching sends one property scope and only the requested criteria, with strict safe results', async () => {
+  const item = { user_code: 72, member_alias: 'Synthetic alias', category_ids: ['air_conditioning'] }
+  const h = harness(page([item]))
+  const signal = new AbortController().signal
+  const criteria = { category_id: 'air_conditioning', property_class: 'house_villa', area_id: 'cabarete' }
+  await h.api.getReviewedServiceProviders({ ...criteria, property_id: B, language: 'es' }, 1, signal)
+  await h.api.getReviewedServiceProviders({ ...criteria, listing_id: D })
+  assert.equal(h.calls[0].url, '/property-network/service-provider-matches')
+  assert.equal(h.calls[0].args[0].signal, signal)
+  assert.deepEqual(plain(h.calls[0].args[0].params), { ...criteria, property_id: B, language: 'es', page: 1 })
+  assert.deepEqual(plain(h.calls[1].args[0].params), { ...criteria, listing_id: D, page: 1 })
+  assert.throws(() => h.api.getReviewedServiceProviders(criteria), /Invalid private service data/)
+  assert.throws(() => h.api.getReviewedServiceProviders({ ...criteria, property_id: B, listing_id: D }), /Invalid private service data/)
+  assert.throws(() => h.api.getReviewedServiceProviders({ ...criteria, property_id: B, language: 'es&phone=1' }), /Invalid private service data/)
+  assert.equal(h.calls.length, 2)
+  h.reply(page([{ ...item, category_ids: ['plumbing'] }]))
+  await assert.rejects(h.api.getReviewedServiceProviders({ ...criteria, property_id: B }), /Invalid private service data/)
+  h.reply(page([{ ...item, public_phone: 'UNEXPECTED' }]))
+  await assert.rejects(h.api.getReviewedServiceProviders({ ...criteria, property_id: B }), /Invalid private service data/)
+})
 test('received projection rejects private dossiers, competitors and global activity metadata',async()=>{
   const h=harness(received());const row=await h.api.getServiceRequest(A,'received')
   assert.equal(h.calls[0].args[0].params.view,'received')
@@ -75,6 +95,22 @@ test('create sends exactly the deliberate shared fields and rejects invalid sour
     await assert.rejects(h.api.runServiceAction({operation:'request_create',audience:'managed',input:requestInput(changes)}),/Invalid private service data/)
   }
   assert.equal(h.calls.length,1)
+})
+test('reviewed quote creation preserves exact selected criteria and leaves repeat and opt-in payloads unchanged', async () => {
+  const h = harness(managed())
+  const send = changes => h.api.runServiceAction({ operation: 'request_create', audience: 'managed', input: requestInput(changes) })
+  const withLanguage = { area_id: 'cabarete', language: 'es' }
+  const anyLanguage = { area_id: 'north_coast' }
+  await send({ reviewed_match: withLanguage })
+  await send({ reviewed_match: anyLanguage })
+  await send({})
+  assert.deepEqual(plain(h.calls[0].args[0]), requestInput({ reviewed_match: withLanguage }))
+  assert.deepEqual(plain(h.calls[1].args[0]), requestInput({ reviewed_match: anyLanguage }))
+  assert.deepEqual(plain(h.calls[2].args[0]), requestInput())
+  for (const reviewed_match of [{}, null, { ...withLanguage, email: 'UNEXPECTED' }, { ...withLanguage, language: '' }]) {
+    await assert.rejects(send({ reviewed_match }), /Invalid private service data/)
+  }
+  assert.equal(h.calls.length, 3)
 })
 test('self opt-in uses explicit preference fields and cannot carry another actor or role',async()=>{
   const input={submission_id:E,expected_version:0,service_opt_in:true,member_alias:'Synthetic member',category_ids:['air_conditioning'],property_class_ids:['house_villa']}

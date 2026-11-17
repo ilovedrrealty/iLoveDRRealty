@@ -8,6 +8,10 @@ export type ServiceOperation = typeof SERVICE_OPERATIONS[number]
 export type ServiceAudience = 'preferences' | 'managed' | 'received'
 export type ServicePreferences = { service_opt_in: boolean; member_alias: string; category_ids: string[]; property_class_ids: string[]; version: number; updated_at: string | null; can_manage: boolean }
 export type ServiceProvider = { user_code: number; member_alias: string; category_ids: string[] }
+export type ReviewedServiceCriteria = { area_id: string; language?: string }
+export type ReviewedServiceSearch = ReviewedServiceCriteria & {
+  property_id?: string; listing_id?: string; category_id: string; property_class: string
+}
 export type ProposalTerms = { amount: string; currency: 'USD' | 'DOP'; pricing_basis: 'fixed' | 'estimate'; scope_text: string; exclusions: string; estimated_days: number | null; valid_until: string }
 export type ServiceProposal = ProposalTerms & { id: string; recipient_id: string; revision_no: number; parent_proposal_id: string | null; kind: 'provider_quote' | 'owner_counter'; status: 'submitted' | 'accepted' | 'declined' | 'withdrawn' | 'superseded' | 'closed' | 'awarded'; version: number; is_expired: boolean; created_at: string }
 export type ManagedRecipient = { id: string; user_code: number; member_alias: string; status: string; version: number; current_proposal: ServiceProposal | null; capabilities: { can_revoke: boolean; can_counter: boolean; can_award: boolean; can_withdraw: boolean } }
@@ -60,6 +64,10 @@ export function decodeServicePreferences(raw: unknown): ServicePreferences {
   return { service_opt_in: enabled, member_alias: text(r.member_alias,120,enabled?1:0), category_ids: categories, property_class_ids: classes, version:int(r.version), updated_at:r.updated_at === null ? null : timestamp(r.updated_at), can_manage:bool(r.can_manage) }
 }
 function provider(raw: unknown): ServiceProvider { const r=exact(raw,['user_code','member_alias','category_ids']); const categories=ids(r.category_ids,12);if(!categories.length)invalid();return {user_code:int(r.user_code,1),member_alias:text(r.member_alias,120,1),category_ids:categories} }
+function reviewedServiceCriteria(value: unknown): ReviewedServiceCriteria {
+  const row = exact(value, ['area_id', 'language'])
+  return { area_id: slug(row.area_id), ...(row.language === undefined ? {} : { language: slug(row.language) }) }
+}
 function terms(raw: unknown): ProposalTerms {
   const r = exact(raw,['amount','currency','pricing_basis','scope_text','exclusions','estimated_days','valid_until'])
   return {amount:serviceAmount(r.amount),currency:choice(r.currency,['USD','DOP']),pricing_basis:choice(r.pricing_basis,['fixed','estimate']),scope_text:text(r.scope_text,4000,1),exclusions:text(r.exclusions,2000),estimated_days:r.estimated_days === null ? null:int(r.estimated_days,1,365),valid_until:day(r.valid_until)}
@@ -124,6 +132,21 @@ async function page<T>(path:string,params:Record<string,string|number>,decode:(r
 }
 export async function getServicePreferences(signal?:AbortSignal) {return decodeServicePreferences((await client.get(PREFIX+'/me/service-preferences',config(signal))).data)}
 export function getServiceProviders(category_id:string,property_class:string,pageNumber=1,signal?:AbortSignal) {return page(PREFIX+'/service-providers',{category_id:slug(category_id),property_class:choice(property_class,PRIVATE_PROPERTY_CLASSES),page:pageNumber},provider,item=>item.user_code,signal)}
+export function getReviewedServiceProviders(search: ReviewedServiceSearch, pageNumber = 1, signal?: AbortSignal) {
+  const row = exact(search, ['property_id', 'listing_id', 'category_id', 'property_class', 'area_id', 'language'])
+  if ((row.property_id === undefined) === (row.listing_id === undefined)) invalid()
+  const category_id = slug(row.category_id)
+  const criteria = reviewedServiceCriteria({ area_id: row.area_id, language: row.language })
+  const property_class = choice(row.property_class, PRIVATE_PROPERTY_CLASSES)
+  const params: Record<string, string | number> = { category_id, property_class, area_id: criteria.area_id, page: pageNumber }
+  if (row.property_id === undefined) params.listing_id = uuid(row.listing_id)
+  else params.property_id = uuid(row.property_id)
+  if (criteria.language) params.language = criteria.language
+  return page<ServiceProvider>(PREFIX + '/service-provider-matches', params, raw => {
+    const candidate = provider(raw)
+    return candidate.category_ids.includes(category_id) ? candidate : invalid()
+  }, item => item.user_code, signal)
+}
 export async function getServiceRequests(view:'managed'|'received',status:string,pageNumber=1,signal?:AbortSignal):Promise<NetworkPage<ServiceRequest>&{can_create:boolean}> {
   choice(view,['managed','received']);choice(status,view==='managed'?['all','open','awarded','cancelled']:['all','actionable','closed','awarded'])
   const params={view,status,page:int(pageNumber,1,1000)},r=object((await client.get(PREFIX+'/service-requests',{...config(signal),params})).data)
@@ -185,10 +208,12 @@ export function prepareServiceAction(action:ServiceAction):{path:string;method:'
     const pref=decodeServicePreferences({service_opt_in:r.service_opt_in,member_alias:text(r.member_alias,120).trim(),category_ids:ids(r.category_ids,12).sort(),property_class_ids:unique(list(r.property_class_ids,10,v=>choice(v,PRIVATE_PROPERTY_CLASSES))).sort(),version:int(r.expected_version),updated_at:null,can_manage:true})
     body={submission_id,expected_version:pref.version,service_opt_in:pref.service_opt_in,member_alias:pref.member_alias,category_ids:pref.category_ids,property_class_ids:pref.property_class_ids};path='/me/service-preferences';method='put'
   }else if(operation==='request_create'){
-    if(audience!=='managed')invalid();exact(r,['submission_id','property_id','listing_id','category_id','property_class','title','brief','area_label','requester_alias','desired_start_on','recipient_user_codes','shared_brief_acknowledged'])
+    if(audience!=='managed')invalid();exact(r,['submission_id','property_id','listing_id','category_id','property_class','title','brief','area_label','requester_alias','desired_start_on','recipient_user_codes','shared_brief_acknowledged','reviewed_match'])
     const property_id=nullableId(r.property_id),listing_id=nullableId(r.listing_id),codes=unique(list(r.recipient_user_codes,5,v=>int(v,1))).sort((a,b)=>a-b)
     if((property_id===null)===(listing_id===null)||!codes.length||r.shared_brief_acknowledged!==true)invalid()
-    body={submission_id,property_id,listing_id,category_id:slug(r.category_id),property_class:choice(r.property_class,PRIVATE_PROPERTY_CLASSES),title:text(text(r.title,180).trim(),180,1),brief:text(text(r.brief,4000).trim(),4000,1),area_label:text(r.area_label,120).trim(),requester_alias:text(text(r.requester_alias,120).trim(),120,1),desired_start_on:r.desired_start_on===null?null:day(r.desired_start_on),recipient_user_codes:codes,shared_brief_acknowledged:true};path='/service-requests'
+    body={submission_id,property_id,listing_id,category_id:slug(r.category_id),property_class:choice(r.property_class,PRIVATE_PROPERTY_CLASSES),title:text(text(r.title,180).trim(),180,1),brief:text(text(r.brief,4000).trim(),4000,1),area_label:text(r.area_label,120).trim(),requester_alias:text(text(r.requester_alias,120).trim(),120,1),desired_start_on:r.desired_start_on===null?null:day(r.desired_start_on),recipient_user_codes:codes,shared_brief_acknowledged:true}
+    if(r.reviewed_match!==undefined)body.reviewed_match=reviewedServiceCriteria(r.reviewed_match)
+    path='/service-requests'
   }else{
     const requestId=action.request_id===undefined?undefined:uuid(action.request_id),recipientId=action.recipient_id===undefined?undefined:uuid(action.recipient_id),proposalId=action.proposal_id===undefined?undefined:uuid(action.proposal_id)
     const requestPath='/service-requests/'+(requestId??invalid())
