@@ -29,6 +29,7 @@ import { fmt } from "../data/listings";
 import { listingGallery, TONE_MAP } from "../data/propertyDetailData";
 import { parseListingRoomTour } from "../data/listingRoomTour";
 import { ListingRoomTour } from "../components/ListingRoomTour";
+import { DevelopmentInventory } from "../components/DevelopmentInventory";
 import { fetchListingById, recordListingView } from "../api/listings";
 import type { ApiListingDetail } from "../api/listings";
 import { isInquiryPropertyContext, observeInquiryProperty, preparePropertyInquiry, submitInquiry, type LeadSubmissionAttempt } from "../api/inquiries";
@@ -703,7 +704,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
       {/* Main two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 items-start">
         {/* ── LEFT ── */}
-        <div>
+        <div className="min-w-0">
           {/* Quick stats */}
           <div className="flex flex-wrap gap-6 py-5.5 border-b border-line-soft text-ink text-[15px]">
             {(listing.bedrooms ?? 0) > 0 && (
@@ -752,6 +753,10 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
               />
             )
           })()}
+
+          {listing.id === id && (listing.transaction === 'sale' || listing.transaction === 'both') && (
+            <DevelopmentInventory key={listing.id} listingId={listing.id} />
+          )}
 
           {/* Property details */}
           <h3 className="font-sans text-[22px] font-semibold text-ink mt-7 mb-4">

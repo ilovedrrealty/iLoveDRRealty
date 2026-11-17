@@ -10,7 +10,9 @@ interface RawListing {
   description: string | null
   type: string
   transaction: string
-  price: number
+  price: number | string
+  currency?: string | null
+  construction_status?: string | null
   location: string
   images: string[]
   share_image_url: string | null
@@ -32,6 +34,14 @@ async function getListing(id: string): Promise<RawListing | null> {
   }
 }
 
+function marketingPrice(listing: RawListing) {
+  const construction = listing.construction_status?.trim().toLowerCase().replace(/[\s-]+/g, '_')
+  const price = Number(listing.price)
+  if (construction === 'pre_construction' || construction === 'under_construction' || !Number.isFinite(price) || price <= 0) return null
+  const currency = listing.currency?.toUpperCase() === 'DOP' ? 'DOP' : 'USD'
+  return { price, currency }
+}
+
 export async function generateStaticParams(): Promise<{ id: string }[]> {
   const listings = await listingsForStaticExport(process.env.NEXT_PUBLIC_API_URL)
   return listings.map(({ id }) => ({ id }))
@@ -46,14 +56,9 @@ export async function generateMetadata({
   const listing = await getListing(id)
   if (!listing) return { title: 'Property Listing | I Love DR Realty' }
 
-  const priceStr =
-    listing.transaction === 'rent'
-      ? `$${Number(listing.price).toLocaleString()}/mo`
-      : `$${Number(listing.price).toLocaleString()}`
-
-  const title = listing.bedrooms
-    ? `${listing.bedrooms}BR ${listing.title} · ${priceStr}`
-    : `${listing.title} · ${priceStr}`
+  const terms = marketingPrice(listing)
+  const priceStr = terms ? `${terms.currency === 'DOP' ? 'RD$' : '$'}${terms.price.toLocaleString('en-US')}${listing.transaction === 'rent' ? '/mo' : ''}` : null
+  const title = [listing.bedrooms ? `${listing.bedrooms}BR ${listing.title}` : listing.title, priceStr].filter(Boolean).join(' · ')
 
   const highlightTag = listing.tags?.[0] ?? listing.tag ?? null
   const description = [
@@ -103,6 +108,7 @@ export default async function ListingPage({
 }) {
   const { id } = await params
   const listing = await getListing(id)
+  const terms = listing && marketingPrice(listing)
 
   const jsonLd = listing
     ? {
@@ -112,12 +118,12 @@ export default async function ListingPage({
         description: (listing.description ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
         image: listing.images ?? [],
         url: `https://ilovedrrealty.com/listing/${id}/`,
-        offers: {
+        // Unit availability is sourced at runtime and is never asserted by the static shell.
+        ...(terms ? { offers: {
           '@type': 'Offer',
-          price: listing.price,
-          priceCurrency: 'USD',
-          availability: 'https://schema.org/InStock',
-        },
+          price: terms.price,
+          priceCurrency: terms.currency,
+        } } : {}),
         address: {
           '@type': 'PostalAddress',
           addressLocality: listing.location,
