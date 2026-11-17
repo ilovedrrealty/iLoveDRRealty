@@ -20,7 +20,7 @@ function loadTS(relative, globals = {}, imports = {}) {
   return exports
 }
 const model = loadTS('packages/professionals/src/index.ts')
-const shortlistLinks = loadTS('packages/shortlist-links/index.ts')
+const dashboardLinks = loadTS('packages/dashboard-links/index.ts')
 const complete = () => ({ ...model.emptyProfessionalDraft(), business_name: 'Synthetic services', category_ids: ['example'], service_area_ids: ['example'], descriptions: { en: 'Property services.', es: '' }, public_phone: '+18095550101', public_contact_consent: true })
 
 test('submission accepts a contact person instead of a business name and one translated description', () => {
@@ -62,7 +62,7 @@ function intentHarness(search = '', blockedStorage = false) {
   }
   const window = { location: { search } }
   const api = loadTS('apps/landing/src/lib/professionalJoin.ts', { window, sessionStorage: storage },
-    { '../../../../packages/shortlist-links': shortlistLinks })
+    { '../../../../packages/dashboard-links': dashboardLinks })
   return { api, window, values }
 }
 test('professional intent chooses a fixed dashboard screen and ignores arbitrary redirect targets', () => {
@@ -104,7 +104,7 @@ test('an explicit shortlist link returns to the fixed signed-in screen without b
   const dashboard = 'https://app.ilovedrrealty.com'
   const { api, values } = intentHarness(`?shortlist=${grant}&redirect=https://example.invalid`, true)
   assert.equal(api.dashboardAfterAuth(dashboard), `${dashboard}/shortlists?grant=${grant.toLowerCase()}`)
-  assert.equal(shortlistLinks.readShortlistGrant(new URLSearchParams({ grant }), 'grant'), grant.toLowerCase())
+  assert.equal(dashboardLinks.dashboardLoginHint('shortlists', new URLSearchParams({ grant })), '?shortlist=' + grant.toLowerCase())
   assert.equal(values.size, 0)
 })
 
@@ -113,6 +113,27 @@ test('shortlist login rejects duplicate, malformed and arbitrary redirect hints'
   const dashboard = 'https://app.ilovedrrealty.com'
   for (const query of [`shortlist=${id}&shortlist=${id}`, `shortlist=${id}%0A`, 'shortlist=%2F%2Fexample.invalid', 'shortlist=professional']) {
     assert.equal(intentHarness('?' + query).api.dashboardAfterAuth(dashboard), dashboard)
+  }
+})
+
+test('property-viewing links keep the selected listing across sign-in', () => {
+  const listing = '80b0e1bc-9e28-4B24-82a7-64118d900bd4'
+  const root = 'https://app.ilovedrrealty.com'
+  const handoff = dashboardLinks.dashboardLoginHint('viewings', new URLSearchParams({ listing }))
+  assert.equal(handoff, '?viewing=' + listing.toLowerCase())
+  const { api, values } = intentHarness(handoff + '&continue=https://untrusted.invalid', true)
+  assert.equal(api.dashboardAfterAuth(root), root + '/viewings?listing=' + listing.toLowerCase())
+  assert.equal(values.size, 0)
+})
+
+test('viewing login ignores malformed, duplicate and conflicting intents', () => {
+  const listing = '80b0e1bc-9e28-4b24-82a7-64118d900bd4'
+  const root = 'https://app.ilovedrrealty.com'
+  assert.equal(dashboardLinks.dashboardLoginHint('viewings', new URLSearchParams({ listing: listing + '\n' })), null)
+  assert.equal(dashboardLinks.dashboardLoginHint('property-network', new URLSearchParams({ listing })), null)
+  for (const search of ['?viewing=%2F%2Funtrusted.invalid', `?viewing=${listing}&viewing=${listing}`,
+    `?viewing=${listing}&shortlist=${listing}`]) {
+    assert.equal(intentHarness(search).api.dashboardAfterAuth(root), root)
   }
 })
 
