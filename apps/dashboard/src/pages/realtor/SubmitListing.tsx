@@ -6,6 +6,7 @@ import { PhoneInput } from 'react-international-phone'
 import 'react-international-phone/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import { submitListing, updateListing, uploadListingImages, uploadAgreementPdf, type Listing } from '../../api/listings'
+import { RoomPhotoTourEditor } from '../../components/listings/RoomPhotoTourEditor'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { REGION_GROUPS } from '../../data/regions'
 import { PAYPAL_ENABLED } from '../../lib/features'
@@ -1587,6 +1588,8 @@ export function EditListing({ listing, tone, onBack, onSaved, isAdmin = false }:
       </button>
 
       <h2 className="text-[20px] font-bold text-ink mb-4">{t('submit_listing_page.edit_title')}</h2>
+
+      {isActive && <RoomPhotoTourEditor key={listing.id} listingId={listing.id} />}
 
       {(isAdmin || isActive) && (
         <div className="mb-5 flex items-start gap-3 px-4 py-3.5 rounded-xl border text-[13px]"

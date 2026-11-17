@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node ../../tests/listing-export.test.cjs && node ../../tests/blog-articles.test.cjs && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },
@@ -23,6 +23,7 @@
     "libphonenumber-js": "^1.13.4",
     "lucide-react": "^1.17.0",
     "next": "^15.3.0",
+    "pdf-lib": "1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",

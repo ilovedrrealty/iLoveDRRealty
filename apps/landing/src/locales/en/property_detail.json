@@ -1,6 +1,68 @@
 {
+  "floor_plan": {
+    "title": "Property floor plan",
+    "view": "View floor plan",
+    "download": "Download floor plan (PDF)",
+    "loading": "Opening floor plan…",
+    "unavailable": "The floor plan is unavailable.",
+    "image": "Property floor plan",
+    "close": "Close floor plan"
+  },
   "not_found": "Property not found.",
   "loading": "Loading property…",
+  "brochure": {
+    "download": "Download property brochure",
+    "preparing": "Preparing brochure…",
+    "error": "The brochure could not be downloaded. Please try again.",
+    "document_title": "Property brochure",
+    "prices": "Listed prices",
+    "sale_price": "Base sale price",
+    "per_month": "Rent per month",
+    "per_day": "Rent per day",
+    "price_unlisted": "See the current listing for pricing.",
+    "details": "Property details",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "living": "Living area",
+    "lot": "Lot size",
+    "built": "Year built",
+    "verify": "Check the current listing for price, promotions and availability.",
+    "open_listing": "View the current listing",
+    "types": { "villa": "Villa", "apartment": "Apartment", "condo": "Condominium", "land": "Land", "commercial": "Commercial" },
+    "transactions": { "sale": "For sale", "rent": "For rent", "both": "For sale or rent" }
+  },
+  "development": {
+    "heading": "Development availability",
+    "verified_on": "Developer information verified {{date}}.",
+    "current_through": "Availability confirmed through {{date}}.",
+    "unconfirmed": "Current unit availability has not been confirmed. The details below reflect the last report.",
+    "phase_filter": "Phase",
+    "all_phases": "All phases",
+    "units_in": "Units in {{phase}}",
+    "no_units": "No units are listed for this phase.",
+    "delivery": "Delivery target {{date}}",
+    "quarter": "Q{{quarter}} {{year}}",
+    "square_meters": "{{area}} m²",
+    "unreported": "Not reported",
+    "view_floor_plan": "View floor plan",
+    "floor_plan_named": "View floor plan for unit {{unit}}",
+    "payment_stages": "Payment stages",
+    "updates": "Development updates",
+    "status": {
+      "available": "Available",
+      "reserved": "Reserved",
+      "sold": "Sold",
+      "unconfirmed": "Unconfirmed"
+    },
+    "column": {
+      "unit": "Unit",
+      "floor": "Floor",
+      "area": "Size",
+      "price": "Price",
+      "status": "Status",
+      "plan": "Floor plan"
+    }
+  },
   "back": "Back to search",
   "share": "Share",
   "share_heading": "Share this listing",
@@ -10,6 +72,17 @@
   "tour_3d": "3D Tour",
   "photo_more": "+{{count}} photo",
   "photo_more_plural": "+{{count}} photos",
+  "open_gallery_photo": "View photo {{number}} of {{total}}",
+  "room_tour": {
+    "open": "Browse photos by room",
+    "title": "Room-by-room photo tour",
+    "close": "Close room tour",
+    "back": "Back to rooms",
+    "photo": "{{room}}, photo {{number}} of {{total}}",
+    "position": "Photo {{number}} of {{total}}",
+    "previous": "Previous photo",
+    "next": "Next photo"
+  },
   "beds": "beds",
   "baths": "baths",
   "built": "Built {{year}}",
@@ -57,6 +130,10 @@
   },
   "location": {
     "exact": "Exact location shared after inquiry.",
+    "reviewed": "Property coordinates reviewed against a recorded source.",
+    "saved": "Saved property coordinates. Source review is pending.",
+    "approximate": "Approximate recorded area, not an individual property position.",
+    "hidden": "Map location is not publicly displayed.",
     "open_maps": "Open in Google Maps"
   },
   "sidebar": {
@@ -80,6 +157,7 @@
     "request_book": "Request to book",
     "listed_by": "Listed by",
     "message_agent": "Message Agent",
+    "request_viewing": "Request a viewing",
     "cancel": "Cancel",
     "request": "Request",
     "sending": "Sending…",
@@ -111,8 +189,26 @@
   },
   "inquiry": {
     "name": "Your name",
-    "email": "Email",
-    "phone": "Phone (optional)",
-    "message": "Your message…"
+    "email": "Email (optional when a phone is provided)",
+    "phone": "Phone (preferred)",
+    "message": "Comments or description (optional)",
+    "contact_help": "Share a valid phone number or email. Both are welcome; phone is our preferred way to follow up.",
+    "contact_consent": "I agree that iLoveDR Realty may contact me about this property inquiry.",
+    "follow_up_phone": "We will use your phone number to follow up about this property.",
+    "follow_up_email": "We will use your email to follow up about this property.",
+    "reference": "Reference: {{id}}",
+    "errors": {
+      "name": "Enter your name (up to 200 characters).",
+      "contact": "Enter a valid phone number or email address.",
+      "phone": "Enter a valid phone number, including the country code.",
+      "email": "Enter a valid email address, or leave it blank if you provided a valid phone number.",
+      "message": "Keep comments to 2,000 characters or fewer.",
+      "consent": "Please agree to be contacted about this property.",
+      "validation": "Check your contact details and contact consent, then try again.",
+      "unavailable": "This property is not available for inquiries. Please return to the property search or contact our team.",
+      "conflict": "This request reference was already used with different details. Refresh this page before starting a new inquiry.",
+      "rate": "Please wait a moment before trying again.",
+      "send": "We could not confirm your inquiry. Try again without changing the details to avoid a duplicate."
+    }
   }
 }

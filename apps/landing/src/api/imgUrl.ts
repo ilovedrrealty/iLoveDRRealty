@@ -1,5 +1,4 @@
-export function supabaseImgUrl(url: string, width: number, quality = 75): string {
-  if (!url?.includes('/storage/v1/object/public/')) return url
-  const base = url.split('?')[0].replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
-  return `${base}?width=${width}&quality=${quality}`
+export function supabaseImgUrl(url: string, _width: number, _quality = 75): string {
+  // Keep the stored URL; cards and map previews retain their existing CSS crops.
+  return url
 }

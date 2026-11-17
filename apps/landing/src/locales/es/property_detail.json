@@ -1,6 +1,68 @@
 {
+  "floor_plan": {
+    "title": "Plano de la propiedad",
+    "view": "Ver plano",
+    "download": "Descargar plano (PDF)",
+    "loading": "Abriendo el plano…",
+    "unavailable": "El plano no está disponible.",
+    "image": "Plano de la propiedad",
+    "close": "Cerrar plano"
+  },
   "not_found": "Propiedad no encontrada.",
   "loading": "Cargando propiedad…",
+  "brochure": {
+    "download": "Descargar folleto de la propiedad",
+    "preparing": "Preparando el folleto…",
+    "error": "No se pudo descargar el folleto. Inténtalo de nuevo.",
+    "document_title": "Folleto de la propiedad",
+    "prices": "Precios publicados",
+    "sale_price": "Precio base de venta",
+    "per_month": "Alquiler por mes",
+    "per_day": "Alquiler por día",
+    "price_unlisted": "Consulta el anuncio vigente para conocer el precio.",
+    "details": "Detalles de la propiedad",
+    "bedrooms": "Habitaciones",
+    "bathrooms": "Baños",
+    "living": "Área habitable",
+    "lot": "Área del terreno",
+    "built": "Año de construcción",
+    "verify": "Consulta el anuncio vigente para confirmar el precio, las promociones y la disponibilidad.",
+    "open_listing": "Ver el anuncio vigente",
+    "types": { "villa": "Villa", "apartment": "Apartamento", "condo": "Condominio", "land": "Terreno", "commercial": "Comercial" },
+    "transactions": { "sale": "En venta", "rent": "En alquiler", "both": "En venta o alquiler" }
+  },
+  "development": {
+    "heading": "Disponibilidad del proyecto",
+    "verified_on": "Información del desarrollador verificada el {{date}}.",
+    "current_through": "Disponibilidad confirmada hasta el {{date}}.",
+    "unconfirmed": "La disponibilidad actual está por confirmar. Los detalles corresponden al último informe.",
+    "phase_filter": "Etapa",
+    "all_phases": "Todas las etapas",
+    "units_in": "Unidades en {{phase}}",
+    "no_units": "No hay unidades registradas para esta etapa.",
+    "delivery": "Entrega prevista para {{date}}",
+    "quarter": "T{{quarter}} de {{year}}",
+    "square_meters": "{{area}} m²",
+    "unreported": "Sin datos",
+    "view_floor_plan": "Ver plano",
+    "floor_plan_named": "Ver plano de la unidad {{unit}}",
+    "payment_stages": "Etapas de pago",
+    "updates": "Actualizaciones del proyecto",
+    "status": {
+      "available": "Disponible",
+      "reserved": "Reservada",
+      "sold": "Vendida",
+      "unconfirmed": "Por confirmar"
+    },
+    "column": {
+      "unit": "Unidad",
+      "floor": "Piso",
+      "area": "Superficie",
+      "price": "Precio",
+      "status": "Estado",
+      "plan": "Plano"
+    }
+  },
   "back": "Volver a la búsqueda",
   "share": "Compartir",
   "share_heading": "Compartir esta propiedad",
@@ -10,6 +72,17 @@
   "tour_3d": "Tour 3D",
   "photo_more": "+{{count}} foto",
   "photo_more_plural": "+{{count}} fotos",
+  "open_gallery_photo": "Ver foto {{number}} de {{total}}",
+  "room_tour": {
+    "open": "Ver fotos por ambiente",
+    "title": "Recorrido fotográfico por ambientes",
+    "close": "Cerrar recorrido fotográfico",
+    "back": "Volver a los ambientes",
+    "photo": "{{room}}, foto {{number}} de {{total}}",
+    "position": "Foto {{number}} de {{total}}",
+    "previous": "Foto anterior",
+    "next": "Foto siguiente"
+  },
   "beds": "hab.",
   "baths": "baños",
   "built": "Construido en {{year}}",
@@ -57,6 +130,10 @@
   },
   "location": {
     "exact": "Ubicación exacta compartida tras la consulta.",
+    "reviewed": "Coordenadas de la propiedad revisadas con una fuente registrada.",
+    "saved": "Coordenadas guardadas. La fuente aún no se ha revisado.",
+    "approximate": "Zona registrada aproximada, no la posición individual de la propiedad.",
+    "hidden": "La ubicación no se muestra públicamente en el mapa.",
     "open_maps": "Abrir en Google Maps"
   },
   "sidebar": {
@@ -80,6 +157,7 @@
     "request_book": "Solicitar reserva",
     "listed_by": "Publicado por",
     "message_agent": "Enviar mensaje al agente",
+    "request_viewing": "Solicitar una visita",
     "cancel": "Cancelar",
     "request": "Solicitar",
     "sending": "Enviando…",
@@ -111,8 +189,26 @@
   },
   "inquiry": {
     "name": "Tu nombre",
-    "email": "Correo electrónico",
-    "phone": "Teléfono (opcional)",
-    "message": "Tu mensaje…"
+    "email": "Correo electrónico (opcional si indicas un teléfono)",
+    "phone": "Teléfono (preferido)",
+    "message": "Comentarios o descripción (opcional)",
+    "contact_help": "Comparte un teléfono o correo válido. Puedes indicar ambos; preferimos contactarte por teléfono.",
+    "contact_consent": "Acepto que iLoveDR Realty me contacte sobre esta consulta de propiedad.",
+    "follow_up_phone": "Usaremos tu teléfono para dar seguimiento sobre esta propiedad.",
+    "follow_up_email": "Usaremos tu correo para dar seguimiento sobre esta propiedad.",
+    "reference": "Referencia: {{id}}",
+    "errors": {
+      "name": "Escribe tu nombre (hasta 200 caracteres).",
+      "contact": "Indica un teléfono o correo electrónico válido.",
+      "phone": "Indica un teléfono válido, incluyendo el código de país.",
+      "email": "Indica un correo válido o déjalo vacío si proporcionaste un teléfono válido.",
+      "message": "Limita los comentarios a 2,000 caracteres.",
+      "consent": "Acepta que te contactemos sobre esta propiedad.",
+      "validation": "Revisa tus datos de contacto y la autorización para contactarte e inténtalo de nuevo.",
+      "unavailable": "Esta propiedad no está disponible para consultas. Vuelve a la búsqueda de propiedades o contacta a nuestro equipo.",
+      "conflict": "Esta referencia ya se utilizó con otros datos. Actualiza la página antes de iniciar una nueva consulta.",
+      "rate": "Espera un momento antes de intentarlo de nuevo.",
+      "send": "No pudimos confirmar tu consulta. Inténtalo de nuevo sin cambiar los datos para evitar un duplicado."
+    }
   }
 }

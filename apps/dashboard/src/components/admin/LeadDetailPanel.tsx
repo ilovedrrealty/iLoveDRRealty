@@ -1,14 +1,15 @@
 import { X, Mail, Phone, Calendar, Home, Copy, CheckCheck, Check, UserCheck, Zap, ExternalLink, KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { assignLead, updateLeadStatus, type Lead } from '../../api/leads'
+import { assignLead, isOwnerAccessLead, updateLeadStatus, type Lead } from '../../api/leads'
 import type { AdminAgent } from '../../api/admin'
 import { TONE } from '../../pages/admin/shared'
 import { parsePhone } from '../../utils/phone'
 import { ConfirmModal } from '../shared/ConfirmModal'
-import { ShareContactButton } from '../shared/ShareContactDialog'
 import { RealtorCombobox } from './RealtorCombobox'
 import { LeadTrackingDetails } from './LeadTrackingOverview'
+import { ShareContactButton } from '../shared/ShareContactDialog'
+import { isTransactionRoomLead } from '../../api/transactions'
 
 const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
 
@@ -49,9 +50,12 @@ interface Props {
   updateStatusFn?: (leadId: string, status: string) => Promise<void>
   calendlyUrl?: string
   allowContactShare?: boolean
+  onOpenDelivery?: (leadId: string) => void
+  onOpenValuation?: (leadId: string) => void
+  onOpenTransaction?: (leadId: string) => void
 }
 
-export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false }: Props) {
+export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false, onOpenDelivery, onOpenValuation, onOpenTransaction }: Props) {
   const { t } = useTranslation('admin')
 
   const TYPE_LABEL: Record<string, string> = {
@@ -77,6 +81,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
   const [confirmAssignId, setConfirmAssignId] = useState<string | null>(null)
 
   if (!lead) return null
+  const isOwnerAccess = isOwnerAccessLead(lead)
 
   const color = TYPE_COLOR[lead.type] ?? '#64748b'
 
@@ -107,7 +112,6 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
   }
 
   function requestAssign(realtorId: string) {
-    const isOwnerAccess = lead!.type === 'seller_interest' && !lead!.property_id
     if (isOwnerAccess) {
       setConfirmAssignId(realtorId)
     } else {
@@ -182,7 +186,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
                 className="text-[11.5px] font-bold px-3 py-0.75 rounded-full"
                 style={{ background: color, color: 'white' }}
               >
-                {TYPE_LABEL[lead.type] ?? lead.type}
+                {lead.has_valuation_request ? t('request_label', { ns: 'seller_valuation' }) : TYPE_LABEL[lead.type] ?? lead.type}
               </span>
               <span
                 className="text-[11.5px] font-bold px-3 py-0.75 rounded-full"
@@ -197,7 +201,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
           <div className="bg-paper rounded-t-3xl -mt-3 px-5 pt-6 pb-8 space-y-6 flex-1">
 
             {/* Owner Access Request banner */}
-            {lead.type === 'seller_interest' && !lead.property_id && (
+            {isOwnerAccess && (
               <div className="flex items-start gap-3 px-4 py-3.5 rounded-2xl border" style={{ background: '#f5f3ff', borderColor: '#ddd6fe' }}>
                 <div className="w-8 h-8 rounded-full shrink-0 grid place-items-center" style={{ background: '#7c3aed18' }}>
                   <KeyRound size={14} style={{ color: '#7c3aed' }} />
@@ -210,6 +214,13 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
                 </div>
               </div>
             )}
+
+            {lead.type === 'seller_interest' && onOpenValuation && <button type="button"
+              className="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold text-sea focus-visible:outline-2 focus-visible:outline-coral"
+              onClick={() => onOpenValuation(lead.id)}>{t('open_valuation', { ns: 'seller_valuation' })}</button>}
+            {onOpenTransaction && isTransactionRoomLead(lead) && <button type="button"
+              className="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold text-sea focus-visible:outline-2 focus-visible:outline-coral"
+              onClick={() => onOpenTransaction(lead.id)}>{t('open_from_lead', { ns: 'transactions' })}</button>}
 
             {/* Contact */}
             <div>
@@ -302,6 +313,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
             </div>
 
             <LeadTrackingDetails lead={lead} />
+            {onOpenDelivery ? <button type="button" onClick={() => onOpenDelivery(lead.id)} className="min-h-10 rounded-lg border border-line px-4 py-2 text-sm font-semibold text-sea">{t('leads_page.open_delivery')}</button> : null}
             {/* Timeline */}
             <div>
               <div className="text-[10.5px] font-bold uppercase tracking-widest text-dim mb-4">{t('lead_panel.section_timeline')}</div>

@@ -26,16 +26,24 @@ import {
 } from "lucide-react";
 import { useNav } from "../hooks/useNav";
 import { fmt } from "../data/listings";
-import { TONE_MAP } from "../data/propertyDetailData";
+import { listingGallery, TONE_MAP } from "../data/propertyDetailData";
+import { parseListingRoomTour } from "../data/listingRoomTour";
+import { ListingRoomTour } from "../components/ListingRoomTour";
+import { ListingBrochureDownload } from "../components/ListingBrochureDownload";
+import { ListingFloorPlan } from "../components/ListingFloorPlan";
+import { DevelopmentInventory } from "../components/DevelopmentInventory";
 import { fetchListingById, recordListingView } from "../api/listings";
 import type { ApiListingDetail } from "../api/listings";
-import { submitInquiry } from "../api/inquiries";
+import { isInquiryPropertyContext, observeInquiryProperty, preparePropertyInquiry, submitInquiry, type LeadSubmissionAttempt } from "../api/inquiries";
+import type { LeadReceipt } from "../lib/gtag";
 import { PhoneInput } from 'react-international-phone'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 import 'react-international-phone/style.css'
 import { createBooking, createPaymentAuth, getUnavailableDates, type BookedRange } from "../api/bookings";
 import { getMe } from "../api/auth";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { PAYPAL_ENABLED } from "../lib/features";
+import { viewingRequestUrl } from "../lib/viewingLink";
 
 // Empty while PAYPAL_ENABLED is off, which collapses every PayPal branch below
 // and falls the booking form back to a no-payment "Request to book".
@@ -128,48 +136,27 @@ const MAP_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#d8d3cc" }] },
 ]
 
-function parseLatLng(url: string): { lat: number; lng: number } | null {
-  try {
-    const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
-    if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
-    const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/)
-    if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) }
-  } catch { /* ignore */ }
-  return null
-}
-
-function PropertyMap({ mapsUrl, locationName, latitude, longitude }: {
-  mapsUrl: string | null
+function PropertyMap({ locationName, latitude, longitude, label }: {
   locationName: string
   latitude: number | null
   longitude: number | null
+  label: string
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ""
   const coords: { lat: number; lng: number } | null =
-    latitude != null && longitude != null
+    latitude != null && longitude != null && Number.isFinite(latitude) && Number.isFinite(longitude)
+      && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180
       ? { lat: latitude, lng: longitude }
-      : mapsUrl ? parseLatLng(mapsUrl) : null
-
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: apiKey,
-    id: "google-map-script",
-  })
+      : null
 
   if (!apiKey || !coords) {
-    const ALLOWED_HOSTS = new Set(["maps.google.com", "www.google.com", "google.com", "maps.googleapis.com"])
-    const fallback = `https://maps.google.com/maps?q=${encodeURIComponent(locationName + ", Dominican Republic")}&output=embed`
-    let embedSrc = fallback
-    if (mapsUrl) {
-      try {
-        const u = new URL(mapsUrl)
-        if (u.protocol === "https:" && ALLOWED_HOSTS.has(u.hostname)) {
-          if (!u.searchParams.has("output")) u.searchParams.set("output", "embed")
-          embedSrc = u.toString()
-        }
-      } catch { /* invalid URL */ }
-    }
+    // A Maps URL may describe a viewport. Only API-supplied coordinates define
+    // a property point; otherwise this is an approximate recorded-area map.
+    const destination = coords ? `${coords.lat},${coords.lng}` : locationName + ", Dominican Republic"
+    const embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(destination)}&output=embed`
     return (
       <iframe
+        title={label}
         src={embedSrc}
         width="100%"
         height="100%"
@@ -181,6 +168,15 @@ function PropertyMap({ mapsUrl, locationName, latitude, longitude }: {
     )
   }
 
+  return <PropertyPointMap coords={coords} apiKey={apiKey} label={label} />
+}
+
+function PropertyPointMap({ coords, apiKey, label }: { coords: { lat: number; lng: number }; apiKey: string; label: string }) {
+  const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: apiKey, id: "google-map-script" })
+  if (loadError) {
+    return <iframe title={label} src={`https://maps.google.com/maps?q=${encodeURIComponent(`${coords.lat},${coords.lng}`)}&output=embed`}
+      width="100%" height="100%" style={{ border: 0, display: 'block' }} loading="lazy" referrerPolicy="no-referrer" sandbox="allow-scripts allow-same-origin" />
+  }
   if (!isLoaded) {
     return <div className="w-full h-full bg-paper2 animate-pulse rounded-2xl" />
   }
@@ -276,7 +272,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
 
   const [listing, setListing] = useState<ApiListingDetail | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [requestedLightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [dopRate, setDopRate] = useState(59.5);
   const [currency, setCurrency] = useState<'USD' | 'DOP'>('DOP');
   const [aPrice, setAPrice] = useState(0);
@@ -289,6 +285,25 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
   const [inquiryPhoneDialCode, setInquiryPhoneDialCode] = useState('1');
   const [inquirySending, setInquirySending] = useState(false);
   const [inquirySent, setInquirySent] = useState(false);
+  const [inquiryConsent, setInquiryConsent] = useState(false);
+  const [inquiryError, setInquiryError] = useState<string | null>(null);
+  const [inquiryReceipt, setInquiryReceipt] = useState<LeadReceipt | null>(null);
+  const [inquiryFollowUp, setInquiryFollowUp] = useState<'phone' | 'email'>('phone');
+  const inquirySubmitting = useRef(false);
+  const inquiryAttempt = useRef<LeadSubmissionAttempt>({});
+  const inquiryVersion = useRef(0);
+  const inquiryStatus = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    const version = ++inquiryVersion.current;
+    inquirySubmitting.current = false;
+    inquiryAttempt.current = {};
+    setInquiryOpen(false); setInquirySending(false); setInquirySent(false);
+    setInquiryConsent(false); setInquiryError(null); setInquiryReceipt(null);
+    setInquiryForm({ name: '', email: '', phone: '', message: '' });
+    setInquiryPhoneDialCode('1');
+    return () => { if (inquiryVersion.current === version) inquiryVersion.current += 1; };
+  }, [id]);
+  useEffect(() => { if (inquiryError) inquiryStatus.current?.focus(); }, [inquiryError]);
 
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingForm, setBookingForm] = useState({ name: '', email: '', phone: '', checkIn: '', checkOut: '', guests: 1, notes: '' });
@@ -324,17 +339,15 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
   }, []);
 
   useEffect(() => {
-    if (!id) {
-      setLoadError(true);
-      return;
-    }
-    fetchListingById(id)
-      .then((data) => {
+    setListing(null);
+    setLoadError(false);
+    setAPrice(0);
+    setLightboxIdx(null);
+    return observeInquiryProperty(id, fetchListingById,
+      (data) => {
         setListing(data);
         setAPrice(Number(data.price));
-        recordListingView(id).catch(() => {});
-      })
-      .catch(() => setLoadError(true));
+      }, () => setLoadError(true), recordListingView);
   }, [id]);
 
   const fmtM = (v: number) => currency === 'DOP'
@@ -363,14 +376,32 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
 
   const handleInquiry = async (e: FormEvent) => {
     e.preventDefault()
+    if (inquirySubmitting.current || inquirySent) return
+    const prepared = preparePropertyInquiry({ ...inquiryForm, contactConsent: inquiryConsent }, inquiryPhoneDialCode, isValidPhoneNumber)
+    if (prepared.issue) { setInquiryError(prepared.issue); return }
+    if (!listing || !isInquiryPropertyContext(id, listing.id)) { setInquiryError('unavailable'); return }
+    const version = inquiryVersion.current
+    inquirySubmitting.current = true
+    setInquiryError(null)
     setInquirySending(true)
     try {
-      const phoneDigits = inquiryForm.phone.replace(/\D/g, '')
-      const phone = !phoneDigits || phoneDigits === inquiryPhoneDialCode ? undefined : inquiryForm.phone
-      await submitInquiry({ listing_id: id, name: inquiryForm.name, email: inquiryForm.email, phone, message: inquiryForm.message })
-      setInquirySent(true)
-    } catch { /* keep form open */ }
-    finally { setInquirySending(false) }
+      const receipt = await submitInquiry({
+        listing_id: listing.id, name: prepared.name, email: prepared.email, phone: prepared.phone, message: prepared.message,
+        contactConsent: inquiryConsent, locale: i18n.language.startsWith('es') ? 'es' : 'en',
+        conversionIntent: listing.transaction === 'sale' ? 'buy' : listing.transaction === 'rent' ? 'rent' : 'general',
+        attempt: inquiryAttempt.current,
+      })
+      if (inquiryVersion.current === version) {
+        setInquiryReceipt(receipt); setInquiryFollowUp(prepared.phone ? 'phone' : 'email'); setInquirySent(true)
+      }
+    } catch (reason) {
+      if (inquiryVersion.current === version) {
+        const status = (reason as { response?: { status?: number } } | null)?.response?.status
+        setInquiryError(status === 404 ? 'unavailable' : status === 409 ? 'conflict' : status === 429 ? 'rate' : status === 422 ? 'validation' : 'send')
+      }
+    } finally {
+      if (inquiryVersion.current === version) { inquirySubmitting.current = false; setInquirySending(false) }
+    }
   }
 
   const handleBooking = async (e: FormEvent) => {
@@ -398,9 +429,10 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
     } finally { setBookingSending(false) }
   }
 
-  const imgs: string[] = listing?.images ?? [];
-
-  const remainingCount = imgs.length - 4;
+  const gallery = useMemo(() => listingGallery(listing?.images ?? []), [listing?.images]);
+  const imgs = gallery.photos;
+  const lightboxIdx = requestedLightboxIdx !== null && imgs[requestedLightboxIdx] ? requestedLightboxIdx : null;
+  const roomTour = useMemo(() => listing?.id === id ? parseListingRoomTour(listing.room_photo_tour, listing.images) : null, [id, listing]);
 
   useEffect(() => {
     document.body.style.overflow = lightboxIdx !== null ? "hidden" : "";
@@ -469,6 +501,11 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
         {t('loading')}
       </div>
     );
+
+  const safeTourUrl = listing.tour_3d_url ? safeUrl(listing.tour_3d_url) : null;
+  const activeTourUrl = galleryTab === '3dtour' ? safeTourUrl : null;
+  const viewingUrl = isInquiryPropertyContext(id, listing.id)
+    ? viewingRequestUrl(process.env.NEXT_PUBLIC_DASHBOARD_URL, listing.id) : null;
 
   return (
     <div className="max-w-310 mx-auto px-4 sm:px-6 py-5 pb-20">
@@ -619,7 +656,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
 
       {/* Gallery */}
       <div className="mb-7">
-        {listing.tour_3d_url && safeUrl(listing.tour_3d_url) && (
+        {safeTourUrl && (
           <div className="flex gap-1 mb-3">
             <button
               onClick={() => setGalleryTab('photos')}
@@ -636,57 +673,40 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
             </button>
           </div>
         )}
-        {galleryTab === '3dtour' && listing.tour_3d_url && safeUrl(listing.tour_3d_url) ? (
+        {activeTourUrl ? (
           <div className="rounded-2xl overflow-hidden aspect-video">
             <iframe
-              src={safeUrl(listing.tour_3d_url)!}
+              src={activeTourUrl}
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               title="3D Tour"
             />
           </div>
-        ) : (
-          <div className="grid grid-cols-[2fr_1fr] sm:grid-cols-[2fr_1fr_1fr] grid-rows-[130px_130px] sm:grid-rows-[172px_172px] gap-2">
-            <div
-              className="rounded-2xl overflow-hidden row-span-2 bg-cover bg-center cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[0]})` }}
-              onClick={() => setLightboxIdx(0)}
-            />
-            <div
-              className="rounded-xl overflow-hidden bg-cover bg-center cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[1]})` }}
-              onClick={() => setLightboxIdx(1)}
-            />
-            <div
-              className="rounded-xl overflow-hidden bg-cover bg-center hidden sm:block cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[2]})` }}
-              onClick={() => setLightboxIdx(2)}
-            />
-            <div
-              className="rounded-xl overflow-hidden bg-cover bg-center hidden sm:block cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[3]})` }}
-              onClick={() => setLightboxIdx(3)}
-            />
-            <div
-              className="rounded-xl overflow-hidden bg-cover bg-center relative cursor-pointer"
-              style={{ backgroundImage: `url(${imgs[4] ?? imgs[1]})` }}
-              onClick={() => setLightboxIdx(4)}
-            >
-              {remainingCount > 0 && (
-                <div className="absolute inset-0 grid place-items-center text-white text-[13px] font-semibold font-sans bg-ink/52">
-                  {remainingCount !== 1 ? t('photo_more_plural', { count: remainingCount }) : t('photo_more', { count: remainingCount })}
-                </div>
-              )}
-            </div>
+        ) : gallery.tiles.length > 0 && (
+          <div className={`grid gap-2 ${gallery.grid}`}>
+            {gallery.tiles.map(({ src, index, placement, remainingCount }) => (
+              <button key={index} type="button"
+                className={`${index === 0 ? 'rounded-2xl' : 'rounded-xl'} ${placement} relative overflow-hidden border-0 bg-cover bg-center p-0 cursor-pointer`}
+                aria-label={t('open_gallery_photo', { number: index + 1, total: imgs.length })}
+                style={{ backgroundImage: `url(${src})` }}
+                onClick={() => setLightboxIdx(index)}>
+                {remainingCount > 0 && (
+                  <span className="absolute inset-0 grid place-items-center text-white text-[13px] font-semibold font-sans bg-ink/52">
+                    {remainingCount !== 1 ? t('photo_more_plural', { count: remainingCount }) : t('photo_more', { count: remainingCount })}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         )}
+        {!activeTourUrl && roomTour && <ListingRoomTour key={listing.id} tour={roomTour} />}
       </div>
 
       {/* Main two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 items-start">
         {/* ── LEFT ── */}
-        <div>
+        <div className="min-w-0">
           {/* Quick stats */}
           <div className="flex flex-wrap gap-6 py-5.5 border-b border-line-soft text-ink text-[15px]">
             {(listing.bedrooms ?? 0) > 0 && (
@@ -735,6 +755,10 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
               />
             )
           })()}
+
+          {listing.id === id && (listing.transaction === 'sale' || listing.transaction === 'both') && (
+            <DevelopmentInventory key={listing.id} listingId={listing.id} />
+          )}
 
           {/* Property details */}
           <h3 className="font-sans text-[22px] font-semibold text-ink mt-7 mb-4">
@@ -947,27 +971,20 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
             <h2 className="font-sans text-[22px] font-semibold text-ink mb-3.5">
               {t('sections.location')}
             </h2>
-            <div
-              className="rounded-2xl overflow-hidden border border-line"
-              style={{ height: 300 }}
-            >
-              <PropertyMap mapsUrl={listing.maps_url ?? null} locationName={listing.location} latitude={listing.latitude ?? null} longitude={listing.longitude ?? null} />
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-[12.5px] text-ink2 leading-[1.55]">
-                {t('location.exact')}
-              </p>
-              {listing.maps_url && (
-                <a
-                  href={listing.maps_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-sea hover:underline"
-                >
+            {listing.location_precision === 'hidden' ? <p className="text-sm text-ink2">{t('location.hidden')}</p> : <>
+              <div className="rounded-2xl overflow-hidden border border-line" style={{ height: 300 }}>
+                <PropertyMap locationName={listing.location} latitude={listing.latitude ?? null} longitude={listing.longitude ?? null} label={t('sections.location')} />
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-[12.5px] text-ink2 leading-[1.55]">
+                  {t(listing.latitude != null && listing.longitude != null ? listing.location_verified ? 'location.reviewed' : 'location.saved' : 'location.approximate')}
+                </p>
+                {listing.maps_url && <a href={listing.maps_url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-sea hover:underline">
                   {t('location.open_maps')} <ExternalLink size={12} />
-                </a>
-              )}
-            </div>
+                </a>}
+              </div>
+            </>}
           </div>
 
         </div>
@@ -1407,6 +1424,16 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
           )}
 
           {/* Submitter / Agent contact */}
+          {viewingUrl && <a href={viewingUrl}
+            className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-line px-3 py-2 text-sm font-semibold text-sea no-underline hover:bg-paper2">
+            <Calendar size={15} aria-hidden="true" /> {t('sidebar.request_viewing')}
+          </a>}
+          {listing.status === 'active' && isInquiryPropertyContext(id, listing.id) && (
+            <>
+              <ListingBrochureDownload key={listing.id} listingId={listing.id} />
+              <ListingFloorPlan key={'floor-plan-' + listing.id} listingId={listing.id} />
+            </>
+          )}
           {listing.submitted_by_name && (
             <div className="mt-5 pt-4 border-t border-line-soft">
               <div className="text-[10.5px] font-bold text-ink2 uppercase tracking-wide mb-3">
@@ -1436,21 +1463,28 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
                 </div>
               </div>
               {inquirySent ? (
-                <div className="py-3 text-center text-[13px] text-emerald-700 font-semibold">
-                  <CheckCircle2 size={15} className="inline mr-1.5" />{t('sidebar.inquiry_sent')}
+                <div role="status" className="py-3 text-center text-[13px] text-emerald-700 font-semibold">
+                  <CheckCircle2 size={15} aria-hidden="true" className="inline mr-1.5" />{t('sidebar.inquiry_sent')}
+                  <p className="mt-2 text-ink2 font-normal">{t(`inquiry.follow_up_${inquiryFollowUp}`)}</p>
+                  {inquiryReceipt ? <p className="mt-2 break-all text-xs font-normal text-dim">{t('inquiry.reference', { id: inquiryReceipt.id })}</p> : null}
                 </div>
               ) : inquiryOpen ? (
-                <form onSubmit={handleInquiry} className="flex flex-col gap-2">
-                  <input required placeholder={t('inquiry.name')} value={inquiryForm.name}
+                <form onSubmit={handleInquiry} noValidate aria-busy={inquirySending} className="flex flex-col gap-3">
+                  <p id="property-inquiry-contact-help" className="text-xs leading-relaxed text-ink2">{t('inquiry.contact_help')}</p>
+                  {inquiryError ? <p ref={inquiryStatus} tabIndex={-1} role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-900 outline-none">{t(`inquiry.errors.${inquiryError}`)}</p> : null}
+                  <fieldset disabled={inquirySending} className="flex min-w-0 flex-col gap-3 disabled:opacity-70">
+                  <label htmlFor="property-inquiry-name" className="text-xs font-semibold text-ink2">{t('inquiry.name')} *</label>
+                  <input id="property-inquiry-name" name="name" required autoComplete="name" maxLength={200} value={inquiryForm.name}
                     onChange={e => setInquiryForm(f => ({ ...f, name: e.target.value }))}
+                    aria-invalid={inquiryError === 'name'}
                     className="w-full text-[13px] border border-line rounded-lg px-3 py-2 font-sans outline-none" />
-                  <input required type="email" placeholder={t('inquiry.email')} value={inquiryForm.email}
-                    onChange={e => setInquiryForm(f => ({ ...f, email: e.target.value }))}
-                    className="w-full text-[13px] border border-line rounded-lg px-3 py-2 font-sans outline-none" />
+                  <label htmlFor="property-inquiry-phone" className="text-xs font-semibold text-ink2">{t('inquiry.phone')}</label>
                   <PhoneInput
                     defaultCountry="us"
                     placeholder={t('inquiry.phone')}
                     value={inquiryForm.phone}
+                    disabled={inquirySending}
+                    inputProps={{ id: 'property-inquiry-phone', name: 'phone', autoComplete: 'tel', maxLength: 50, 'aria-describedby': 'property-inquiry-contact-help', 'aria-invalid': inquiryError === 'phone' || inquiryError === 'contact' }}
                     onChange={(phone, metadata) => {
                       setInquiryPhoneDialCode(metadata.country.dialCode)
                       setInquiryForm(f => ({ ...f, phone }))
@@ -1458,9 +1492,17 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
                     inputStyle={{ flex: 1, width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #e4ddcf', borderLeft: 'none', borderRadius: '0 0.5rem 0.5rem 0', backgroundColor: '#ffffff', fontFamily: 'inherit', fontSize: '0.8125rem', color: '#00102e', outline: 'none' }}
                     countrySelectorStyleProps={{ buttonStyle: { border: '1px solid #e4ddcf', borderRight: 'none', borderRadius: '0.5rem 0 0 0.5rem', backgroundColor: '#f3f1ea', padding: '0 0.5rem', cursor: 'pointer', height: '100%' } }}
                   />
-                  <textarea required rows={3} placeholder={t('inquiry.message')} value={inquiryForm.message}
+                  <label htmlFor="property-inquiry-email" className="text-xs font-semibold text-ink2">{t('inquiry.email')}</label>
+                  <input id="property-inquiry-email" name="email" type="email" autoComplete="email" maxLength={254} value={inquiryForm.email}
+                    onChange={e => setInquiryForm(f => ({ ...f, email: e.target.value }))}
+                    aria-describedby="property-inquiry-contact-help" aria-invalid={inquiryError === 'email' || inquiryError === 'contact'}
+                    className="w-full text-[13px] border border-line rounded-lg px-3 py-2 font-sans outline-none" />
+                  <label htmlFor="property-inquiry-comments" className="text-xs font-semibold text-ink2">{t('inquiry.message')}</label>
+                  <textarea id="property-inquiry-comments" name="message" rows={3} maxLength={2000} value={inquiryForm.message}
                     onChange={e => setInquiryForm(f => ({ ...f, message: e.target.value }))}
+                    aria-invalid={inquiryError === 'message'}
                     className="w-full text-[13px] border border-line rounded-lg px-3 py-2 font-sans outline-none resize-none" />
+                  <label className="flex items-start gap-2 text-xs leading-relaxed text-ink2"><input type="checkbox" name="contact_consent" checked={inquiryConsent} onChange={e => setInquiryConsent(e.target.checked)} required aria-invalid={inquiryError === 'consent'} className="mt-0.5 h-4 w-4 shrink-0 accent-sea" /><span>{t('inquiry.contact_consent')}</span></label>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => setInquiryOpen(false)}
                       className="flex-1 py-2 rounded-full border border-line text-[13px] font-semibold text-ink2 cursor-pointer bg-transparent font-sans">
@@ -1471,6 +1513,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
                       {inquirySending ? t('sidebar.sending') : t('sidebar.send')}
                     </button>
                   </div>
+                  </fieldset>
                 </form>
               ) : (
                 <button

@@ -1,5 +1,10 @@
 import axios from 'axios'
 import client from './axios'
+import type { AuthLocale } from '../lib/authLocale'
+
+function requireLocale(locale: AuthLocale): void {
+  if (locale !== 'en' && locale !== 'es') throw new Error('Unsupported language')
+}
 
 function errorMessage(err: unknown): never {
   if (axios.isAxiosError(err)) {
@@ -27,8 +32,10 @@ export async function login(body: {
 export async function verify(body: {
   email: string
   code: string
+  locale: AuthLocale
 }): Promise<{ expires_in: number }> {
-  return client.post('/auth/verify', body).then(r => r.data).catch(errorMessage)
+  requireLocale(body.locale)
+  return client.post('/auth/verify', { email: body.email, code: body.code, locale: body.locale }).then(r => r.data).catch(errorMessage)
 }
 
 export async function resendCode(body: { email: string }): Promise<void> {
@@ -43,8 +50,9 @@ export async function logout(): Promise<void> {
   return client.post('/auth/logout').then(() => undefined).catch(errorMessage)
 }
 
-export async function googleAuth(accessToken: string): Promise<{ expires_in: number }> {
-  return client.post('/auth/google', { access_token: accessToken }).then(r => r.data).catch(errorMessage)
+export async function googleAuth(accessToken: string, locale: AuthLocale): Promise<{ expires_in: number }> {
+  requireLocale(locale)
+  return client.post('/auth/google', { access_token: accessToken, locale }).then(r => r.data).catch(errorMessage)
 }
 
 export async function forgotPassword(email: string): Promise<void> {

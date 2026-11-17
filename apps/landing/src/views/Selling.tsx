@@ -4,6 +4,7 @@ import { useNav } from '../hooks/useNav'
 import { useTranslation } from 'react-i18next'
 import { ArrowRight, Check } from 'lucide-react'
 import { I, PILLARS, REACH, STEPS, TRUST_ITEMS, HERO_BG } from '../data/sellingData'
+import { SELLER_VALUATION_ROUTE } from '../data/sellerValuation'
 
 function Icon({ d, size = 22 }: { d: string | string[]; size?: number }) {
   const paths = Array.isArray(d) ? d : [d]
@@ -193,7 +194,7 @@ export default function Selling() {
             </p>
           </div>
           <div className="flex gap-2.5 flex-wrap shrink-0">
-            <button onClick={() => go('get-started', undefined, { intent: 'sell' })}
+            <button onClick={() => go('get-started', undefined, SELLER_VALUATION_ROUTE)}
               className="font-sans text-sm font-semibold cursor-pointer py-2.75 px-5.5 rounded-full inline-flex items-center gap-2 bg-white text-brand border border-white">
               {t('cta.valuation')}
             </button>

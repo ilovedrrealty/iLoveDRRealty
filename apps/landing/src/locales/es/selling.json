@@ -19,7 +19,7 @@
       { "title": "Alcance global desde el primer día", "desc": "Tu listado aparece en nuestra plataforma, sitios asociados, motores de búsqueda de IA y nuestros canales sociales — llegando a compradores de la diáspora y más allá, no solo al mercado local." },
       { "title": "Verificado, la confianza primero", "desc": "Cada listado en nuestra plataforma se revisa para garantizar su exactitud. Ese filtro protege a los compradores — por eso los compradores serios vienen aquí primero." },
       { "title": "Gestión de leads integrada", "desc": "Las consultas se dirigen a tu panel y a GoHighLevel automáticamente. Leads calientes etiquetados, seguimientos programados, nada se escapa." },
-      { "title": "Precios respaldados por datos", "desc": "Comparamos tu propiedad con ventas recientes similares en tu barrio — no con precios aspiracionales, sino con cierres reales." }
+      { "title": "Precios respaldados por datos", "desc": "Revisamos propiedades comparables e incluimos datos de ventas verificadas cuando están disponibles." }
     ]
   },
   "reach": {
@@ -42,11 +42,11 @@
     "heading": "De la valoración al cierre",
     "sub": "La mayoría de los listados cierran en 90–180 días. Así es exactamente como llegamos ahí.",
     "steps": [
-      { "title": "Valoración gratuita", "desc": "Cuéntanos sobre tu propiedad. Analizamos ventas comparables, tendencias del barrio y demanda actual para darte un rango de precios realista — no un número inflado para ganar tu listado." },
+      { "title": "Valoración gratuita", "desc": "Cuéntanos sobre tu propiedad. Un agente revisa propiedades comparables, la demanda en la zona y las ventas verificadas disponibles antes de preparar un rango de precios." },
       { "title": "Preparación del listado", "desc": "Listado de calidad profesional con fotos optimizadas, texto bilingüe, mapa de ubicación, amenidades y estrategia de precios. Revisado por nuestro equipo antes de publicarlo." },
       { "title": "Lanzamiento de marketing", "desc": "Listado publicado en nuestra plataforma, sitios asociados, canales sociales y la base de datos de solicitudes de compradores para coincidencia instantánea con leads calificados." },
       { "title": "Calificación de leads", "desc": "Consultas filtradas. Solo dedicas tiempo a compradores serios — preaprobados, con presupuesto confirmado y que encajan con el perfil de tu propiedad." },
-      { "title": "Ofertas y negociación", "desc": "Gestionamos el intercambio, presentamos cierres comparables para respaldar tu posición y protegemos tus intereses durante la negociación." },
+      { "title": "Ofertas y negociación", "desc": "Te ayudamos a gestionar las ofertas y a respaldar tu posición con propiedades comparables documentadas." },
       { "title": "Apoyo en el cierre", "desc": "Coordinación de abogado, transferencia de título, garantía en custodia, manejo del depósito y entrega final — gestionado y rastreado de principio a fin." }
     ]
   },

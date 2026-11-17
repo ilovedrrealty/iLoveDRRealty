@@ -15,6 +15,8 @@ export function canOpenToolWorkspace(accountRole: string, workspace: ToolWorkspa
 const SHARED: ToolCard[] = [
   { id: 'calculator', icon: 'calculator', view: 'calculator' },
   { id: 'professionals', icon: 'users', view: 'professional-directory' },
+  { id: 'network', icon: 'users', view: 'property-network' },
+  { id: 'transactions', icon: 'leads', view: 'transactions' },
   { id: 'resources', icon: 'book', view: 'resources' },
 ]
 
@@ -30,6 +32,7 @@ export function workspaceToolCards(workspace: ToolWorkspace, accountRole: string
   ]
   if (workspace === 'Owner') return [
     { id: 'owner_listings', icon: 'home', view: 'listings' },
+    { id: 'management', icon: 'home', view: 'property-management' },
     { id: 'calendar', icon: 'calendar', view: 'calendar' },
     { id: 'owner_leads', icon: 'leads', view: 'leads' },
     ...SHARED,
@@ -40,6 +43,7 @@ export function workspaceToolCards(workspace: ToolWorkspace, accountRole: string
     { id: 'research', icon: 'research', view: 'research' },
     { id: 'map', icon: 'search', path: '/search/' },
     { id: 'realtor_listings', icon: 'home', view: 'listings' },
+    { id: 'management', icon: 'home', view: 'property-management' },
     { id: 'realtor_leads', icon: 'leads', view: 'leads' },
     { id: 'pipeline', icon: 'leads', view: 'pipeline' },
     ...SHARED,

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { verify, resendCode } from '../api/auth'
+import { currentAuthLocale } from '../lib/authLocale'
 import { dashboardAfterAuth, professionalAuthParams, rememberProfessionalJoin } from '../lib/professionalJoin'
 
 const _dashRaw = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'https://app.ilovedrrealty.com'
@@ -27,7 +28,7 @@ export default function Verify() {
   const [loading, setLoading] = useState(false)
   const [resendSent, setResendSent] = useState(false)
   const digitRefs = useRef<(HTMLInputElement | null)[]>([])
-  const { t } = useTranslation('verify')
+  const { t, i18n } = useTranslation('verify')
 
   useEffect(() => {
     rememberProfessionalJoin()
@@ -100,7 +101,7 @@ export default function Verify() {
     setVerifyError('')
     setLoading(true)
     try {
-      const res = await verify({ email, code })
+      await verify({ email, code, locale: currentAuthLocale(i18n.language) })
       toast.success(t('toast_success'))
       setTimeout(() => { window.location.href = dashboardAfterAuth(DASHBOARD_URL) }, 1500)
     } catch (e: unknown) {

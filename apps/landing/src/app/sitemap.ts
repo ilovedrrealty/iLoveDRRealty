@@ -1,11 +1,12 @@
 import type { MetadataRoute } from 'next'
 import { ARTICLES, FEATURED, EDITOR_PICKS, GUIDES } from '../data/blogData'
 import { ARTICLES_ES } from '../data/blogData.es'
+import { listingsForStaticExport } from '../lib/listingExport'
 
 export const dynamic = 'force-static'
 
 const BASE = 'https://ilovedrrealty.com'
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
@@ -19,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/contact/`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/get-started/`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/blog/`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/local-guides/`, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${BASE}/professionals/`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
     { url: `${BASE}/privacy-policy/`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
     { url: `${BASE}/terms-of-service/`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
@@ -71,26 +73,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     })
 
-  let listingPages: MetadataRoute.Sitemap = []
-  try {
-    const pageSize = 60
-    const items: { id: string; created_at: string | null }[] = []
-    for (let page = 1; ; page++) {
-      const res = await fetch(`${API_URL}/listings?page=${page}&page_size=${pageSize}&include_aggregates=false`)
-      if (!res.ok) break
-      const data = (await res.json()) as { items: { id: string; created_at: string | null }[]; total: number }
-      items.push(...data.items)
-      if (items.length >= data.total || data.items.length < pageSize) break
-    }
-    listingPages = items.map(l => ({
-      url: `${BASE}/listing/${l.id}/`,
-      lastModified: l.created_at ? new Date(l.created_at) : new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    }))
-  } catch {
-    // If API is unavailable at build time, only static pages are included
-  }
+  const listingPages: MetadataRoute.Sitemap = (await listingsForStaticExport(API_URL)).map(l => ({
+    url: `${BASE}/listing/${l.id}/`,
+    lastModified: l.created_at ? new Date(l.created_at) : new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }))
 
   return [...staticPages, ...articlePages, ...esArticlePages, ...listingPages]
 }

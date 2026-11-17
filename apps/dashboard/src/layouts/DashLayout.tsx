@@ -36,6 +36,8 @@ const GENERAL_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Users,           view: 'professional-profile' },
   { Icon: BookOpen,        view: 'resources' },
   { Icon: Users,           view: 'professional-directory' },
+  { Icon: GitBranch,       view: 'property-network' },
+  { Icon: ClipboardList,  view: 'transactions' },
   { Icon: Settings,        view: 'settings' },
 ]
 
@@ -43,11 +45,13 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
   Buyer: [
     { Icon: Heart,         view: 'saved'      },
     { Icon: MessageCircle, view: 'inquiries'  },
+    { Icon: CalendarDays,  view: 'viewings'   },
     { Icon: CalendarDays,  view: 'bookings'   },
     { Icon: Calculator,    view: 'calculator' },
   ],
   Owner: [
     { Icon: Home,          view: 'listings'        },
+    { Icon: ClipboardList, view: 'property-management' },
     { Icon: CalendarDays,  view: 'calendar'        },
     { Icon: Bell,          view: 'owner-bookings'  },
     { Icon: MessageCircle, view: 'leads'           },
@@ -55,6 +59,9 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
   ],
   Realtor: [
     { Icon: Building2,     view: 'listings'          },
+    { Icon: Heart,         view: 'shortlists'        },
+    { Icon: CalendarDays,  view: 'viewings'          },
+    { Icon: ClipboardList, view: 'property-management' },
     { Icon: ClipboardList, view: 'leads'             },
     { Icon: Bell,          view: 'realtor-bookings'  },
     { Icon: GitBranch,     view: 'pipeline'          },
@@ -70,9 +77,17 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Contact,         view: 'trade-contacts' },
   { Icon: Users,           view: 'professional-profile' },
   { Icon: Building2,       view: 'listings'  },
+  { Icon: Search,          view: 'location-review' },
+  { Icon: ClipboardList,   view: 'property-management' },
+  { Icon: GitBranch,       view: 'property-network' },
   { Icon: Inbox,           view: 'leads'     },
+  { Icon: ClipboardList,   view: 'transactions' },
+  { Icon: Inbox,           view: 'lead-delivery' },
+  { Icon: Inbox,           view: 'communications' },
+  { Icon: LayoutDashboard, view: 'analytics' },
   { Icon: Upload,          view: 'bulk-import' },
   { Icon: Bell,            view: 'bookings'  },
+  { Icon: CalendarDays,    view: 'viewings'  },
   { Icon: BookOpen,        view: 'resources' },
   { Icon: Search,          view: 'buyer-tools' },
   { Icon: Key,             view: 'owner-tools' },
@@ -80,6 +95,7 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: Users,           view: 'professional-directory' },
   { Icon: BookOpen,        view: 'research' },
   { Icon: Globe,           view: 'website-editor' },
+  { Icon: BookOpen,        view: 'editorial' },
   { Icon: Settings,        view: 'settings'  },
 ]
 
@@ -201,7 +217,9 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
               )}
             </button>
 
-            {isExpanded && NAV[r as Exclude<Role, 'Admin'>].map(item => {
+            {isExpanded && NAV[r as Exclude<Role, 'Admin'>].filter(item =>
+              (item.view !== 'shortlists' || user.role === 'realtor')
+              && (item.view !== 'viewings' || user.role === r.toLowerCase())).map(item => {
               const active = !sectionLocked && view === item.view
               return (
                 <button

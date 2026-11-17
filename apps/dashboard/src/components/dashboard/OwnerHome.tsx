@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Home, Calendar, DollarSign, Bell, MessageCircle, Clock, Star, Pencil, UserCircle, CalendarCheck } from 'lucide-react'
+import { Home, Calendar, Bell, MessageCircle, Clock, Star, Pencil, UserCircle, CalendarCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Card, StatusPill, RoleKpiCard, fmtPrice } from './shared'
 import { getMyListings, type Listing } from '../../api/listings'
 import { getOwnerBookings, type Booking } from '../../api/bookings'
-import { getOwnerInquiries, type Inquiry } from '../../api/inquiries'
+import { getOwnerLeads, type OwnerLead, type OwnerLeadPage } from '../../api/ownerLeads'
+import { inquiryDate } from '../../utils/inquiryFeeds'
+import { buildOwnerArrivalActivity, isBookingCalendarDate } from '../../utils/ownerArrivalActivity'
 import { getMyAgent } from '../../api/auth'
 import type { UserInfo } from '../../lib/auth'
 import { SetupBanners, useListingSetup } from './SetupBanners'
@@ -13,40 +15,17 @@ export const OWNER_KPIS: { label: string; value: string; sub: string; accent?: s
   { label: 'Active Listings',    value: '—', sub: '' },
   { label: 'Upcoming Bookings',  value: '—', sub: '' },
   { label: 'Open Leads',         value: '—', sub: '' },
-  { label: 'Revenue This Month', value: '—', sub: '', accent: '#f0a800' },
+  { label: 'Confirmed Bookings This Month', value: '—', sub: '', accent: '#f0a800' },
 ]
 
 const STATUS_TONE_MAP: Record<string, string> = {
   active: '#1f7a3d', pending_approval: '#f0a800', rejected: '#e10f1f', archived: '#9ca3af',
 }
 
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-function fmtRelative(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1)   return t('rel.just_now')
-  if (mins < 60)  return t('rel.mins_ago', { count: mins })
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24)   return t('rel.hrs_ago', { count: hrs })
-  const days = Math.floor(hrs / 24)
-  if (days < 30)  return t('rel.days_ago', { count: days })
-  return t('rel.months_ago', { count: Math.floor(days / 30) })
-}
-
-function buildRevenueBar(bookings: Booking[]) {
-  const now = new Date()
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
-    return { month: MONTH_SHORT[d.getMonth()], year: d.getFullYear(), monthIdx: d.getMonth(), rev: 0 }
-  })
-  for (const b of bookings) {
-    if (b.status !== 'confirmed' || !b.total_price) continue
-    const d = new Date(b.check_in)
-    const slot = months.find(m => m.monthIdx === d.getMonth() && m.year === d.getFullYear())
-    if (slot) slot.rev += b.total_price
-  }
-  return months
+interface BookingFeed {
+  identity: string
+  status: 'loading' | 'ready' | 'error'
+  items: Booking[]
 }
 
 function avatarTone(name: string): string {
@@ -59,53 +38,82 @@ function avatarTone(name: string): string {
 export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: string; user: UserInfo }) {
   const { t } = useTranslation('owner')
   const { t: tCommon } = useTranslation('common')
+  const { t: tFeed, i18n } = useTranslation('inquiry_feeds')
 
   const [myListings, setMyListings]   = useState<Listing[]>([])
-  const [bookings, setBookings]       = useState<Booking[]>([])
-  const [inquiries, setInquiries]     = useState<Inquiry[]>([])
+  const bookingIdentity = `${user.id}:${user.role}`
+  const [bookingFeed, setBookingFeed] = useState<BookingFeed>({ identity: bookingIdentity, status: 'loading', items: [] })
+  const [bookingRefresh, setBookingRefresh] = useState(0)
+  const [inquiries, setInquiries]     = useState<OwnerLead[]>([])
+  const [inquiryPage, setInquiryPage] = useState<OwnerLeadPage | null>(null)
+  const [inquiryError, setInquiryError] = useState(false)
+  const [inquiryRefresh, setInquiryRefresh] = useState(0)
   const [agent, setAgent] = useState<{ name: string; email: string; phone: string | null; calendly_url: string | null } | null>(null)
   const [loadingListings, setLoadingListings] = useState(true)
-  const [loadingBookings, setLoadingBookings] = useState(true)
   const [loadingInquiries, setLoadingInquiries] = useState(true)
   const [loadingAgent, setLoadingAgent] = useState(true)
 
   useEffect(() => {
     getMyListings().then(setMyListings).catch(() => {}).finally(() => setLoadingListings(false))
-    getOwnerBookings().then(setBookings).catch(() => {}).finally(() => setLoadingBookings(false))
-    getOwnerInquiries().then(setInquiries).catch(() => {}).finally(() => setLoadingInquiries(false))
     getMyAgent().then(d => {
       if (d.realtor_name) setAgent({ name: d.realtor_name, email: d.realtor_email ?? '', phone: d.realtor_phone ?? null, calendly_url: d.realtor_calendly_url ?? null })
     }).catch(() => {}).finally(() => setLoadingAgent(false))
   }, [])
 
-  const activeCount = myListings.filter(l => l.status === 'active').length
-  const today = new Date().toISOString().slice(0, 10)
-  const upcomingBookings = bookings.filter(b => b.check_in >= today && b.status !== 'cancelled')
-  const revenueBar = buildRevenueBar(bookings)
-  const maxRev = Math.max(...revenueBar.map(d => d.rev), 1)
-  const thisMonthRev = revenueBar[revenueBar.length - 1].rev
+  useEffect(() => {
+    const controller = new AbortController()
+    setBookingFeed({ identity: bookingIdentity, status: 'loading', items: [] })
+    getOwnerBookings(controller.signal).then(items => {
+      if (!Array.isArray(items) || items.some(item => !item || typeof item.id !== 'string' || typeof item.status !== 'string' || typeof item.check_in !== 'string' || typeof item.check_out !== 'string')) {
+        throw new Error('Booking activity is unavailable')
+      }
+      if (!controller.signal.aborted) setBookingFeed({ identity: bookingIdentity, status: 'ready', items })
+    }).catch(() => {
+      if (!controller.signal.aborted) setBookingFeed({ identity: bookingIdentity, status: 'error', items: [] })
+    })
+    return () => controller.abort()
+  }, [bookingIdentity, bookingRefresh])
 
-  const loading = loadingListings || loadingBookings || loadingInquiries
+  useEffect(() => {
+    const controller = new AbortController()
+    setInquiries([]); setInquiryPage(null); setInquiryError(false); setLoadingInquiries(true)
+    getOwnerLeads(1, 'all', controller.signal).then(result => {
+      if (!controller.signal.aborted) { setInquiries(result.items); setInquiryPage(result) }
+    }).catch(() => { if (!controller.signal.aborted) setInquiryError(true) })
+      .finally(() => { if (!controller.signal.aborted) setLoadingInquiries(false) })
+    return () => controller.abort()
+  }, [user.id, user.role, inquiryRefresh])
+
+  const activeCount = myListings.filter(l => l.status === 'active').length
+  // Identity gating also hides the old account's data before the new effect runs.
+  const currentBookingFeed = bookingFeed.identity === bookingIdentity
+  const loadingBookings = !currentBookingFeed || bookingFeed.status === 'loading'
+  const bookingError = currentBookingFeed && bookingFeed.status === 'error'
+  const bookings = currentBookingFeed && bookingFeed.status === 'ready' ? bookingFeed.items : []
+  const arrivalActivity = buildOwnerArrivalActivity(bookings, new Date(), i18n.language)
+  const upcomingBookings = bookings.filter(b => isBookingCalendarDate(b.check_in) && b.check_in >= arrivalActivity.today && (b.status === 'confirmed' || b.status === 'pending'))
+    .sort((a, b) => a.check_in.localeCompare(b.check_in))
+  const maxArrivals = Math.max(...arrivalActivity.months.map(month => month.count), 1)
   const kpis = [
     {
       label: t('kpis.active_listings'),
-      value: loading ? '…' : String(activeCount),
-      sub:   loading ? '' : activeCount === 1 ? t('kpis.active_one') : t('kpis.active_many', { count: activeCount }),
+      value: loadingListings ? '…' : String(activeCount),
+      sub:   loadingListings ? '' : activeCount === 1 ? t('kpis.active_one') : t('kpis.active_many', { count: activeCount }),
     },
     {
       label: t('kpis.upcoming_bookings'),
-      value: loading ? '…' : String(upcomingBookings.length),
-      sub:   loading ? '' : upcomingBookings.length ? t('kpis.bookings_next', { date: upcomingBookings[0].check_in }) : t('kpis.bookings_none'),
+      value: loadingBookings ? '…' : bookingError ? '—' : String(upcomingBookings.length),
+      sub:   loadingBookings ? t('bookings.loading') : bookingError ? t('bookings.load_error') : upcomingBookings.length ? t('kpis.bookings_next', { date: upcomingBookings[0].check_in }) : t('kpis.bookings_none'),
     },
     {
       label: t('kpis.open_leads'),
-      value: loading ? '…' : String(inquiries.length),
-      sub:   loading ? '' : inquiries.length ? t('kpis.leads_count', { count: inquiries.length }) : t('kpis.leads_none'),
+      value: loadingInquiries ? '…' : inquiryError || !inquiryPage ? '—' : String(inquiryPage.summary.open_total),
+      sub: loadingInquiries ? '' : inquiryError ? tFeed('home_error') : tFeed('open_definition'),
     },
     {
-      label: t('kpis.revenue_month'),
-      value: loading ? '…' : thisMonthRev ? `$${thisMonthRev.toLocaleString()}` : '$0',
-      sub:   loading ? '' : t('kpis.revenue_sub'),
+      label: t('kpis.arrivals_month'),
+      value: loadingBookings ? '…' : bookingError ? '—' : String(arrivalActivity.thisMonthCount),
+      sub:   loadingBookings ? t('bookings.loading') : bookingError ? t('bookings.load_error') : t('kpis.arrivals_sub', { date: arrivalActivity.today }),
       accent: '#f0a800',
     },
   ]
@@ -193,36 +201,32 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
             )}
           </Card>
 
-          <Card title={<><DollarSign size={14} /> {t('revenue.title')}</>} sub={t('revenue.sub')}>
+          <Card title={<><CalendarCheck size={14} /> {t('arrival_activity.title')}</>} sub={t('arrival_activity.sub', { date: arrivalActivity.today })}>
             {loadingBookings ? (
-              <div className="flex items-end gap-2 h-27.5 animate-pulse">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                    <div className="h-3 w-full bg-line-soft rounded" />
-                    <div className="w-full rounded-t-lg bg-line-soft" style={{ height: 40 }} />
-                    <div className="h-3 w-4 bg-line-soft rounded" />
-                  </div>
-                ))}
+              <div role="status" className="py-6 text-[12px] text-dim">{t('bookings.loading')}</div>
+            ) : bookingError ? (
+              <div role="alert" className="py-3 text-[12px] text-ink">
+                <p>{t('bookings.load_error')}</p>
+                <button type="button" onClick={() => setBookingRefresh(value => value + 1)} className="mt-2 font-semibold underline" style={{ color: tone }}>{t('bookings.retry')}</button>
               </div>
             ) : (
-              <div className="flex items-end gap-2 h-27.5">
-                {revenueBar.map((d, i) => {
-                  const h = Math.max((d.rev / maxRev) * 80, d.rev > 0 ? 4 : 2)
-                  const isLast = i === revenueBar.length - 1
+              <ul className="flex items-end gap-2 min-h-27.5" aria-label={t('arrival_activity.title')}>
+                {arrivalActivity.months.map((month, index) => {
+                  const height = Math.max((month.count / maxArrivals) * 80, month.count > 0 ? 4 : 2)
+                  const isLast = index === arrivalActivity.months.length - 1
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                      <div className={`text-[10px] ${isLast ? 'text-ink font-bold' : 'text-dim'}`}>
-                        {d.rev > 0 ? `$${(d.rev / 1000).toFixed(1)}K` : '—'}
-                      </div>
-                      <div className="w-full rounded-t-lg" style={{ height: h, background: isLast ? tone : `${tone}50` }} />
-                      <div className="text-[10px] text-dim">{d.month}</div>
-                    </div>
+                    <li key={month.key} className="flex-1 min-w-0 flex flex-col items-center gap-1.5" aria-label={t('arrival_activity.month_count', { month: month.label, count: month.count })}>
+                      <div className={`text-[10px] ${isLast ? 'text-ink font-bold' : 'text-dim'}`}>{month.count}</div>
+                      <div aria-hidden="true" className="w-full rounded-t-lg" style={{ height, background: isLast ? tone : `${tone}50` }} />
+                      <div className="text-[10px] text-dim text-center">{month.label}</div>
+                    </li>
                   )
                 })}
-              </div>
+              </ul>
             )}
-            <button onClick={() => go('earnings')} className="mt-3 text-[12.5px] font-semibold bg-transparent border-none cursor-pointer p-0" style={{ color: tone }}>
-              {t('revenue.view_breakdown')}
+            <p className="mt-3 text-[11.5px] text-dim">{t('arrival_activity.definition')}</p>
+            <button onClick={() => go('owner-bookings')} className="mt-3 text-[12.5px] font-semibold bg-transparent border-none cursor-pointer p-0" style={{ color: tone }}>
+              {t('arrival_activity.view_bookings')}
             </button>
           </Card>
         </div>
@@ -303,7 +307,7 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
           )}
 
           <Card title={<><Bell size={14} /> {t('bookings.title')}</>} sub={t('bookings.sub')}
-            action={<button onClick={() => go('bookings')} className="text-xs font-bold bg-transparent border-none cursor-pointer" style={{ color: tone }}>{t('bookings.all')}</button>}>
+            action={<button onClick={() => go('owner-bookings')} className="text-xs font-bold bg-transparent border-none cursor-pointer" style={{ color: tone }}>{t('bookings.all')}</button>}>
             {loadingBookings ? (
               <div className="flex flex-col gap-2.5">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -312,6 +316,11 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
                     <div className="h-3 bg-line-soft rounded w-1/2" />
                   </div>
                 ))}
+              </div>
+            ) : bookingError ? (
+              <div role="alert" className="py-3 text-[12px] text-ink">
+                <p>{t('bookings.load_error')}</p>
+                <button type="button" onClick={() => setBookingRefresh(value => value + 1)} className="mt-2 font-semibold underline" style={{ color: tone }}>{t('bookings.retry')}</button>
               </div>
             ) : upcomingBookings.length === 0 ? (
               <div className="py-8 flex flex-col items-center gap-2 text-center">
@@ -335,7 +344,8 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
           </Card>
 
           <Card title={<><MessageCircle size={14} /> {t('leads_card.title')}</>}
-            action={inquiries.length > 0 ? <span className="text-[11.5px] font-bold px-2.5 py-0.75 rounded-full" style={{ color: tone, background: `${tone}18` }}>{t('leads_card.total', { count: inquiries.length })}</span> : undefined}>
+            action={inquiryPage && inquiryPage.summary.all_total > 0 ? <span className="text-[11.5px] font-bold px-2.5 py-0.75 rounded-full" style={{ color: tone, background: `${tone}18` }}>{t('leads_card.total', { count: inquiryPage.summary.all_total })}</span> : undefined}>
+            {user.role === 'admin' ? <p className="mb-3 text-xs text-dim">{tFeed('admin_scope')}</p> : null}
             {loadingInquiries ? (
               <div className="flex flex-col gap-2.5">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -348,6 +358,8 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
                   </div>
                 ))}
               </div>
+            ) : inquiryError ? (
+              <div role="alert" className="py-5"><p className="text-sm text-red-800">{tFeed('current_error')}</p><button type="button" onClick={() => setInquiryRefresh(value => value + 1)} className="mt-2 min-h-10 text-sm font-semibold text-sea underline">{tFeed('retry')}</button></div>
             ) : inquiries.length === 0 ? (
               <div className="py-8 flex flex-col items-center gap-2 text-center">
                 <MessageCircle size={22} className="text-dim" />
@@ -357,17 +369,17 @@ export function OwnerHome({ go, tone, user }: { go: (v: string) => void; tone: s
             ) : (
               <div className="flex flex-col gap-2.5">
                 {inquiries.slice(0, 4).map((l, i) => (
-                  <div key={i} className={`flex items-start gap-2.5 pb-2.5 ${i < Math.min(inquiries.length, 4) - 1 ? 'border-b border-line' : ''}`}>
+                  <div key={l.id} className={`flex items-start gap-2.5 pb-2.5 ${i < Math.min(inquiries.length, 4) - 1 ? 'border-b border-line' : ''}`}>
                     <div className="w-8.5 h-8.5 rounded-full shrink-0 grid place-items-center font-bold text-[13px] text-white" style={{ background: avatarTone(l.name) }}>{l.name[0]}</div>
                     <div className="flex-1 overflow-hidden">
                       <div className="text-[13px] font-bold text-ink">{l.name}</div>
-                      <div className="text-xs text-ink2 leading-[1.35] mt-0.5 mb-0.75 line-clamp-2">{l.message}</div>
-                      <div className="text-[11px] text-dim">{fmtRelative(l.created_at, t)}</div>
+                      <div className="text-xs text-ink2 leading-[1.35] mt-0.5 mb-0.75 line-clamp-2">{l.message || tFeed('no_message')}</div>
+                      <div className="text-[11px] text-dim">{inquiryDate(l.created_at, i18n.language)} · {tFeed(`statuses.${l.status}`)}</div>
                     </div>
                   </div>
                 ))}
                 <button onClick={() => go('leads')} className="text-[12.5px] font-semibold bg-transparent border-none cursor-pointer p-0 text-left" style={{ color: tone }}>
-                  {t('leads_card.view_all', { count: inquiries.length })}
+                  {tFeed('view_all', { count: inquiryPage?.summary.all_total ?? inquiries.length })}
                 </button>
               </div>
             )}

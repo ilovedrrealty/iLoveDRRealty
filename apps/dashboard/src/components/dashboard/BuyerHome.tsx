@@ -8,20 +8,9 @@ import { useTranslation } from 'react-i18next'
 const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
 import { Card, CardLink, StatusPill, SceneThumb, RoleKpiCard, fmtPrice } from './shared'
 import { getMySavedHomes, type SavedHome } from '../../api/savedHomes'
-import { getMyInquiries, type Inquiry } from '../../api/inquiries'
+import { getMyLeads, type Lead } from '../../api/leads'
+import { currentBuyerInquiries, inquiryDate, inquiryStatus } from '../../utils/inquiryFeeds'
 import { getMyBookings, type Booking } from '../../api/bookings'
-
-function fmtRelative(dateStr: string | null | undefined, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  if (!dateStr) return '—'
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1)  return t('rel.just_now')
-  if (mins < 60) return t('rel.mins_ago', { count: mins })
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24)  return t('rel.hrs_ago', { count: hrs })
-  const days = Math.floor(hrs / 24)
-  return t('rel.days_ago', { count: days })
-}
 
 function nightsBetween(a: string, b: string): number {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000)
@@ -36,8 +25,11 @@ export const BUYER_RESOURCES: { Icon: LucideIcon; title: string; time: string }[
 
 export function BuyerHome({ go }: { go: (v: string) => void }) {
   const { t } = useTranslation('buyer')
+  const { t: tFeed, i18n } = useTranslation('inquiry_feeds')
   const [savedHomes,   setSavedHomes]   = useState<SavedHome[]>([])
-  const [inquiries,    setInquiries]    = useState<Inquiry[]>([])
+  const [inquiries,    setInquiries]    = useState<Lead[]>([])
+  const [inquiryError, setInquiryError] = useState(false)
+  const [inquiryRefresh, setInquiryRefresh] = useState(0)
   const [bookings,     setBookings]     = useState<Booking[]>([])
   const [loadingSaved,     setLoadingSaved]     = useState(true)
   const [loadingInquiries, setLoadingInquiries] = useState(true)
@@ -45,9 +37,17 @@ export function BuyerHome({ go }: { go: (v: string) => void }) {
 
   useEffect(() => {
     getMySavedHomes().then(setSavedHomes).catch(() => {}).finally(() => setLoadingSaved(false))
-    getMyInquiries().then(setInquiries).catch(() => {}).finally(() => setLoadingInquiries(false))
     getMyBookings().then(setBookings).catch(() => {}).finally(() => setLoadingBookings(false))
   }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setInquiries([]); setLoadingInquiries(true); setInquiryError(false)
+    getMyLeads(controller.signal).then(rows => { if (!controller.signal.aborted) setInquiries(currentBuyerInquiries(rows)) })
+      .catch(() => { if (!controller.signal.aborted) setInquiryError(true) })
+      .finally(() => { if (!controller.signal.aborted) setLoadingInquiries(false) })
+    return () => controller.abort()
+  }, [inquiryRefresh])
 
   const today = new Date().toISOString().slice(0, 10)
   const upcomingBookings = bookings
@@ -63,8 +63,8 @@ export function BuyerHome({ go }: { go: (v: string) => void }) {
     },
     {
       label: t('kpis.inquiries_sent'),
-      value: loadingInquiries ? '…' : String(inquiries.length),
-      sub: inquiries.length ? t('kpis.inquiries_count', { count: inquiries.length }) : t('kpis.inquiries_none'),
+      value: loadingInquiries ? '…' : inquiryError ? '—' : String(inquiries.length),
+      sub: inquiryError ? tFeed('home_error') : inquiries.length ? t('kpis.inquiries_count', { count: inquiries.length }) : t('kpis.inquiries_none'),
     },
     {
       label: t('kpis.upcoming_trips'),
@@ -160,6 +160,8 @@ export function BuyerHome({ go }: { go: (v: string) => void }) {
                   </div>
                 ))}
               </div>
+            ) : inquiryError ? (
+              <div role="alert" className="px-5 py-6"><p className="text-sm text-red-800">{tFeed('current_error')}</p><button type="button" onClick={() => setInquiryRefresh(value => value + 1)} className="mt-2 min-h-10 text-sm font-semibold text-sea underline">{tFeed('retry')}</button></div>
             ) : inquiries.length === 0 ? (
               <div className="py-10 flex flex-col items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: '#e10f1f18' }}>
@@ -184,10 +186,10 @@ export function BuyerHome({ go }: { go: (v: string) => void }) {
                 {inquiries.slice(0, 3).map((inq, i) => (
                   <div key={inq.id} className={`flex items-center gap-3 py-3 ${i < Math.min(2, inquiries.length - 1) ? 'border-b border-line' : ''}`}>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold text-ink truncate">{inq.listing_title ?? t('inquiries.general_inquiry')}</div>
-                      <div className="text-[11px] text-dim">{fmtRelative(inq.created_at, t)}</div>
+                      <div className="text-[13px] font-semibold text-ink truncate">{inq.property_title ?? t('inquiries.general_inquiry')}</div>
+                      <div className="text-[11px] text-dim">{inquiryDate(inq.created_at, i18n.language)}</div>
                     </div>
-                    <StatusPill label={t('inquiries.sent_label')} tone="#0b63ab" />
+                    <StatusPill label={tFeed(`statuses.${inquiryStatus(inq.status)}`)} tone="#0b63ab" />
                   </div>
                 ))}
               </div>

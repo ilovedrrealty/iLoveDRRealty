@@ -4,7 +4,7 @@ import { useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { BedDouble, Bath, Maximize2, MapPin, Heart, TrendingUp, SlidersHorizontal } from 'lucide-react'
 import { fmt, fmtDOP, type Listing } from '../data/listings'
-import { fetchListings, fetchListingFilterOptions, fetchListingMap, type ListingFilterOptions } from '../api/listings'
+import { fetchListings, fetchListingFilterOptions, fetchListingMap, type ListingFilterOptions, type ListingsPage } from '../api/listings'
 import { EMPTY_LISTING_MAP, type ListingMapData, type MapBounds } from '../data/searchMap'
 import { supabaseImgUrl } from '../api/imgUrl'
 import { getMySavedIds, saveHome, unsaveHome } from '../api/savedHomes'
@@ -12,6 +12,7 @@ import { SearchFilterSidebar } from '../components/SearchFilterSidebar'
 import { SearchMapSidebar } from '../components/SearchMapSidebar'
 import { FEATURES } from '../data/searchData'
 import { defaultSearchFilters, readSearchFilters, writeSearchFilters, type SearchFilters } from '../data/searchFilters'
+import { parseSpatialSearch, serializeSpatialSearch, type SpatialSearch } from '../data/spatialSearch'
 import { useTranslation } from 'react-i18next'
 
 type TagTone = 'sand' | 'coral' | 'sea' | 'gold' | 'green'
@@ -167,6 +168,8 @@ function PropertyCard({ l, go, onHover, currency, dopRate, savedIds, onToggleSav
   )
 }
 
+const EMPTY_LISTINGS: Listing[] = []
+
 export default function Search() {
   const go = useNav()
   const { t } = useTranslation('search')
@@ -176,15 +179,10 @@ export default function Search() {
   const queryString = searchParams.toString()
   const [filters, setFilters] = useState(() => readSearchFilters(new URLSearchParams(queryString)))
   const filtersRef = useRef(filters)
-  const { page, purpose, types, locations, minPrice, maxPrice, beds, minROI, rentalPeriod, sort } = filters
+  const { page, purpose, types, locations, minPrice, maxPrice, beds, minROI, rentalPeriod, sort, spatial, spatialInvalid } = filters
   const amenities = useMemo(() => new Set(filters.amenities), [filters.amenities])
-  const [listings, setListings] = useState<Listing[]>([])
-  const [total, setTotal] = useState(0)
-  const [medianPrice, setMedianPrice] = useState<number | null>(null)
-  const [avgRoi, setAvgRoi] = useState<number | null>(null)
+  const [listingResult, setListingResult] = useState<{ scope: string; page: ListingsPage | null } | null>(null)
   const [alsoLike, setAlsoLike] = useState<Listing[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
   const [retry, setRetry] = useState(0)
   const [options, setOptions] = useState<ListingFilterOptions>({ locations: [], types: [] })
   const [hovered, setHovered] = useState<Listing | null>(null)
@@ -226,6 +224,18 @@ export default function Search() {
   const setMinROI = (value: number) => changeFilters({ minROI: value })
   const setAmenities = (value: Set<string>) => changeFilters({ amenities: [...value] })
   const setSort = (value: SearchFilters['sort']) => changeFilters({ sort: value })
+  function showMap(expanded: boolean) {
+    setMapViewport(null)
+    setMapExpanded(expanded)
+  }
+
+  function setSpatial(value: SpatialSearch | null) {
+    const encoded = value && serializeSpatialSearch(value)
+    const validated = encoded && parseSpatialSearch(encoded)
+    if (value && !validated) return
+    setHovered(null)
+    changeFilters({ spatial: validated || null, spatialInvalid: false })
+  }
   const setPage = (value: number | ((previous: number) => number)) =>
     changeFilters({ page: typeof value === 'function' ? value(filtersRef.current.page) : value }, false)
 
@@ -267,7 +277,7 @@ export default function Search() {
     return () => { document.body.style.overflow = previous }
   }, [filtersOpen])
 
-  const requestQuery = JSON.stringify({
+  const requestQuery = spatialInvalid ? null : JSON.stringify({
     page, pageSize: PAGE_SIZE, purpose,
     types: types.length ? types : undefined,
     locations: locations.length ? locations : undefined,
@@ -277,13 +287,21 @@ export default function Search() {
     minRoi: priceFilters.minROI > 0 ? priceFilters.minROI : undefined,
     features: filters.amenities.length ? filters.amenities : undefined,
     sort, priceCurrency: 'USD', usdToDop: dopRate, rentalPeriod,
+    spatial: spatial ? serializeSpatialSearch(spatial) : undefined,
   })
-  const mapScope = JSON.stringify({ ...JSON.parse(requestQuery), page: undefined, pageSize: undefined, sort: undefined })
-  const mapData = mapResult.scope === mapScope ? mapResult.data : EMPTY_LISTING_MAP
+  const activeResult = requestQuery && listingResult?.scope === requestQuery ? listingResult : null
+  const listings = activeResult?.page?.items ?? EMPTY_LISTINGS
+  const total = activeResult?.page?.total ?? 0
+  const loading = !spatialInvalid && !activeResult
+  const error = activeResult?.page === null
+  const mapScope = requestQuery ? JSON.stringify({ ...JSON.parse(requestQuery), page: undefined, pageSize: undefined, sort: undefined }) : ''
+  const currentMap = mapScope && mapResult.scope === mapScope
+  const mapData = currentMap ? mapResult.data : EMPTY_LISTING_MAP
   const mapRequest = JSON.stringify({ scope: mapScope, bounds: mapViewport?.scope === mapScope ? mapViewport.bounds : null })
   useEffect(() => {
     const controller = new AbortController()
     const requested = JSON.parse(mapRequest)
+    if (!requested.scope) return
     setMapLoading(true); setMapError(false)
     fetchListingMap({ ...JSON.parse(requested.scope), signal: controller.signal }, requested.bounds)
       .then(data => { if (!controller.signal.aborted) setMapResult({ scope: requested.scope, data }) })
@@ -297,34 +315,22 @@ export default function Search() {
     setMapViewport(previous => previous?.scope === mapScope && JSON.stringify(previous.bounds) === JSON.stringify(rounded) ? previous : { scope: mapScope, bounds: rounded })
   }
   useEffect(() => {
+    if (!requestQuery) return
     const controller = new AbortController()
-    let cancelled = false
-    setLoading(true)
-    setError(false)
+    setListingResult(null)
     fetchListings({ ...JSON.parse(requestQuery), signal: controller.signal })
-      .then(result => {
-        if (cancelled) return
-        setListings(result.items)
-        setTotal(result.total)
-        setMedianPrice(result.medianPrice)
-        setAvgRoi(result.avgRoi)
-      })
-      .catch(() => {
-        if (cancelled) return
-        setListings([])
-        setTotal(0)
-        setError(true)
-      })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true; controller.abort() }
+      .then(result => { if (!controller.signal.aborted) setListingResult({ scope: requestQuery, page: result }) })
+      .catch(() => { if (!controller.signal.aborted) setListingResult({ scope: requestQuery, page: null }) })
+    return () => controller.abort()
   }, [requestQuery, retry])
 
   const suggestionLocations = JSON.stringify(locations)
+  const hasSpatialSelection = Boolean(spatial || spatialInvalid)
   useEffect(() => {
+    if (hasSpatialSelection || !listings.length) { setAlsoLike(EMPTY_LISTINGS); return }
     const controller = new AbortController()
     let cancelled = false
     const ids = listings.map(listing => listing.id)
-    if (!ids.length) { setAlsoLike([]); return }
     const selectedLocations: string[] = JSON.parse(suggestionLocations)
     const getSuggestions = (nearby: boolean) => fetchListings({
       locations: nearby && selectedLocations.length ? selectedLocations : undefined,
@@ -337,12 +343,17 @@ export default function Search() {
       .then(result => { if (!cancelled) setAlsoLike(result.items) })
       .catch(() => { if (!cancelled) setAlsoLike([]) })
     return () => { cancelled = true; controller.abort() }
-  }, [listings, suggestionLocations, dopRate, rentalPeriod, purpose])
+  }, [hasSpatialSelection, listings, suggestionLocations, dopRate, rentalPeriod, purpose])
 
-  const insights = !error && total > 0 ? { count: total, median: medianPrice ?? 0, avgYield: avgRoi ?? 0 } : null
+  const insights = activeResult?.page && total > 0
+    ? { count: total, median: activeResult.page.medianPrice ?? 0, avgYield: activeResult.page.avgRoi ?? 0 } : null
+  const excludedUnlocated = activeResult?.page?.spatialExcludedUnlocated ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const locationLabel = locations.length > 2 ? t('selected_locations', { count: locations.length }) : locations.length ? locations.join(', ') : null
+  const spatialLabel = spatial?.kind === 'radius' ? t('spatial.active_radius', { km: spatial.km })
+    : spatial?.kind === 'polygon' ? t('spatial.active_polygon') : null
   const chips: { label: string; clear: () => void }[] = []
+  if (spatialLabel) chips.push({ label: spatialLabel, clear: () => setSpatial(null) })
   if (purpose !== 'sale') chips.push({ label: purpose === 'rent' ? t('chips.rent') : t('chips.investment'), clear: () => setPurpose('sale') })
   types.forEach(type => chips.push({ label: t(`sidebar.type_${type.toLowerCase()}`), clear: () => setTypes(types.filter(value => value !== type)) }))
   if (beds !== 'any') chips.push({ label: t('chip_beds', { beds }), clear: () => setBeds('any') })
@@ -376,11 +387,11 @@ export default function Search() {
           <h1 className="font-sans text-5 sm:text-6.5 font-semibold text-ink leading-[1.1] m-0">
             {t('results_count', { count: total })}{' '}
             <span className="text-dim text-3.25 sm:text-3.75 font-sans font-normal">
-              {locationLabel ? t('location_in', { region: locationLabel }) : t('location_across')}
+              {spatialLabel || (locationLabel ? t('location_in', { region: locationLabel }) : t('location_across'))}
             </span>
           </h1>
           <div className="flex items-center gap-2 flex-wrap">
-            <button type="button" onClick={() => setMapExpanded(true)} aria-haspopup="dialog"
+            <button type="button" onClick={() => showMap(true)} aria-haspopup="dialog"
               className="inline-flex items-center gap-1.5 font-sans text-3.25 font-semibold cursor-pointer py-2 px-3.5 rounded-full border border-line bg-paper text-ink focus-visible:outline-coral">
               <MapPin size={15} aria-hidden="true" />{t('map.open')}
             </button>
@@ -429,9 +440,15 @@ export default function Search() {
           </div>
         )}
 
-        {error ? (
+        {excludedUnlocated > 0 && <p role="status" className="mb-4 text-sm text-dim">{t('spatial.excluded', { count: excludedUnlocated })}</p>}
+        {spatialInvalid ? (
           <div role="alert" className="p-8 text-center border border-line rounded-2xl">
-            <p>{t('load_error')}</p>
+            <p>{t('spatial.invalid_url')}</p>
+            <button type="button" onClick={() => setSpatial(null)} className="mt-3 rounded-full bg-coral text-white px-5 py-2">{t('spatial.clear')}</button>
+          </div>
+        ) : error ? (
+          <div role="alert" className="p-8 text-center border border-line rounded-2xl">
+            <p>{t(spatial ? 'spatial.unavailable' : 'load_error')}</p>
             <button onClick={() => setRetry(value => value + 1)} className="mt-3 rounded-full bg-coral text-white px-5 py-2">{t('retry')}</button>
           </div>
         ) : loading ? (
@@ -475,18 +492,20 @@ export default function Search() {
       </main>
 
       <SearchMapSidebar
-        inventory={{ data: mapData, loading: mapLoading, error: mapError, scope: mapScope, retry: () => setMapRetry(value => value + 1), onAreaSelect: setLocations, onViewportChange: onMapViewportChange }}
+        inventory={{ data: mapData, loading: Boolean(mapScope && (!currentMap || mapLoading)), error: Boolean(currentMap && mapError), scope: mapScope, retry: () => setMapRetry(value => value + 1), onAreaSelect: setLocations, onViewportChange: onMapViewportChange }}
         hovered={hovered}
         results={listings}
-        alsoLike={alsoLike}
+        alsoLike={hasSpatialSelection ? EMPTY_LISTINGS : alsoLike}
         insights={insights}
         currency={currency}
         dopRate={dopRate}
         locations={locations}
-        locationLabel={locationLabel}
+        locationLabel={spatialLabel || locationLabel}
+        spatial={spatial}
+        onSpatialChange={setSpatial}
         expanded={mapExpanded}
-        onExpand={() => setMapExpanded(true)}
-        onClose={() => setMapExpanded(false)}
+        onExpand={() => showMap(true)}
+        onClose={() => showMap(false)}
         onCurrencyChange={setCurrency}
         onSelect={l => go(`detail?id=${l.id}`)}
         go={go}

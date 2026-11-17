@@ -1,5 +1,6 @@
 import { X, CalendarDays, Users, Mail, Phone, CreditCard, ExternalLink, StickyNote } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Booking } from '../../api/bookings'
 import { fmtPrice } from './shared'
 import { PAYPAL_ENABLED } from '../../lib/features'
@@ -38,6 +39,7 @@ interface Props {
   accentColor?: string
   showGHL?: boolean
   isAdmin?: boolean
+  afterStay?: ReactNode
   onAccept?: () => Promise<void>
   onDecline?: () => Promise<void>
   onReleasePayout?: () => Promise<void>
@@ -50,11 +52,13 @@ export function BookingDetailPanel({
   accentColor = '#1f7a3d',
   showGHL,
   isAdmin,
+  afterStay,
   onAccept,
   onDecline,
   onReleasePayout,
   onRequestPayout,
 }: Props) {
+  const { t } = useTranslation('common', { keyPrefix: 'arrival_guide' })
   const [acting, setActing] = useState(false)
   const [payoutRequested, setPayoutRequested] = useState(false)
   const [confirmRelease, setConfirmRelease] = useState(false)
@@ -82,6 +86,8 @@ export function BookingDetailPanel({
         <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
           <span className="text-[14px] font-bold text-ink">Booking Details</span>
           <button
+            type="button"
+            aria-label={t('close_booking')}
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-line-soft text-dim cursor-pointer border-0 bg-transparent"
           >
@@ -155,6 +161,8 @@ export function BookingDetailPanel({
               </span>
             </div>
           </div>
+
+          {afterStay}
 
           {/* Pricing */}
           {booking.total_price != null && (

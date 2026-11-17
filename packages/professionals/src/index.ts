@@ -4,6 +4,7 @@ export type ProfessionalOptions = {
   categories: ProfessionalOption[]
   areas: ProfessionalOption[]
   languages: ProfessionalOption[]
+  property_classes?: ProfessionalOption[]
 }
 export type ProfessionalDraft = {
   business_name: string

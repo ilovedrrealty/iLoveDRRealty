@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { StatusPill, fmtPrice } from '../../components/dashboard/shared'
 import { getMyBookings, cancelBooking, type Booking } from '../../api/bookings'
 import { ConfirmModal } from '../../components/shared/ConfirmModal'
+import { GuestArrivalGuidePanel } from '../../components/dashboard/ArrivalGuide'
 
 const TONE = '#e10f1f'
 const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
@@ -28,6 +29,7 @@ function filterBookings(bookings: Booking[], tab: Tab): Booking[] {
 
 export function BuyerBookings() {
   const { t } = useTranslation('buyer')
+  const { t: guideText } = useTranslation('common', { keyPrefix: 'arrival_guide' })
 
   const TABS: { key: Tab; label: string }[] = [
     { key: 'all',       label: t('bookings_page.tab_all')       },
@@ -41,6 +43,7 @@ export function BuyerBookings() {
   const [tab,              setTab]              = useState<Tab>('all')
   const [cancelling,       setCancelling]       = useState<string | null>(null)
   const [confirmCancelId,  setConfirmCancelId]  = useState<string | null>(null)
+  const [openGuideId, setOpenGuideId] = useState<string | null>(null)
 
   useEffect(() => {
     getMyBookings()
@@ -51,6 +54,7 @@ export function BuyerBookings() {
 
   async function handleCancel(id: string) {
     setCancelling(id)
+    setOpenGuideId(current => current === id ? null : current)
     try {
       await cancelBooking(id)
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' } : b))
@@ -70,14 +74,17 @@ export function BuyerBookings() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-w-0 flex-col gap-5">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 bg-paper border border-line rounded-xl px-2 py-1.5 w-fit">
+      <div className="flex w-fit max-w-full flex-wrap items-center gap-1 rounded-xl border border-line bg-paper px-2 py-1.5">
         {TABS.map(t => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold border-0 cursor-pointer transition-colors ${
+            onClick={() => {
+              if (tab !== t.key) setOpenGuideId(null)
+              setTab(t.key)
+            }}
+            className={`min-h-11 max-w-full rounded-lg border-0 px-2.5 py-1.5 text-[13px] font-semibold cursor-pointer transition-colors sm:min-h-0 sm:px-3.5 ${
               tab === t.key ? 'text-white' : 'bg-transparent text-dim hover:text-ink'
             }`}
             style={tab === t.key ? { background: TONE } : undefined}
@@ -143,55 +150,71 @@ export function BuyerBookings() {
               const isCancellable = b.status === 'pending' || b.status === 'confirmed'
               const today = new Date().toISOString().slice(0, 10)
               const isFuture = b.check_in >= today
+              const guideOpen = b.status === 'confirmed' && openGuideId === b.id
+              const guideId = `arrival-guide-${b.id}`
 
               return (
-                <div key={b.id} className="flex items-start gap-4 px-5 py-4">
-                  {/* Thumbnail */}
-                  {thumb ? (
-                    <div
-                      className="w-16 h-12 rounded-lg shrink-0 bg-cover bg-center"
-                      style={{ backgroundImage: `url(${thumb})` }}
-                    />
-                  ) : (
-                    <div className="w-16 h-12 rounded-lg shrink-0 bg-paper2 border border-line flex items-center justify-center">
-                      <CalendarDays size={18} className="text-dim" />
-                    </div>
-                  )}
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] font-semibold text-ink truncate">
-                      {b.listing_title ?? 'Rental Property'}
-                    </div>
-                    <div className="flex items-center gap-1 text-[11.5px] text-dim mt-0.5 flex-wrap">
-                      {b.listing_location && (
-                        <><MapPin size={10} className="shrink-0" /><span>{b.listing_location} ·</span></>
-                      )}
-                      <span>{fmtDate(b.check_in)} – {fmtDate(b.check_out)}</span>
-                      <span>· {nights} {nights !== 1 ? t('bookings_page.nights') : t('bookings_page.night')}</span>
-                      <span>· {b.guests} {b.guests !== 1 ? t('bookings_page.guests') : t('bookings_page.guest')}</span>
-                    </div>
-                  </div>
-
-                  {/* Right side */}
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <div className="flex items-center gap-2">
-                      {b.total_price != null && (
-                        <span className="text-[13px] font-bold text-ink">{fmtPrice(b.total_price)}</span>
-                      )}
-                      <StatusPill label={b.status.charAt(0).toUpperCase() + b.status.slice(1)} />
-                    </div>
-                    {isCancellable && isFuture && (
-                      <button
-                        onClick={() => setConfirmCancelId(b.id)}
-                        disabled={cancelling === b.id}
-                        className="flex items-center gap-1 text-[11.5px] font-semibold text-red-500 bg-transparent border border-red-200 rounded-lg px-2.5 py-1 cursor-pointer hover:bg-red-50 disabled:opacity-50"
-                      >
-                        <X size={11} strokeWidth={2.5} />
-                        {cancelling === b.id ? t('bookings_page.cancelling') : t('bookings_page.cancel')}
-                      </button>
+                <div key={b.id}>
+                  <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 px-5 py-4 sm:flex sm:gap-4">
+                    {/* Thumbnail */}
+                    {thumb ? (
+                      <div
+                        className="w-16 h-12 rounded-lg shrink-0 bg-cover bg-center"
+                        style={{ backgroundImage: `url(${thumb})` }}
+                      />
+                    ) : (
+                      <div className="w-16 h-12 rounded-lg shrink-0 bg-paper2 border border-line flex items-center justify-center">
+                        <CalendarDays size={18} className="text-dim" />
+                      </div>
                     )}
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="break-words text-[13.5px] font-semibold text-ink sm:truncate">
+                        {b.listing_title ?? 'Rental Property'}
+                      </div>
+                      <div className="flex items-center gap-1 text-[11.5px] text-dim mt-0.5 flex-wrap">
+                        {b.listing_location && (
+                          <><MapPin size={10} className="shrink-0" /><span>{b.listing_location} ·</span></>
+                        )}
+                        <span>{fmtDate(b.check_in)} – {fmtDate(b.check_out)}</span>
+                        <span>· {nights} {nights !== 1 ? t('bookings_page.nights') : t('bookings_page.night')}</span>
+                        <span>· {b.guests} {b.guests !== 1 ? t('bookings_page.guests') : t('bookings_page.guest')}</span>
+                      </div>
+                    </div>
+
+                    {/* Right side */}
+                    <div className="col-start-2 flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0 sm:flex-col sm:items-end sm:gap-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {b.total_price != null && (
+                          <span className="text-[13px] font-bold text-ink">{fmtPrice(b.total_price)}</span>
+                        )}
+                        <StatusPill label={b.status.charAt(0).toUpperCase() + b.status.slice(1)} />
+                      </div>
+                      {isCancellable && isFuture && (
+                        <button
+                          onClick={() => setConfirmCancelId(b.id)}
+                          disabled={cancelling === b.id}
+                          className="flex min-h-11 items-center gap-1 text-[11.5px] font-semibold text-red-500 bg-transparent border border-red-200 rounded-lg px-2.5 py-1 cursor-pointer hover:bg-red-50 disabled:opacity-50 sm:min-h-0"
+                        >
+                          <X size={11} strokeWidth={2.5} />
+                          {cancelling === b.id ? t('bookings_page.cancelling') : t('bookings_page.cancel')}
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {b.status === 'confirmed' && <div className="px-5 pb-4">
+                    <button type="button"
+                      className="min-h-11 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink disabled:opacity-50"
+                      disabled={cancelling === b.id}
+                      aria-expanded={guideOpen} aria-controls={guideId}
+                      onClick={() => setOpenGuideId(current => current === b.id ? null : b.id)}>
+                      {guideText(guideOpen ? 'close' : 'view')}
+                    </button>
+                  </div>}
+                  {b.status === 'confirmed' && (guideOpen
+                    ? <GuestArrivalGuidePanel key={b.id} bookingId={b.id} id={guideId} />
+                    : <div id={guideId} hidden />)}
                 </div>
               )
             })}

@@ -26,6 +26,7 @@ export interface Lead {
   closed_at: string | null
   ghl_contact_url: string | null
   booking_status: string | null
+  has_valuation_request?: boolean
   tracking_summary?: {
     form: string; page_path: string; locale: string; contact_consent: boolean
     intent: 'buy' | 'sell' | 'rent' | 'general' | 'unknown'
@@ -39,6 +40,10 @@ export interface LeadTrackingSummary {
   window_days: number; total: number; tracked_submissions: number; internal_tests: number
   measurement_granted: number; with_ad_click_id: number; crm_linked: number; crm_errors: number
   by_intent: Record<string, number>; note: string
+}
+
+export function isOwnerAccessLead(lead: Pick<Lead, 'type' | 'property_id' | 'has_valuation_request'>): boolean {
+  return lead.type === 'seller_interest' && !lead.property_id && !lead.has_valuation_request
 }
 
 export async function getLeadTrackingSummary(): Promise<LeadTrackingSummary> {
@@ -80,8 +85,8 @@ export async function getRealtorLeads(): Promise<Lead[]> {
   return res.data
 }
 
-export async function getMyLeads(): Promise<Lead[]> {
-  const res = await client.get<Lead[]>('/leads/mine')
+export async function getMyLeads(signal?: AbortSignal): Promise<Lead[]> {
+  const res = await client.get<Lead[]>('/leads/mine', { signal })
   return res.data
 }
 
