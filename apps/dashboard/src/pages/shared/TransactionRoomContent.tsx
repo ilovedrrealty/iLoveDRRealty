@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   canManageTransaction, getTransactionHistory, transactionAccessDenied, transactionTaskStatuses, TRANSACTION_HISTORY_SIZE,
-  type TransactionRoom,
+  type TransactionRoom, type TransactionTaskEvidenceLink,
 } from '../../api/transactions'
 import { NetworkDate, NETWORK_BUTTON, NETWORK_PRIMARY } from '../../components/network/NetworkShared'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
@@ -12,7 +12,7 @@ import { TransactionDocuments } from './TransactionDocuments'
 const ROOM_SECTIONS = ['tasks', 'milestones', 'members', 'documents', 'history'] as const
 const HISTORY_ACTIONS = new Set([
   'room_created', 'room_closed', 'room_retired', 'professional_invited', 'professional_accepted',
-  'professional_revoked', 'assignment_changed', 'task_created', 'task_updated', 'milestone_created',
+  'professional_revoked', 'assignment_changed', 'task_created', 'task_updated', 'task_evidence_reviewed', 'milestone_created',
   'milestone_updated', 'document_version_submitted', 'document_version_approved', 'document_version_rejected',
   'document_version_access_changed', 'document_version_withdrawn',
 ])
@@ -67,6 +67,7 @@ export function TransactionRoomContent({ room, userId, stale, refresh, onUpdated
   const { t } = useTranslation('transactions')
   const [section, setSection] = useState<typeof ROOM_SECTIONS[number]>('tasks')
   const [editor, setEditor] = useState<TransactionEdit | null>(null)
+  const [evidenceFocus, setEvidenceFocus] = useState<TransactionTaskEvidenceLink | null>(null)
   const manager = canManageTransaction(room)
   const memberNames = new Map(room.members.map(member => [member.user_id, member.display_name]))
   return <article className="min-w-0 space-y-4">
@@ -84,7 +85,8 @@ export function TransactionRoomContent({ room, userId, stale, refresh, onUpdated
     </header>
     <div role="group" aria-label={t('sections')} className="flex min-w-0 flex-wrap gap-2">
       {ROOM_SECTIONS.map(value => <button type="button" key={value} aria-pressed={section === value}
-        className={section === value ? NETWORK_PRIMARY : NETWORK_BUTTON} onClick={() => setSection(value)}>{t(value)}</button>)}
+        className={section === value ? NETWORK_PRIMARY : NETWORK_BUTTON}
+        onClick={() => { setEvidenceFocus(null); setSection(value) }}>{t(value)}</button>)}
     </div>
     <section className="min-w-0 space-y-4 rounded-2xl border border-line bg-paper p-4 sm:p-6" aria-labelledby="transaction-section">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -102,6 +104,19 @@ export function TransactionRoomContent({ room, userId, stale, refresh, onUpdated
             <h4 className="break-words text-sm font-bold">{task.title}</h4>
             <p className="mt-1 break-words text-sm text-ink2">{(task.assignee_user_id && memberNames.get(task.assignee_user_id)) || t('unassigned')} · {t(`task_status.${task.status}`)}</p>
             {task.due_on ? <p className="mt-1 flex flex-wrap gap-1 text-xs text-ink2">{t('due_on')} <NetworkDate value={task.due_on} /></p> : null}
+            {!stale && task.evidence ? <div className="mt-2 space-y-2">
+              <button type="button" className={NETWORK_BUTTON} disabled={stale} onClick={() => {
+                const evidence = task.evidence
+                if (!evidence) return
+                setEvidenceFocus({ document_id: evidence.document_id, version_id: evidence.version_id })
+                setSection('documents')
+              }}>{t('named_document_evidence', { title: task.evidence.title, number: task.evidence.number })}</button>
+              {task.evidence.reviewed_at && <p className="flex flex-wrap gap-1 break-words text-xs text-ink2">
+                {task.evidence.reviewer_name ? t('document_reviewed_by', { name: task.evidence.reviewer_name })
+                  : t('document_review_recorded')}
+                <NetworkDate value={task.evidence.reviewed_at} showTime />
+              </p>}
+            </div> : !stale && task.requires_evidence_review && <p className="mt-2 text-xs text-ink2">{t('document_evidence_unavailable')}</p>}
           </div>
           {transactionTaskStatuses(room, task, userId).length ? <button type="button" className={NETWORK_BUTTON} disabled={stale}
             onClick={() => setEditor({ kind: 'task', version: room.version, task })}>{t(manager ? 'edit_task' : 'change_status')}</button> : null}
@@ -129,7 +144,7 @@ export function TransactionRoomContent({ room, userId, stale, refresh, onUpdated
         </li>)}
       </ul> : <p className="text-sm text-ink2">{t('no_members')}</p> : null}
       {section === 'documents' ? <TransactionDocuments key={room.role} room={room} userId={userId} stale={stale}
-        refresh={refresh} onDenied={onDenied} /> : null}
+        refresh={refresh} onDenied={onDenied} focus={evidenceFocus} onClearFocus={() => setEvidenceFocus(null)} /> : null}
       {section === 'history' ? <RoomHistory key={room.version} roomId={room.id} userId={userId} onDenied={onDenied} /> : null}
     </section>
     {editor ? <TransactionRoomEditor editor={editor} room={room} userId={userId} stale={stale}

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   downloadTransactionDocument, listTransactionDocuments, type TransactionDocument, type TransactionDocumentVersion,
 } from '../../api/transactionDocuments'
-import { canManageTransaction, transactionAccessDenied, type TransactionRoom } from '../../api/transactions'
+import { canManageTransaction, transactionAccessDenied, type TransactionRoom, type TransactionTaskEvidenceLink } from '../../api/transactions'
 import { NETWORK_BUTTON, NETWORK_PRIMARY, NetworkDate } from '../../components/network/NetworkShared'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { useTransactionMutation } from '../../hooks/useTransactionMutation'
@@ -12,8 +12,9 @@ import { TransactionDocumentReview, TransactionDocumentUpload } from './Transact
 type ActiveDialog = { kind: 'upload'; document?: TransactionDocument }
   | { kind: 'review'; document: TransactionDocument; version: TransactionDocumentVersion; expectedVersion: number }
 
-export function TransactionDocuments({ room, userId, stale, refresh, onDenied }: {
+export function TransactionDocuments({ room, userId, stale, refresh, onDenied, focus, onClearFocus }: {
   room: TransactionRoom; userId: string; stale: boolean; refresh: () => void; onDenied: () => void
+  focus?: TransactionTaskEvidenceLink | null; onClearFocus?: () => void
 }) {
   const { t } = useTranslation('transactions')
   const read = useNetworkRead(`transaction-documents:${userId}:${room.id}`, signal => listTransactionDocuments(room.id, signal))
@@ -69,8 +70,13 @@ export function TransactionDocuments({ room, userId, stale, refresh, onDenied }:
   }
 
   if (denied) return <p role="alert">{t('error_access')}</p>
-  const documents = read.data?.items ?? []
-  const docForDialog = dialog?.document ? documents.find(document => document.id === dialog.document?.id) : undefined
+  const allDocuments = read.data?.items ?? []
+  const checkingFocus = !!focus && (stale || read.stale || read.checking)
+  const documents = focus
+    ? (checkingFocus || read.error ? [] : allDocuments.filter(document => document.id === focus.document_id
+      && document.versions.some(version => version.id === focus.version_id && version.can_download)))
+    : allDocuments
+  const docForDialog = dialog?.document ? allDocuments.find(document => document.id === dialog.document?.id) : undefined
   const versionForDialog = dialog?.kind === 'review' ? docForDialog?.versions.find(version => version.id === dialog.version.id) : undefined
   const canUpload = read.data?.can_upload === true
   const dialogProps = {
@@ -83,15 +89,18 @@ export function TransactionDocuments({ room, userId, stale, refresh, onDenied }:
     },
   }
   return <div className="min-w-0 space-y-4">
+    {focus ? <button type="button" className={NETWORK_BUTTON} onClick={onClearFocus}>{t('all_room_documents')}</button> : null}
     {canUpload ? <button type="button" className={NETWORK_PRIMARY} disabled={writeBlocked}
       onClick={() => openDialog({ kind: 'upload' })}>{t('documents_ui.add_document')}</button> : null}
     {read.error ? <div className="flex flex-wrap items-center gap-3">
       <p role="alert" className="text-sm text-red-800">{t('error_retry')}</p>
       <button type="button" className={NETWORK_BUTTON} onClick={read.refresh}>{t('retry')}</button>
-    </div> : !read.data ? <p role="status" className="text-sm text-ink2">{t('loading')}</p> : null}
+    </div> : !read.data || checkingFocus ? <p role="status" className="text-sm text-ink2">{t('loading')}</p> : null}
     {mutation.error ? <p role="alert" className="text-sm text-red-800">{t(mutation.error)}</p> : null}
     {success ? <p role="status" className="text-sm text-ink2">{t(success)}</p> : null}
-    {read.data && !documents.length ? <p className="text-sm text-ink2">{t('documents_ui.empty')}</p> : null}
+    {read.data && !checkingFocus && !read.error && !documents.length ? <p className="text-sm text-ink2">
+      {t(focus ? 'document_evidence_unavailable' : 'documents_ui.empty')}
+    </p> : null}
     {documents.map(document => <article key={document.id} aria-label={document.title}
       className="min-w-0 space-y-3 rounded-xl border border-line bg-white p-3 sm:p-4">
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
@@ -100,7 +109,8 @@ export function TransactionDocuments({ room, userId, stale, refresh, onDenied }:
           onClick={() => openDialog({ kind: 'upload', document })}>{t('documents_ui.add_version')}</button> : null}
       </div>
       <ul className="space-y-2">
-        {[...document.versions].sort((a, b) => b.number - a.number).map(version => <li key={version.id}
+        {document.versions.filter(version => !focus || version.id === focus.version_id)
+          .sort((a, b) => b.number - a.number).map(version => <li key={version.id}
           className="flex min-w-0 flex-wrap items-start justify-between gap-3 rounded-lg border border-line p-3">
           <div className="min-w-0 space-y-1">
             <p className="text-sm font-semibold">{t('documents_ui.version', { number: version.number })} · {t(`documents_ui.status.${version.status}`)}</p>

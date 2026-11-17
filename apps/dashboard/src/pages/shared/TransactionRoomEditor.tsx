@@ -7,10 +7,12 @@ import {
   type TransactionRoom, type TransactionTask, type TransactionTaskStatus,
 } from '../../api/transactions'
 import { todayInDR, validCalendarDate } from '../../api/propertyManagement'
+import { listTransactionDocuments } from '../../api/transactionDocuments'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, useNetworkDraftGuard } from '../../components/network/NetworkShared'
 import { ProfessionalConfirmation } from '../../components/shared/ProfessionalConfirmation'
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { useTransactionMutation } from '../../hooks/useTransactionMutation'
+import { useNetworkRead } from '../../hooks/useNetworkRead'
 
 export type TransactionEdit = { version: number } & (
   { kind: 'task'; task?: TransactionTask } | { kind: 'milestone'; milestone?: TransactionMilestone }
@@ -37,6 +39,7 @@ export function TransactionRoomEditor({ editor, room, userId, stale, refresh, on
   const milestone = editor.kind === 'milestone' ? editor.milestone : undefined
   const [title, setTitle] = useState(task?.title ?? milestone?.title ?? '')
   const [assignee, setAssignee] = useState(task?.assignee_user_id ?? '')
+  const [evidenceVersion, setEvidenceVersion] = useState(task?.evidence?.version_id ?? '')
   const [dueOn, setDueOn] = useState(task?.due_on ?? '')
   const [status, setStatus] = useState<TransactionTaskStatus>(task?.status ?? 'open')
   const [targetOn, setTargetOn] = useState(milestone?.target_on ?? '')
@@ -48,15 +51,28 @@ export function TransactionRoomEditor({ editor, room, userId, stale, refresh, on
   const conflict = editor.version !== room.version
   const disabled = mutation.busy || stale || conflict || !eligible
   const active = room.members.filter(member => member.state === 'active')
+  const assigneeGrant = active.find(member => member.role === 'professional' && member.user_id === assignee)?.grant_id
+  const canChooseEvidence = manager && editor.kind === 'task' && task?.status !== 'done' && Boolean(assigneeGrant)
+  const documents = useNetworkRead(`review-documents:${userId}:${room.id}:${room.version}:${assigneeGrant ?? ''}`,
+    signal => listTransactionDocuments(room.id, signal), canChooseEvidence)
+  const choices = (!documents.error && !documents.stale && !documents.checking ? documents.data?.items ?? [] : [])
+    .flatMap(document => document.versions.filter(version => version.can_download && version.status === 'approved'
+      && version.professional_grant_id === assigneeGrant).map(version => ({
+      documentId: document.id, title: document.title, number: version.number, id: version.id,
+    })))
+  const selectedEvidence = choices.find(choice => choice.id === evidenceVersion)
+  const evidenceChanged = evidenceVersion !== (task?.evidence?.version_id ?? '')
+  const newEvidenceScope = evidenceChanged || (task?.requires_evidence_review && assignee !== (task.assignee_user_id ?? ''))
+  const reviewStatuses = evidenceVersion && manager ? taskStatuses.filter(value => value !== 'done') : taskStatuses
   const memberCode = transactionAccountCode(code)
   const validTitle = Boolean(title.trim()) && title.trim().length <= TRANSACTION_WORK_TITLE_LIMIT
   const validAssignee = !assignee || active.some(member => member.user_id === assignee)
   const validTask = (manager ? validTitle && validOptionalDate(dueOn) && validAssignee : true)
-    && (!task || taskStatuses.includes(status))
+    && (!newEvidenceScope || Boolean(selectedEvidence)) && (!task || reviewStatuses.includes(status))
   const today = todayInDR()
   const validMilestone = validTitle && validOptionalDate(targetOn) && validOptionalDate(actualOn) && (!actualOn || actualOn <= today)
   const dirty = title !== (task?.title ?? milestone?.title ?? '') || assignee !== (task?.assignee_user_id ?? '')
-    || status !== (task?.status ?? 'open') || dueOn !== (task?.due_on ?? '')
+    || status !== (task?.status ?? 'open') || dueOn !== (task?.due_on ?? '') || evidenceChanged
     || targetOn !== (milestone?.target_on ?? '') || actualOn !== (milestone?.actual_on ?? '') || Boolean(code)
   useNetworkDraftGuard(dirty, mutation.busy)
 
@@ -74,7 +90,12 @@ export function TransactionRoomEditor({ editor, room, userId, stale, refresh, on
       if (!manager && task) {
         void mutation.run(signal => updateTransactionTask(room, task.id, { status }, signal), onUpdated)
       } else if (manager) {
-        const fields = { title: title.trim(), assignee_user_id: assignee || null, due_on: dueOn || null }
+        const fields = {
+          title: title.trim(), assignee_user_id: assignee || null, due_on: dueOn || null,
+          ...(evidenceChanged && selectedEvidence ? {
+            evidence: { document_id: selectedEvidence.documentId, version_id: selectedEvidence.id },
+          } : {}),
+        }
         void mutation.run(signal => task ? updateTransactionTask(room, task.id, { ...fields, status }, signal)
           : createTransactionTask(room, fields, signal), onUpdated)
       }
@@ -124,10 +145,27 @@ export function TransactionRoomEditor({ editor, room, userId, stale, refresh, on
           <label className="block min-w-0 text-sm font-semibold">{t('due_on')}
             <input className={NETWORK_FIELD} type="date" value={dueOn} onChange={event => setDueOn(event.target.value)} disabled={disabled} />
           </label>
+          {canChooseEvidence && <label className="block min-w-0 text-sm font-semibold sm:col-span-2">
+            {t('document_evidence')}
+            <select className={NETWORK_FIELD} value={evidenceVersion}
+              disabled={disabled || documents.checking || documents.stale}
+              onChange={event => setEvidenceVersion(event.target.value)}>
+              <option value="" disabled={!!task?.requires_evidence_review}>{t('no_document_evidence')}</option>
+              {evidenceVersion && !selectedEvidence && <option value={evidenceVersion} disabled>
+                {t('existing_document_evidence')}
+              </option>}
+              {choices.map(choice => <option key={choice.id} value={choice.id}>
+                {t('named_document_evidence', { title: choice.title, number: choice.number })}
+              </option>)}
+            </select>
+            <span className="mt-1 block text-xs font-normal text-ink2">{t('document_evidence_hint')}</span>
+          </label>}
+          {canChooseEvidence && !!documents.error && <button type="button" className={NETWORK_BUTTON}
+            onClick={documents.refresh}>{t('retry')}</button>}
         </div> : null}
-        {task && taskStatuses.length ? <label className="block text-sm font-semibold">{t('status')}
+        {task && reviewStatuses.length ? <label className="block text-sm font-semibold">{t('status')}
           <select className={NETWORK_FIELD} value={status} onChange={event => setStatus(event.target.value as TransactionTaskStatus)} disabled={disabled}>
-            {taskStatuses.map(value => <option key={value} value={value}>{t(`task_status.${value}`)}</option>)}
+            {reviewStatuses.map(value => <option key={value} value={value}>{t(`task_status.${value}`)}</option>)}
           </select>
         </label> : null}
       </div> : null}

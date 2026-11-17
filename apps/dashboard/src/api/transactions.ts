@@ -13,8 +13,13 @@ export type TransactionMember = {
 }
 export const TASK_STATUSES = ['open', 'in_progress', 'done', 'cancelled'] as const
 export type TransactionTaskStatus = typeof TASK_STATUSES[number]
+export type TransactionTaskEvidenceLink = { document_id: string; version_id: string }
+export type TransactionTaskEvidence = TransactionTaskEvidenceLink & {
+  title: string; number: number; reviewed_at: string | null; reviewer_name: string | null
+}
 export type TransactionTask = {
   id: string; title: string; assignee_user_id: string | null; due_on: string | null; status: TransactionTaskStatus
+  requires_evidence_review?: boolean; evidence?: TransactionTaskEvidence | null
 }
 export type TransactionMilestone = { id: string; title: string; target_on: string | null; actual_on: string | null }
 export type TransactionRoom = TransactionRoomSummary & {
@@ -25,6 +30,7 @@ export type TransactionHistoryEntry = {
   sequence: number; action: string; actor_role: TransactionRole | 'system'; created_at: string; target_id: string | null
 }
 export type TaskFields = Pick<TransactionTask, 'title' | 'assignee_user_id' | 'due_on'>
+  & { evidence?: TransactionTaskEvidenceLink }
 export type MilestoneFields = Omit<TransactionMilestone, 'id'>
 
 export const TRANSACTION_TITLE_LIMIT = 120
@@ -60,8 +66,12 @@ export function canManageTransaction(room: TransactionRoomSummary): boolean {
 }
 
 export function transactionTaskStatuses(room: TransactionRoomSummary, task: TransactionTask, userId: string): readonly TransactionTaskStatus[] {
-  if (canManageTransaction(room)) return TASK_STATUSES
+  if (canManageTransaction(room)) {
+    if (!task.requires_evidence_review) return TASK_STATUSES
+    return task.status === 'done' ? [] : ['open', 'in_progress', 'cancelled']
+  }
   if (room.status === 'open' && task.assignee_user_id === userId && (task.status === 'open' || task.status === 'in_progress')) {
+    if (task.requires_evidence_review && !task.evidence) return []
     return ['open', 'in_progress', 'done']
   }
   return []

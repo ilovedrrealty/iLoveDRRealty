@@ -67,6 +67,31 @@ test('member codes and task controls observe role, assignee, room closure and te
   assert.equal(api.transactionTaskStatuses({ ...start, status: 'closed' }, task, 'me').length, 0)
 })
 
+test('only the assigned professional with visible linked evidence can complete the review', () => {
+  const { api } = harness()
+  const reviewer = { ...start, role: 'professional' }
+  const task = { assignee_user_id: 'me', status: 'open', requires_evidence_review: true }
+  const readable = { ...task, evidence: { document_id: leadId, version_id: grantId } }
+  assert.deepEqual(plain(api.transactionTaskStatuses(start, readable, 'manager')), ['open', 'in_progress', 'cancelled'])
+  assert.equal(api.transactionTaskStatuses(start, { ...readable, status: 'done' }, 'manager').length, 0)
+  assert.equal(api.transactionTaskStatuses(reviewer, task, 'me').length, 0)
+  assert.equal(api.transactionTaskStatuses(reviewer, readable, 'other').length, 0)
+  assert.deepEqual(plain(api.transactionTaskStatuses(reviewer, readable, 'me')), ['open', 'in_progress', 'done'])
+})
+
+test('an evidence assignment sends the exact document and version IDs with the room version', async () => {
+  const { api, calls } = harness()
+  const { signal } = new AbortController()
+  const evidence = { document_id: leadId, version_id: grantId }
+  const fields = { title: 'Synthetic review', due_on: null, assignee_user_id: taskId, evidence }
+  await api.createTransactionTask(start, fields, signal)
+  await api.updateTransactionTask(start, taskId, { evidence }, signal)
+  assert.deepEqual(plain(calls), [
+    ['post', `/transactions/${roomId}/tasks`, { ...fields, expected_version: 17 }, { signal: {} }],
+    ['patch', `/transactions/${roomId}/tasks/${taskId}`, { evidence, expected_version: 17 }, { signal: {} }],
+  ])
+})
+
 test('only the scoped room and invite endpoints are called and workflow writes carry the reviewed room version', async () => {
   const { api, calls } = harness()
   const { signal } = new AbortController()
