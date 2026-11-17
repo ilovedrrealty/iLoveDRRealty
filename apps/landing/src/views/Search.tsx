@@ -224,6 +224,11 @@ export default function Search() {
   const setMinROI = (value: number) => changeFilters({ minROI: value })
   const setAmenities = (value: Set<string>) => changeFilters({ amenities: [...value] })
   const setSort = (value: SearchFilters['sort']) => changeFilters({ sort: value })
+  function showMap(expanded: boolean) {
+    setMapViewport(null)
+    setMapExpanded(expanded)
+  }
+
   function setSpatial(value: SpatialSearch | null) {
     const encoded = value && serializeSpatialSearch(value)
     const validated = encoded && parseSpatialSearch(encoded)
@@ -386,7 +391,7 @@ export default function Search() {
             </span>
           </h1>
           <div className="flex items-center gap-2 flex-wrap">
-            <button type="button" onClick={() => setMapExpanded(true)} aria-haspopup="dialog"
+            <button type="button" onClick={() => showMap(true)} aria-haspopup="dialog"
               className="inline-flex items-center gap-1.5 font-sans text-3.25 font-semibold cursor-pointer py-2 px-3.5 rounded-full border border-line bg-paper text-ink focus-visible:outline-coral">
               <MapPin size={15} aria-hidden="true" />{t('map.open')}
             </button>
@@ -499,8 +504,8 @@ export default function Search() {
         spatial={spatial}
         onSpatialChange={setSpatial}
         expanded={mapExpanded}
-        onExpand={() => setMapExpanded(true)}
-        onClose={() => setMapExpanded(false)}
+        onExpand={() => showMap(true)}
+        onClose={() => showMap(false)}
         onCurrencyChange={setCurrency}
         onSelect={l => go(`detail?id=${l.id}`)}
         go={go}

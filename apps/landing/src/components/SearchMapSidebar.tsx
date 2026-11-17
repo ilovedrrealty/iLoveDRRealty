@@ -11,6 +11,7 @@ import type { SpatialSearch } from '../data/spatialSearch'
 
 const titleCase = (s: string) =>
   s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s
+const ignoreViewport = () => {}
 
 function fmtPill(l: { price: number; purpose: string }, currency: 'USD' | 'DOP', dopRate: number, unit: string): string {
   if (currency === 'DOP') {
@@ -206,7 +207,7 @@ export function SearchMapSidebar({
     <aside className="hidden lg:block self-start sticky top-22.5 max-h-[calc(100vh-110px)] overflow-y-auto space-y-3.5">
 
       <DRMap
-        inventory={inventory}
+        inventory={expanded ? { ...inventory, onViewportChange: ignoreViewport } : inventory}
         hovered={hovered}
         listings={results}
         onSelect={onSelect}
