@@ -1,5 +1,8 @@
 {
   "heading": "Seller valuation",
+  "open_valuation": "Open seller valuation",
+  "back_to_lead": "Back to lead",
+  "request_label": "Valuation request",
   "loading": "Loading valuation…",
   "retry": "Try again",
   "reload": "Reload valuation",

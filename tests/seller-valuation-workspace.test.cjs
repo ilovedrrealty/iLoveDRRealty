@@ -40,6 +40,15 @@ function harness() {
   return { api, requests }
 }
 
+test('a structured valuation stays out of the owner access workflow', () => {
+  const { isOwnerAccessLead } = load('api/leads.ts', { './axios': {} })
+  const propertylessSeller = { type: 'seller_interest', property_id: null }
+  assert.equal(isOwnerAccessLead(propertylessSeller), true)
+  assert.equal(isOwnerAccessLead({ ...propertylessSeller, has_valuation_request: true }), false)
+  assert.equal(isOwnerAccessLead({ ...propertylessSeller, property_id: listing }), false)
+  assert.equal(isOwnerAccessLead({ type: 'buyer_interest', property_id: null }), false)
+})
+
 test('case lookup and filtered asking candidates use the current lead and cancellable private reads', async () => {
   const { api, requests } = harness()
   const { signal } = new AbortController()

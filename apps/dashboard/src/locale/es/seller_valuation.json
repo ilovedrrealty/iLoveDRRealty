@@ -1,5 +1,8 @@
 {
   "heading": "Valoración del vendedor",
+  "open_valuation": "Abrir valoración del vendedor",
+  "back_to_lead": "Volver a la solicitud",
+  "request_label": "Solicitud de valoración",
   "loading": "Cargando valoración…",
   "retry": "Reintentar",
   "reload": "Cargar la valoración actual",
