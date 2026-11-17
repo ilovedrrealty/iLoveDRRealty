@@ -80,7 +80,7 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
     { id: 'profile',       label: t('tabs.profile')       },
     { id: 'security',      label: t('tabs.security')      },
     { id: 'notifications', label: t('tabs.notifications') },
-    ...(role === 'Realtor' || role === 'Owner' ? [{ id: 'connections' as const, label: 'Connections' }] : []),
+    ...(role === 'Realtor' || role === 'Owner' ? [{ id: 'connections' as const, label: t('tabs.connections') }] : []),
   ]
 
   // Profile state
@@ -373,7 +373,7 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
       )}
 
       {/* Tab bar */}
-      <div className="flex gap-1.5 p-1 bg-paper border border-line rounded-xl w-fit">
+      <div className="flex max-w-full flex-wrap gap-1.5 p-1 bg-paper border border-line rounded-xl w-fit">
         {TABS.map(tb => (
           <button
             key={tb.id}

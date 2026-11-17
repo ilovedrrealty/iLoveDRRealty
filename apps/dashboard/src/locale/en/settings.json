@@ -2,7 +2,8 @@
   "tabs": {
     "profile": "Profile",
     "security": "Security",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "connections": "Connections"
   },
   "profile": {
     "title": "Profile",
