@@ -18,6 +18,7 @@ import { ResearchTools } from './shared/ResearchTools'
 import { WebsiteEditor } from './admin/WebsiteEditor'
 import { AdminProfessionals } from './admin/Professionals'
 import { ProfessionalProfile } from './shared/ProfessionalProfile'
+import { Viewings } from './shared/Viewings'
 import { Resources } from './buyer/Resources'
 import ProfessionalDirectory from './shared/ProfessionalDirectory'
 import { ToolHub } from './shared/ToolHub'
@@ -31,7 +32,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
   const [searchParams] = useSearchParams()
 
   const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'professional-profile'].includes(view) ? view : 'home'
-  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network'].includes(view)
+  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network', 'viewings'].includes(view)
   const title = sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
   const sub = sharedTitle ? '' : t(`pages.${pageKey}.sub`)
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
@@ -47,6 +48,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
       case 'property-management': return <PropertyManagement user={user} />
       case 'property-network': return <PropertyNetwork user={user} />
       case 'bookings': return <AdminBookings />
+      case 'viewings': return <Viewings user={user} />
       case 'analytics': return <Analytics />
       case 'settings': return <AdminSettings user={user} onUserUpdate={onUserUpdate} />
       case 'bulk-import': return <BulkImportListings />
