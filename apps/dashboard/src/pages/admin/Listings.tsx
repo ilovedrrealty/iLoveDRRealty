@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react'
+import { lazy, Suspense, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  Check, X, Home, Search, MoreHorizontal, Archive,
+  Check, X, Home, Search, MoreHorizontal, Archive, Building2,
   MapPin, Pencil, GitCompare, Eye, Plus, CheckCircle2, XCircle, Star, Clock, Sparkles, UserCheck, UserX,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -14,6 +14,7 @@ import {
   getAdminActivityLog, getAdminAgents, getAdminStats,
 } from '../../api/admin'
 import type { AdminListing, AdminListingEdit, ActivityEntry, DealRequest, AdminAgent, AdminStats } from '../../api/admin'
+import { canManageDevelopment } from '../../api/developments'
 import { AdminEditListing, AdminSubmitListing } from './SubmitListing'
 import { TONE, FilterPills } from './shared'
 import { ListingDetailPanel } from '../../components/admin/ListingDetailPanel'
@@ -21,6 +22,8 @@ import { ListingEditReviewPage } from '../../components/admin/ListingEditReviewP
 import { RoomPhotoTourEditReview } from '../../components/admin/RoomPhotoTourEditReview'
 import { ListingHistoryPanel } from '../../components/admin/ListingHistoryPanel'
 import { ConfirmModal } from '../../components/shared/ConfirmModal'
+
+const DevelopmentInventory = lazy(() => import('./DevelopmentInventory'))
 
 const titleCase = (s: string) =>
   s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s
@@ -151,7 +154,9 @@ function StatusChip({ status }: { status: string }) {
   )
 }
 
-function ActionMenu({ onView, onEdit, onHistory, onSetDeal, onArchive }: { onView: () => void; onEdit: () => void; onHistory: () => void; onSetDeal?: () => void; onArchive: () => void }) {
+function ActionMenu({ onView, onEdit, onHistory, onDevelopment, onSetDeal, onArchive }: {
+  onView: () => void; onEdit: () => void; onHistory: () => void; onDevelopment?: () => void; onSetDeal?: () => void; onArchive: () => void
+}) {
   const { t } = useTranslation('admin')
   const [open, setOpen] = useState(false)
   const [pos, setPos]   = useState({ top: 0, left: 0 })
@@ -173,10 +178,10 @@ function ActionMenu({ onView, onEdit, onHistory, onSetDeal, onArchive }: { onVie
     if (!open && btnRef.current) {
       const r = btnRef.current.getBoundingClientRect()
       const menuW = 176
-      const menuH = 200 // approximate; enough to flip up if near bottom
+      const menuH = onDevelopment ? 236 : 200
       const left = Math.max(8, Math.min(r.right - menuW, window.innerWidth - menuW - 8))
       const fitsBelow = r.bottom + 6 + menuH < window.innerHeight
-      const top = fitsBelow ? r.bottom + 6 : r.top - menuH - 6
+      const top = fitsBelow ? r.bottom + 6 : Math.max(8, r.top - menuH - 6)
       setPos({ top, left })
     }
     setOpen(v => !v)
@@ -185,8 +190,11 @@ function ActionMenu({ onView, onEdit, onHistory, onSetDeal, onArchive }: { onVie
   return (
     <>
       <button
+        type="button"
         ref={btnRef}
         onClick={toggle}
+        aria-label={t('listing_actions', { ns: 'development_inventory' })}
+        aria-expanded={open}
         className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-line-soft cursor-pointer border-0 bg-transparent"
       >
         <MoreHorizontal size={15} className="text-dim" />
@@ -215,6 +223,10 @@ function ActionMenu({ onView, onEdit, onHistory, onSetDeal, onArchive }: { onVie
           >
             <Clock size={12} /> {t('listings_page.action_history')}
           </button>
+          {onDevelopment && <button type="button" onClick={() => { onDevelopment(); setOpen(false) }}
+            className="w-full text-left flex items-center gap-2 px-3.5 py-2 text-[12.5px] text-ink hover:bg-line-soft cursor-pointer">
+            <Building2 size={12} aria-hidden="true" /> {t('row_action', { ns: 'development_inventory' })}
+          </button>}
           {onSetDeal && (
             <button
               onClick={() => { onSetDeal(); setOpen(false) }}
@@ -287,6 +299,7 @@ export function AdminListings() {
   const [setDealValue,     setSetDealValue]     = useState('')
   const [setDealType,      setSetDealType]      = useState<'pct' | 'fixed'>('pct')
   const [selected,           setSelected]           = useState<AdminListing | null>(null)
+  const [development,        setDevelopment]        = useState<AdminListing | null>(null)
   const [selectedEdit,       setSelectedEdit]       = useState<AdminListingEdit | null>(null)
   const [historyListing,     setHistoryListing]     = useState<AdminListing | null>(null)
   const [confirmArchive,     setConfirmArchive]     = useState<AdminListing | null>(null)
@@ -521,6 +534,13 @@ export function AdminListings() {
         tone="#0d9488"
       />
     )
+  }
+
+  if (development) {
+    return <Suspense fallback={<p role="status">{t('loading', { ns: 'development_inventory' })}</p>}>
+      <DevelopmentInventory key={development.id} listingId={development.id} listingTitle={development.title}
+        onBack={() => setDevelopment(null)} />
+    </Suspense>
   }
 
   if (editing && selected) {
@@ -910,6 +930,7 @@ export function AdminListings() {
                         onView={() => setSelected(l)}
                         onEdit={() => { setSelected(l); setEditing(true) }}
                         onHistory={() => setHistoryListing(l)}
+                        onDevelopment={canManageDevelopment(l) ? () => setDevelopment(l) : undefined}
                         onSetDeal={l.status === 'active' && !l.is_deal ? () => { setSetDealTarget(l); setSetDealValue(''); setSetDealType('pct') } : undefined}
                         onArchive={() => setConfirmArchive(l)}
                       />
@@ -941,6 +962,10 @@ export function AdminListings() {
                       </div>
                     </div>
                     <div className="text-[11px] text-dim mt-2">{t('listings_page.mobile_row_sub', { type: fmtType(l.type), time: fmtRelative(l.updated_at, t) })}</div>
+                    {canManageDevelopment(l) && <button type="button" className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-paper px-3 text-xs font-semibold text-ink focus-visible:outline-2 focus-visible:outline-coral"
+                      onClick={event => { event.stopPropagation(); setDevelopment(l) }}>
+                      <Building2 size={13} aria-hidden="true" /> {t('row_action', { ns: 'development_inventory' })}
+                    </button>}
                   </div>
                 </div>
               ))}

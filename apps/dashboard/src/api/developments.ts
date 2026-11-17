@@ -90,6 +90,8 @@ export type DevelopmentAction =
   | { action: 'withdraw' }
 
 const developmentPath = (listingId: string) => `/admin/developments/${encodeURIComponent(listingId)}`
+export const canManageDevelopment = ({ status, transaction }: { status: string; transaction: string }) =>
+  status === 'active' && (transaction === 'sale' || transaction === 'both')
 
 export async function getDevelopment(listingId: string, signal: AbortSignal): Promise<AdminDevelopment> {
   return (await client.get<AdminDevelopment>(developmentPath(listingId), { signal })).data
