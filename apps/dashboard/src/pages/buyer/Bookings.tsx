@@ -74,9 +74,9 @@ export function BuyerBookings() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-w-0 flex-col gap-5">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 bg-paper border border-line rounded-xl px-2 py-1.5 w-fit">
+      <div className="flex w-fit max-w-full flex-wrap items-center gap-1 rounded-xl border border-line bg-paper px-2 py-1.5">
         {TABS.map(t => (
           <button
             key={t.key}
@@ -84,7 +84,7 @@ export function BuyerBookings() {
               if (tab !== t.key) setOpenGuideId(null)
               setTab(t.key)
             }}
-            className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold border-0 cursor-pointer transition-colors ${
+            className={`min-h-11 max-w-full rounded-lg border-0 px-2.5 py-1.5 text-[13px] font-semibold cursor-pointer transition-colors sm:min-h-0 sm:px-3.5 ${
               tab === t.key ? 'text-white' : 'bg-transparent text-dim hover:text-ink'
             }`}
             style={tab === t.key ? { background: TONE } : undefined}
@@ -155,7 +155,7 @@ export function BuyerBookings() {
 
               return (
                 <div key={b.id}>
-                  <div className="flex items-start gap-4 px-5 py-4">
+                  <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 px-5 py-4 sm:flex sm:gap-4">
                     {/* Thumbnail */}
                     {thumb ? (
                       <div
@@ -170,7 +170,7 @@ export function BuyerBookings() {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13.5px] font-semibold text-ink truncate">
+                      <div className="break-words text-[13.5px] font-semibold text-ink sm:truncate">
                         {b.listing_title ?? 'Rental Property'}
                       </div>
                       <div className="flex items-center gap-1 text-[11.5px] text-dim mt-0.5 flex-wrap">
@@ -184,8 +184,8 @@ export function BuyerBookings() {
                     </div>
 
                     {/* Right side */}
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <div className="flex items-center gap-2">
+                    <div className="col-start-2 flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0 sm:flex-col sm:items-end sm:gap-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
                         {b.total_price != null && (
                           <span className="text-[13px] font-bold text-ink">{fmtPrice(b.total_price)}</span>
                         )}
@@ -195,7 +195,7 @@ export function BuyerBookings() {
                         <button
                           onClick={() => setConfirmCancelId(b.id)}
                           disabled={cancelling === b.id}
-                          className="flex items-center gap-1 text-[11.5px] font-semibold text-red-500 bg-transparent border border-red-200 rounded-lg px-2.5 py-1 cursor-pointer hover:bg-red-50 disabled:opacity-50"
+                          className="flex min-h-11 items-center gap-1 text-[11.5px] font-semibold text-red-500 bg-transparent border border-red-200 rounded-lg px-2.5 py-1 cursor-pointer hover:bg-red-50 disabled:opacity-50 sm:min-h-0"
                         >
                           <X size={11} strokeWidth={2.5} />
                           {cancelling === b.id ? t('bookings_page.cancelling') : t('bookings_page.cancel')}
