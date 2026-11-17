@@ -48,9 +48,10 @@ export function validDocumentTitle(title: string): boolean {
 
 export function transactionDocumentType(file: File): MediaType | null {
   if (!safeFileName(file.name.trim()) || file.size < 1 || file.size > TRANSACTION_DOCUMENT_BYTES) return null
-  if (file.type) return TRANSACTION_DOCUMENT_TYPES.includes(file.type as MediaType) ? file.type as MediaType : null
   const suffix = /\.([a-z]+)$/i.exec(file.name.trim())?.[1]?.toLowerCase()
-  return suffix && Object.prototype.hasOwnProperty.call(names, suffix) ? names[suffix as keyof typeof names] : null
+  if (!suffix || !Object.prototype.hasOwnProperty.call(names, suffix)) return null
+  const type = names[suffix as keyof typeof names]
+  return !file.type || file.type === type ? type : null
 }
 
 export async function prepareDocumentReservation(file: File, title: string, requestId: string, documentId?: string): Promise<DocumentReservation> {

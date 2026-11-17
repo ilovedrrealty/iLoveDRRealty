@@ -97,3 +97,17 @@ test('wrong room response fails closed and both locales include the same operati
   const copy = language => JSON.parse(fs.readFileSync(path.join(root, 'locale', language, 'transactions.json'), 'utf8'))
   assert.deepEqual(keys(copy('en')), keys(copy('es')))
 })
+
+test('room and invitation pages and audit cursors use only their scoped route selectors', async () => {
+  const { api, calls } = harness({ items: [] })
+  const { signal } = new AbortController()
+  await api.listTransactionRooms(3, signal)
+  await api.listTransactionInvitations(2, signal)
+  await api.getTransactionHistory(roomId, 158, signal)
+  assert.deepEqual(plain(calls.map(([method, url, options]) => [method, url, options.params])), [
+    ['get', '/transactions', { page: 3, page_size: 50 }],
+    ['get', '/transactions/invitations', { page: 2, page_size: 50 }],
+    ['get', `/transactions/${roomId}/history`, { before: 158, limit: 100 }],
+  ])
+  for (const call of calls) assert.equal(call.at(-1).signal, signal)
+})

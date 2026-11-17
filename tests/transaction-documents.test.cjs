@@ -72,6 +72,7 @@ test('a finalized replay never transfers bytes again and a different existing do
 test('only supported bounded files and plain names are valid, including missing browser MIME with a known extension', () => {
   const { api } = harness()
   assert.equal(api.transactionDocumentType(new File([bytes], 'check.PDF')), 'application/pdf')
+  assert.equal(api.transactionDocumentType(new File([bytes], 'check.png', { type: 'application/pdf' })), null)
   assert.equal(api.transactionDocumentType(new File([bytes], 'check.html', { type: 'text/html' })), null)
   assert.equal(api.transactionDocumentType(new File([bytes], '../check.pdf', { type: 'application/pdf' })), null)
   assert.equal(api.transactionDocumentType(new File([bytes], 'unsafe\u202ename.pdf', { type: 'application/pdf' })), null)

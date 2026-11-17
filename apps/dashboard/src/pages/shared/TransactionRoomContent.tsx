@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  canManageTransaction, getTransactionHistory, transactionAccessDenied, transactionTaskStatuses,
+  canManageTransaction, getTransactionHistory, transactionAccessDenied, transactionTaskStatuses, TRANSACTION_HISTORY_SIZE,
   type TransactionRoom,
 } from '../../api/transactions'
 import { NetworkDate, NETWORK_BUTTON, NETWORK_PRIMARY } from '../../components/network/NetworkShared'
@@ -28,7 +28,9 @@ type ContentProps = {
 
 function RoomHistory({ roomId, userId, onDenied }: { roomId: string; userId: string; onDenied: () => void }) {
   const { t } = useTranslation('transactions')
-  const read = useNetworkRead(`transaction-history:${userId}:${roomId}`, signal => getTransactionHistory(roomId, signal))
+  const [cursors, setCursors] = useState<number[]>([])
+  const before = cursors[cursors.length - 1]
+  const read = useNetworkRead(`transaction-history:${userId}:${roomId}:${before ?? 'latest'}`, signal => getTransactionHistory(roomId, before, signal))
   const denied = transactionAccessDenied(read.error)
   useEffect(() => {
     if (denied) onDenied()
@@ -39,16 +41,26 @@ function RoomHistory({ roomId, userId, onDenied }: { roomId: string; userId: str
     <button type="button" className={NETWORK_BUTTON} onClick={read.refresh}>{t('retry')}</button>
   </div>
   if (!read.data) return <p role="status" className="text-sm text-ink2">{t('loading')}</p>
-  if (!read.data.length) return <p className="text-sm text-ink2">{t('no_history')}</p>
-  return <ol className="space-y-3">
-    {[...read.data].sort((a, b) => b.sequence - a.sequence).map(entry => <li className={rowClass} key={entry.sequence}>
-      <div className="min-w-0">
-        <p className="break-words text-sm font-bold">{t(HISTORY_ACTIONS.has(entry.action) ? `event.${entry.action}` : 'event.other')}</p>
-        <p className="mt-1 text-xs text-ink2">{t(`role.${entry.actor_role}`)}</p>
-      </div>
-      <p className="text-xs text-ink2"><NetworkDate value={entry.created_at} showTime /></p>
-    </li>)}
-  </ol>
+  const items = [...read.data].sort((a, b) => b.sequence - a.sequence)
+  const oldest = items[items.length - 1]?.sequence
+  const hasOlder = oldest !== undefined && oldest > 1 && items.length >= TRANSACTION_HISTORY_SIZE
+  return <>
+    {items.length ? <ol className="space-y-3">
+      {items.map(entry => <li className={rowClass} key={entry.sequence}>
+        <div className="min-w-0">
+          <p className="break-words text-sm font-bold">{t(HISTORY_ACTIONS.has(entry.action) ? `event.${entry.action}` : 'event.other')}</p>
+          <p className="mt-1 text-xs text-ink2">{t(`role.${entry.actor_role}`)}</p>
+        </div>
+        <p className="text-xs text-ink2"><NetworkDate value={entry.created_at} showTime /></p>
+      </li>)}
+    </ol> : <p className="text-sm text-ink2">{t(before ? 'empty_page' : 'no_history')}</p>}
+    {before || hasOlder ? <nav aria-label={t('history_pages')} className="flex flex-wrap gap-2">
+      <button type="button" className={NETWORK_BUTTON} disabled={!before || read.checking}
+        onClick={() => setCursors(current => current.slice(0, -1))}>{t('newer_history')}</button>
+      <button type="button" className={NETWORK_BUTTON} disabled={!hasOlder || read.checking}
+        onClick={() => { if (oldest !== undefined) setCursors(current => [...current, oldest]) }}>{t('older_history')}</button>
+    </nav> : null}
+  </>
 }
 
 export function TransactionRoomContent({ room, userId, stale, refresh, onUpdated, onDenied }: ContentProps) {

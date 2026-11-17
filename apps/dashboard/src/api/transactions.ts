@@ -29,6 +29,9 @@ export type MilestoneFields = Omit<TransactionMilestone, 'id'>
 
 export const TRANSACTION_TITLE_LIMIT = 120
 export const TRANSACTION_WORK_TITLE_LIMIT = 160
+export const TRANSACTION_PAGE_SIZE = 50
+export const TRANSACTION_MAX_PAGE = 10_000
+export const TRANSACTION_HISTORY_SIZE = 100
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
 const PREFIX = '/transactions'
 const roomPath = (id: string) => `${PREFIX}/${encodeURIComponent(id)}`
@@ -73,13 +76,17 @@ export function transactionAccessDenied(error: unknown): boolean {
   return status === 401 || status === 403 || status === 404
 }
 
-export async function listTransactionRooms(signal: AbortSignal) {
-  const { data } = await client.get<{ items: TransactionRoomSummary[] }>(PREFIX, { signal })
+export async function listTransactionRooms(page: number, signal: AbortSignal) {
+  const { data } = await client.get<{ items: TransactionRoomSummary[] }>(PREFIX, {
+    params: { page, page_size: TRANSACTION_PAGE_SIZE }, signal,
+  })
   return data.items
 }
 
-export async function listTransactionInvitations(signal: AbortSignal) {
-  const { data } = await client.get<{ items: TransactionInvitation[] }>(`${PREFIX}/invitations`, { signal })
+export async function listTransactionInvitations(page: number, signal: AbortSignal) {
+  const { data } = await client.get<{ items: TransactionInvitation[] }>(`${PREFIX}/invitations`, {
+    params: { page, page_size: TRANSACTION_PAGE_SIZE }, signal,
+  })
   return data.items
 }
 
@@ -99,8 +106,10 @@ export async function getTransactionRoom(id: string, signal: AbortSignal) {
   return data
 }
 
-export async function getTransactionHistory(id: string, signal: AbortSignal) {
-  const { data } = await client.get<{ items: TransactionHistoryEntry[] }>(`${roomPath(id)}/history`, { signal })
+export async function getTransactionHistory(id: string, before: number | undefined, signal: AbortSignal) {
+  const { data } = await client.get<{ items: TransactionHistoryEntry[] }>(`${roomPath(id)}/history`, {
+    params: { before, limit: TRANSACTION_HISTORY_SIZE }, signal,
+  })
   return data.items
 }
 

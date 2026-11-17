@@ -28,13 +28,15 @@ export function TransactionDocumentUpload({ room, document, enabled, onCancel, o
   const [file, setFile] = useState<File | null>(null)
   const [badFile, setBadFile] = useState(false)
   const [pending, setPending] = useState<DocumentReservation | null>(null)
+  const [fileSelection, setFileSelection] = useState(0)
   const mutation = useTransactionMutation(onDenied, refresh)
+  const rejected = mutation.error === 'error_fields'
   useNetworkDraftGuard(Boolean(file || badFile || (!document && title.trim())), mutation.busy)
   const cancel = () => { if (!mutation.busy) onCancel() }
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (!enabled || !file || !validDocumentTitle(title)) return
+    if (!enabled || !file || !validDocumentTitle(title) || rejected) return
     void mutation.run(async signal => {
       const reservation = pending ?? await prepareDocumentReservation(file, title, crypto.randomUUID(), document?.id)
       signal.throwIfAborted()
@@ -54,7 +56,7 @@ export function TransactionDocumentUpload({ room, document, enabled, onCancel, o
       <div className="space-y-1">
         <label className="block text-sm font-semibold">
           {t('documents_ui.file')}
-          <input className="mt-2 block min-w-0 max-w-full text-sm" type="file" accept={TRANSACTION_DOCUMENT_TYPES.join(',')}
+          <input key={fileSelection} className="mt-2 block min-w-0 max-w-full text-sm" type="file" accept={TRANSACTION_DOCUMENT_TYPES.join(',')}
             disabled={!enabled || mutation.busy || Boolean(pending)} onChange={event => {
               const selected = event.target.files?.[0] ?? null
               const invalid = Boolean(selected && !transactionDocumentType(selected))
@@ -66,13 +68,20 @@ export function TransactionDocumentUpload({ room, document, enabled, onCancel, o
         <p className="text-xs text-ink2">{t('documents_ui.file_help')}</p>
       </div>
       {badFile ? <p role="alert" className="text-sm text-red-800">{t('documents_ui.invalid_file')}</p> : null}
-      {mutation.error ? <p role="alert" className="text-sm text-red-800">{t(mutation.error)}</p> : null}
+      {mutation.error ? <p role="alert" className="text-sm text-red-800">{t(rejected ? 'documents_ui.upload_rejected' : mutation.error)}</p> : null}
       {mutation.busy ? <p role="status" className="text-sm text-ink2">{t('documents_ui.uploading')}</p> : null}
-      {!mutation.busy && pending ? <p className="text-sm text-ink2">{t('documents_ui.retry_same_help')}</p> : null}
+      {!mutation.busy && pending && !rejected ? <p className="text-sm text-ink2">{t('documents_ui.retry_same_help')}</p> : null}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className={NETWORK_PRIMARY} disabled={!enabled || mutation.busy || !file || !validDocumentTitle(title)}>
+        {rejected ? <button type="button" className={NETWORK_PRIMARY} disabled={!enabled} onClick={() => {
+          setFile(null)
+          setPending(null)
+          setBadFile(false)
+          setFileSelection(previous => previous + 1)
+          mutation.clearError()
+        }}>{t('documents_ui.choose_another')}</button> : <button type="submit" className={NETWORK_PRIMARY}
+          disabled={!enabled || mutation.busy || !file || !validDocumentTitle(title)}>
           {t(pending ? 'documents_ui.retry_same' : 'documents_ui.submit')}
-        </button>
+        </button>}
         <button type="button" className={NETWORK_BUTTON} onClick={cancel} disabled={mutation.busy}>{t('cancel')}</button>
       </div>
     </form>

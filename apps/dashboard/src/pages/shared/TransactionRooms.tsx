@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   acceptTransactionInvitation, createTransactionRoom, getTransactionRoom, listTransactionInvitations,
   listTransactionRooms, transactionAccessDenied, transactionForLead, transactionOpenId, TRANSACTION_TITLE_LIMIT,
+  TRANSACTION_MAX_PAGE, TRANSACTION_PAGE_SIZE,
   type TransactionRoom,
 } from '../../api/transactions'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkDate, useNetworkDraftGuard } from '../../components/network/NetworkShared'
@@ -28,11 +29,26 @@ function ReadState({ read }: { read: NetworkRead<unknown> }) {
   return null
 }
 
+function RoomPagination({ label, page, count, move, busy }: {
+  label: string; page: number; count: number | undefined; move: (value: number) => void; busy: boolean
+}) {
+  const { t } = useTranslation('transactions')
+  if (page === 1 && (count ?? 0) < TRANSACTION_PAGE_SIZE) return null
+  return <nav aria-label={label} className="flex min-w-0 flex-wrap items-center gap-2">
+    <button type="button" disabled={busy || page <= 1} className={NETWORK_BUTTON} onClick={() => move(page - 1)}>{t('previous_page')}</button>
+    <span role="status" className="text-sm text-ink2">{t('page', { page })}</span>
+    <button type="button" disabled={busy || page >= TRANSACTION_MAX_PAGE || (count ?? 0) < TRANSACTION_PAGE_SIZE}
+      className={NETWORK_BUTTON} onClick={() => move(page + 1)}>{t('next_page')}</button>
+  </nav>
+}
+
 function RoomIndex({ user, open }: { user: UserInfo; open: (id: string) => void }) {
   const { t } = useTranslation('transactions')
   const [generation, setGeneration] = useState(0)
-  const rooms = useNetworkRead(`transactions:${user.id}:${generation}`, listTransactionRooms)
-  const invitations = useNetworkRead(`transaction-invitations:${user.id}:${generation}`, listTransactionInvitations)
+  const [roomPage, setRoomPage] = useState(1)
+  const [invitationPage, setInvitationPage] = useState(1)
+  const rooms = useNetworkRead(`transactions:${user.id}:${generation}:${roomPage}`, signal => listTransactionRooms(roomPage, signal))
+  const invitations = useNetworkRead(`transaction-invitations:${user.id}:${generation}:${invitationPage}`, signal => listTransactionInvitations(invitationPage, signal))
   const [accepting, setAccepting] = useState<string | null>(null)
   const [accepted, setAccepted] = useState<{ invitation: string; room: string } | null>(null)
   function refresh() { rooms.refresh(); invitations.refresh() }
@@ -56,7 +72,7 @@ function RoomIndex({ user, open }: { user: UserInfo; open: (id: string) => void 
     <section className={surface} aria-labelledby="transaction-list">
       <h2 id="transaction-list" className="text-lg font-bold">{t('your_rooms')}</h2>
       <ReadState read={rooms} />
-      {rooms.data?.length === 0 ? <p className="text-sm text-ink2">{t('no_rooms')}</p> : null}
+      {rooms.data?.length === 0 ? <p className="text-sm text-ink2">{t(roomPage === 1 ? 'no_rooms' : 'empty_page')}</p> : null}
       {rooms.data?.length ? <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {rooms.data.map(room => <li key={room.id} className="min-w-0 rounded-xl border border-line bg-white p-4">
           <h3 className="break-words font-bold text-ink">{room.title}</h3>
@@ -64,6 +80,8 @@ function RoomIndex({ user, open }: { user: UserInfo; open: (id: string) => void 
           <button type="button" className={NETWORK_BUTTON} onClick={() => open(room.id)}>{t('open_room')}</button>
         </li>)}
       </ul> : null}
+      {!transactionAccessDenied(rooms.error) ? <RoomPagination label={t('rooms_pages')} page={roomPage} count={rooms.data?.length}
+        move={setRoomPage} busy={rooms.checking || mutation.busy} /> : null}
     </section>
     <section className={surface} aria-labelledby="transaction-invitations">
       <h2 id="transaction-invitations" className="text-lg font-bold">{t('invitations')}</h2>
@@ -73,7 +91,7 @@ function RoomIndex({ user, open }: { user: UserInfo; open: (id: string) => void 
         <p role="status" className="text-sm">{t('accepted')}</p>
         <button type="button" className={NETWORK_BUTTON} onClick={() => open(accepted.room)}>{t('open_accepted_room')}</button>
       </div> : null}
-      {pending?.length === 0 ? <p className="text-sm text-ink2">{t('no_invitations')}</p> : null}
+      {pending?.length === 0 ? <p className="text-sm text-ink2">{t(invitationPage === 1 ? 'no_invitations' : 'empty_page')}</p> : null}
       {pending?.length ? <ul className="space-y-3">
         {pending.map(invitation => <li key={invitation.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white p-3 text-sm">
           <div><p className="font-semibold">{t('professional_invitation')}</p><NetworkDate value={invitation.invited_at} showTime /></div>
@@ -83,6 +101,8 @@ function RoomIndex({ user, open }: { user: UserInfo; open: (id: string) => void 
           }}>{t('accept_invitation')}</button>
         </li>)}
       </ul> : null}
+      {!transactionAccessDenied(invitations.error) ? <RoomPagination label={t('invitation_pages')} page={invitationPage}
+        count={invitations.data?.length} move={setInvitationPage} busy={invitations.checking || mutation.busy} /> : null}
     </section>
     {accepting ? <ProfessionalDialog title={t('accept_invitation')} closeLabel={t('close_dialog')} onClose={() => {
       if (!mutation.busy) setAccepting(null)
