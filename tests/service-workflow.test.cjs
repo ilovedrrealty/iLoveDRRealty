@@ -14,6 +14,11 @@ const recipient = changes => ({id:C,user_code:72,member_alias:'Synthetic provide
 const managed = changes => ({id:A,view:'managed',version:1,status:'open',source:{property_id:B,listing_id:null,title:'Private synthetic property',property_class:'house_villa'},category_id:'air_conditioning',title:'Synthetic request',brief:'Shared synthetic brief',area_label:'Synthetic coarse area',requester_alias:'Synthetic requester',desired_start_on:null,created_at:NOW,updated_at:NOW,recipients:[recipient()],project_id:null,can_open_project:false,capabilities:{can_cancel:true,can_compare:true,can_award:true},...changes})
 const received = changes => ({id:A,view:'received',category_id:'air_conditioning',property_class:'house_villa',title:'Shared synthetic request',brief:'Shared synthetic brief',area_label:'Synthetic coarse area',requester_alias:'Synthetic requester',desired_start_on:'2026-11-10',created_at:NOW,recipient:{id:C,status:'accepted',version:2},current_proposal:proposal(),project_id:null,can_open_project:false,capabilities:{can_accept:false,can_decline:true,can_quote:true,can_withdraw:true,can_accept_counter:false,can_decline_counter:false},...changes})
 const prefs = changes => ({service_opt_in:false,member_alias:'',category_ids:[],property_class_ids:[],version:0,updated_at:null,can_manage:true,...changes})
+const referral = changes => ({
+  id: C, version: 2, status: 'offered', category_id: 'air_conditioning', property_class: 'house_villa',
+  area_id: 'cabarete', language: 'es', relationship: 'worked_together', created_at: NOW, updated_at: NOW,
+  provider_alias: null, request_id: null, can_offer: false, can_accept: true, can_decline: true, can_revoke: false, ...changes,
+})
 const page = (items,extra={}) => ({items,total:items.length,page:1,page_size:30,...extra})
 const requestInput = changes => ({submission_id:E,property_id:B,listing_id:null,category_id:'air_conditioning',property_class:'house_villa',title:'Synthetic request',brief:'Deliberately shared synthetic scope',area_label:'Synthetic area',requester_alias:'Synthetic requester',desired_start_on:null,recipient_user_codes:[72],shared_brief_acknowledged:true,...changes})
 function harness(initial) {
@@ -72,6 +77,66 @@ test('received projection rejects private dossiers, competitors and global activ
     h.reply(received(extra));await assert.rejects(h.api.getServiceRequest(A,'received'),/Invalid private service data/)
   }
   h.reply(managed());await assert.rejects(h.api.getServiceRequest(A,'received'),/Invalid private service data/)
+})
+test('referral inbox withholds the quote request until an accepted referral still grants access', async () => {
+  const offered = referral()
+  const accepted = referral({ status: 'accepted', request_id: A, can_accept: false, can_decline: false })
+  const h = harness(page([offered, { ...accepted, id: D }]))
+  const rows = await h.api.getReceivedServiceReferrals()
+  assert.equal(rows.items[0].request_id, null)
+  assert.equal(rows.items[1].request_id, A)
+  assert.equal(h.calls[0].url, '/property-network/service-referrals')
+  assert.deepEqual(plain(h.calls[0].args[0].params), { view: 'received', page: 1 })
+  for (const leaked of [
+    { request_id: A }, { provider_alias: 'Unneeded private alias' }, { brief: 'PRIVATE' }, { can_revoke: true },
+    { status: 'proposed', can_accept: false, can_decline: false },
+    { status: 'revoked', request_id: A, can_accept: false, can_decline: false },
+  ]) {
+    h.reply(page([{ ...offered, ...leaked }]))
+    await assert.rejects(h.api.getReceivedServiceReferrals(), /Invalid private service data/)
+  }
+})
+test('request referral list and candidate picker bind the current request and return safe aliases', async () => {
+  const pending = referral({
+    status: 'proposed', request_id: A, provider_alias: 'Synthetic consented alias',
+    can_offer: true, can_accept: false, can_decline: false, can_revoke: true,
+  })
+  const h = harness(page([pending], { can_suggest: false, can_offer: true }))
+  assert.equal((await h.api.getRequestReferrals(A)).items[0].provider_alias, 'Synthetic consented alias')
+  await assert.rejects(h.api.getRequestReferrals(B), /Invalid private service data/)
+  const candidate = { user_code: 72, member_alias: 'Synthetic consented alias', category_ids: ['air_conditioning'] }
+  h.reply(page([candidate]))
+  assert.deepEqual(plain((await h.api.getReferralServiceProviders(A, 'air_conditioning', { area_id: 'cabarete', language: 'es' })).items), [candidate])
+  assert.equal(h.calls.at(-1).url, '/property-network/service-requests/' + A + '/referral-providers')
+  assert.deepEqual(plain(h.calls.at(-1).args[0].params), { area_id: 'cabarete', language: 'es', page: 1 })
+  h.reply(page([{ ...candidate, email: 'UNEXPECTED' }]))
+  await assert.rejects(h.api.getReferralServiceProviders(A, 'air_conditioning', { area_id: 'cabarete' }), /Invalid private service data/)
+})
+test('referral approval is explicit and checking submission status only reads the same key', async () => {
+  const managerRow = referral({
+    request_id: A, provider_alias: 'Synthetic consented alias', can_accept: false, can_decline: false, can_revoke: true,
+  })
+  const h = harness(managerRow)
+  await h.api.runServiceReferralAttempt({
+    action: 'create', request_id: A, submission_id: D, provider_user_code: 72, relationship: 'worked_together',
+    criteria: { area_id: 'cabarete', language: 'es' }, share_confirmed: true,
+  })
+  assert.deepEqual(plain(h.calls[0].args[0]), {
+    submission_id: D, provider_user_code: 72, area_id: 'cabarete', language: 'es',
+    relationship: 'worked_together', share_confirmed: true,
+  })
+  const attempt = { action: 'offer', referral_id: C, submission_id: E, expected_version: 1 }
+  await h.api.runServiceReferralAttempt(attempt)
+  await h.api.getServiceReferralSubmission(attempt)
+  assert.deepEqual(h.calls.map(call => call.method), ['post', 'post', 'get'])
+  assert.deepEqual(plain(h.calls[1].args[0]), { submission_id: E, expected_version: 1, share_confirmed: true })
+  assert.equal(h.calls[2].url, '/property-network/service-referral-submissions/' + E)
+  assert.equal(h.calls[2].args[0].withCredentials, true)
+  h.reply({ ...managerRow, id: D })
+  await assert.rejects(h.api.getServiceReferralSubmission(attempt), /Invalid private service data/)
+  h.reply(referral({ status: 'accepted', request_id: A, can_accept: false, can_decline: false }))
+  await h.api.runServiceReferralAttempt({ ...attempt, action: 'accept' })
+  assert.deepEqual(plain(h.calls.at(-1).args[0]), { submission_id: E, expected_version: 1, share_confirmed: false })
 })
 test('managed projection checks source XOR, unique recipients and strict capabilities',async()=>{
   const h=harness(managed());assert.equal((await h.api.getServiceRequest(A,'managed')).source.property_id,B)

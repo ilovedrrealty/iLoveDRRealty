@@ -160,9 +160,10 @@ test('only non-Admin dashboards offer their personal saved-professionals tab', (
     './NetworkShared': shared(),
     './ServicePreferences': { ServicePreferences: never }, './ServiceRequestCreate': { ServiceRequestCreate: never },
     './ServiceRequestDetail': { ServiceRequestDetail: never }, './ServiceFavorites': { ServiceFavorites: never },
-    './ServiceOperations': { ServiceOperations: never },
+    './ServiceOperations': { ServiceOperations: never }, './ServiceReferrals': { ServiceReferrals: never },
   })
   const dashboard = role => renderToStaticMarkup(React.createElement(ServiceWorkflow, { options: {}, role, actorId: id, actorCode: 10, onProject: never }))
+  assert.match(dashboard('owner'), /<button[^>]*>Private referrals<\/button>/)
   assert.match(dashboard('owner'), /<button[^>]*>Saved professionals<\/button>/)
   assert.match(dashboard('buyer'), /<button[^>]*>Saved professionals<\/button>/)
   assert.doesNotMatch(dashboard('admin'), /Saved professionals/)

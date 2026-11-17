@@ -12,6 +12,43 @@ export type ReviewedServiceCriteria = { area_id: string; language?: string }
 export type ReviewedServiceSearch = ReviewedServiceCriteria & {
   property_id?: string; listing_id?: string; category_id: string; property_class: string
 }
+const referralRelationships = ['worked_together', 'know_their_work', 'no_prior_work'] as const
+const referralStates = ['proposed', 'offered', 'accepted', 'declined', 'revoked'] as const
+const referralActions = ['offer', 'accept', 'decline', 'revoke'] as const
+export type ReferralRelationship = typeof referralRelationships[number]
+export type ReferralAction = typeof referralActions[number]
+export type ServiceReferral = {
+  id: string
+  version: number
+  status: typeof referralStates[number]
+  category_id: string
+  property_class: typeof PRIVATE_PROPERTY_CLASSES[number]
+  area_id: string
+  language: string | null
+  relationship: ReferralRelationship
+  created_at: string
+  updated_at: string
+  provider_alias: string | null
+  request_id: string | null
+  can_offer: boolean
+  can_accept: boolean
+  can_decline: boolean
+  can_revoke: boolean
+}
+export type ServiceReferralAttempt = {
+  submission_id: string
+} & ({
+  action: 'create'
+  request_id: string
+  provider_user_code: number
+  criteria: ReviewedServiceCriteria
+  relationship: ReferralRelationship
+  share_confirmed: boolean
+} | {
+  action: ReferralAction
+  referral_id: string
+  expected_version: number
+})
 export type ProposalTerms = { amount: string; currency: 'USD' | 'DOP'; pricing_basis: 'fixed' | 'estimate'; scope_text: string; exclusions: string; estimated_days: number | null; valid_until: string }
 export type ServiceProposal = ProposalTerms & { id: string; recipient_id: string; revision_no: number; parent_proposal_id: string | null; kind: 'provider_quote' | 'owner_counter'; status: 'submitted' | 'accepted' | 'declined' | 'withdrawn' | 'superseded' | 'closed' | 'awarded'; version: number; is_expired: boolean; created_at: string }
 export type ManagedRecipient = { id: string; user_code: number; member_alias: string; status: string; version: number; current_proposal: ServiceProposal | null; capabilities: { can_revoke: boolean; can_counter: boolean; can_award: boolean; can_withdraw: boolean } }
@@ -147,6 +184,98 @@ export function getReviewedServiceProviders(search: ReviewedServiceSearch, pageN
     return candidate.category_ids.includes(category_id) ? candidate : invalid()
   }, item => item.user_code, signal)
 }
+
+type ReferralScope = { requestId: string } | 'received'
+export function decodeServiceReferral(raw: unknown, scope?: ReferralScope): ServiceReferral {
+  const row = exact(raw, [
+    'id', 'version', 'status', 'category_id', 'property_class', 'area_id', 'language', 'relationship',
+    'created_at', 'updated_at', 'provider_alias', 'request_id', 'can_offer', 'can_accept', 'can_decline', 'can_revoke',
+  ])
+  const status = choice(row.status, referralStates)
+  const requestId = nullableId(row.request_id)
+  const alias = row.provider_alias === null ? null : text(row.provider_alias, 120, 1)
+  const canOffer = bool(row.can_offer), canAccept = bool(row.can_accept)
+  const canDecline = bool(row.can_decline), canRevoke = bool(row.can_revoke)
+  if (scope === 'received' && (status === 'proposed' || alias !== null || canOffer || canRevoke
+      || (requestId !== null && status !== 'accepted'))) invalid()
+  if (scope && scope !== 'received' && requestId !== uuid(scope.requestId)) invalid()
+  if ((canOffer && status !== 'proposed') || ((canAccept || canDecline) && status !== 'offered')) invalid()
+  return {
+    id: uuid(row.id), version: int(row.version, 1), status, request_id: requestId, provider_alias: alias,
+    category_id: slug(row.category_id), property_class: choice(row.property_class, PRIVATE_PROPERTY_CLASSES),
+    area_id: slug(row.area_id), language: row.language === null ? null : slug(row.language),
+    relationship: choice(row.relationship, referralRelationships),
+    created_at: timestamp(row.created_at), updated_at: timestamp(row.updated_at),
+    can_offer: canOffer, can_accept: canAccept, can_decline: canDecline, can_revoke: canRevoke,
+  }
+}
+
+export function getReferralServiceProviders(requestId: string, categoryId: string, criteria: ReviewedServiceCriteria,
+    pageNumber = 1, signal?: AbortSignal) {
+  const selection = reviewedServiceCriteria(criteria)
+  const params: Record<string, string | number> = { ...selection, page: pageNumber }
+  const requiredCategory = slug(categoryId)
+  return page(PREFIX + '/service-requests/' + uuid(requestId) + '/referral-providers', params, raw => {
+    const candidate = provider(raw)
+    return candidate.category_ids.includes(requiredCategory) ? candidate : invalid()
+  }, item => item.user_code, signal)
+}
+
+export async function getRequestReferrals(requestId: string, pageNumber = 1, signal?: AbortSignal) {
+  const scope = { requestId: uuid(requestId) }
+  const raw = exact((await client.get(PREFIX + '/service-requests/' + scope.requestId + '/referrals', {
+    ...config(signal), params: { page: int(pageNumber, 1, 1000) },
+  })).data, ['items', 'total', 'page', 'page_size', 'can_suggest', 'can_offer'])
+  const items = list(raw.items, 30, item => decodeServiceReferral(item, scope))
+  unique(items.map(item => item.id))
+  const total = int(raw.total, items.length)
+  if (int(raw.page) !== pageNumber || int(raw.page_size) !== 30) invalid()
+  return { items, total, page: pageNumber, page_size: 30, can_suggest: bool(raw.can_suggest), can_offer: bool(raw.can_offer) }
+}
+
+export function getReceivedServiceReferrals(pageNumber = 1, signal?: AbortSignal) {
+  return page(PREFIX + '/service-referrals', { view: 'received', page: pageNumber },
+    item => decodeServiceReferral(item, 'received'), item => item.id, signal)
+}
+
+export function prepareServiceReferralAttempt(attempt: ServiceReferralAttempt) {
+  try {
+    const submission_id = uuid(attempt.submission_id)
+    if (attempt.action === 'create') {
+      const requestId = uuid(attempt.request_id)
+      return { path: PREFIX + '/service-requests/' + requestId + '/referrals', body: {
+        submission_id, provider_user_code: int(attempt.provider_user_code, 1, 2147483647),
+        ...reviewedServiceCriteria(attempt.criteria), relationship: choice(attempt.relationship, referralRelationships),
+        share_confirmed: bool(attempt.share_confirmed),
+      } }
+    }
+    const action = choice(attempt.action, referralActions)
+    return {
+      path: PREFIX + '/service-referrals/' + uuid(attempt.referral_id) + '/' + action,
+      body: { submission_id, expected_version: int(attempt.expected_version, 1), share_confirmed: action === 'offer' },
+    }
+  } catch {
+    throw new ServiceInputError()
+  }
+}
+
+function bindReferralResult(raw: unknown, attempt: ServiceReferralAttempt) {
+  if (attempt.action === 'create') return decodeServiceReferral(raw, { requestId: attempt.request_id })
+  const scope = attempt.action === 'accept' || attempt.action === 'decline' ? 'received' : undefined
+  const row = decodeServiceReferral(raw, scope)
+  return row.id === uuid(attempt.referral_id) ? row : invalid()
+}
+
+export async function runServiceReferralAttempt(attempt: ServiceReferralAttempt, signal?: AbortSignal) {
+  const { path, body } = prepareServiceReferralAttempt(attempt)
+  return bindReferralResult((await client.post(path, body, config(signal))).data, attempt)
+}
+
+export async function getServiceReferralSubmission(attempt: ServiceReferralAttempt, signal?: AbortSignal) {
+  const path = PREFIX + '/service-referral-submissions/' + uuid(attempt.submission_id)
+  return bindReferralResult((await client.get(path, config(signal))).data, attempt)
+}
+
 export async function getServiceRequests(view:'managed'|'received',status:string,pageNumber=1,signal?:AbortSignal):Promise<NetworkPage<ServiceRequest>&{can_create:boolean}> {
   choice(view,['managed','received']);choice(status,view==='managed'?['all','open','awarded','cancelled']:['all','actionable','closed','awarded'])
   const params={view,status,page:int(pageNumber,1,1000)},r=object((await client.get(PREFIX+'/service-requests',{...config(signal),params})).data)

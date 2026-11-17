@@ -11,6 +11,7 @@ import { ServiceMutationStatus, useServiceMutation } from './ServiceWorkflowShar
 import { ServiceProposalCard, ServiceProposalFields, termsDraft, termsInput, validTerms, type TermsDraft } from './ServiceProposalFields'
 import { ServiceWorkPanel } from './ServiceWorkPanel'
 import { ServiceConversationPanel } from './ServiceConversationPanel'
+import { ServiceReferrals } from './ServiceReferrals'
 
 type Editor={operation:'provider_quote'|'owner_counter'|'request_award';recipientId:string;requestVersion:number|null;recipientVersion:number;proposalId:string|null;proposalVersion:number|null;terms:TermsDraft;projectTitle:string;projectSummary:string;ack:boolean}
 function thread(row:ServiceRequest,id:string) {
@@ -122,6 +123,9 @@ export function ServiceRequestDetail({id,view,role,options,onBack,onProject,onRe
       {!mutation.conflicted?<><NetworkPanel title={row.title}><p className="text-sm font-semibold">{row.view==='managed'?t('service.request_states.'+row.status):t('service.recipient_states.'+row.recipient.status)}</p><p className="mt-2 text-sm">{category?professionalLabel(category.label,i18n.language):row.category_id}</p><p className="mt-3 break-words whitespace-pre-wrap">{row.brief}</p><dl className="mt-4 grid gap-2 text-sm"><div><dt className="font-semibold">{t('service.requester_alias')}</dt><dd>{row.requester_alias}</dd></div><div><dt className="font-semibold">{t('service.coarse_area')}</dt><dd>{row.area_label||'—'}</dd></div><div><dt className="font-semibold">{t('service.desired_start')}</dt><dd>{row.desired_start_on?<NetworkDate value={row.desired_start_on}/>: '—'}</dd></div></dl><p className="mt-2 text-xs text-dim">{t('service.not_appointment')}</p>{row.view==='managed'?<p className="mt-4 text-sm">{t('service.source')}: {row.source.title}</p>:null}
         {row.can_open_project&&row.project_id?<button className={NETWORK_PRIMARY+' mt-4'} disabled={locked||editor!==null} onClick={()=>{if(row.project_id&&allowNetworkNavigation())onProject(row.project_id)}}>{t('service.open_project')}</button>:null}
       </NetworkPanel>
+      {row.view==='managed'||row.recipient.status==='accepted'?<ServiceReferrals key={id+':'+view} request={row}
+        options={options} blocked={!fresh||locked||editor!==null}
+        onChange={()=>{read.refresh();comparison.refresh();events.refresh()}}/>:null}
       {canReadWork?<ServiceWorkPanel key={`${id}:${workProjectId}:${view}`} requestId={id} projectId={workProjectId} parentFresh={fresh&&workAccessFresh&&!locked&&!editor} reviewSender={reviewSender} rebookScope={rebookScope} onRebook={onRebook} onProject={onProject}/>:null}
       {workProjectId&&showAgreement&&conversationSender?<ServiceConversationPanel key={`${id}:${workProjectId}:${conversationSender}`} requestId={id} sender={conversationSender} readOnly={retainedAgreement} parentFresh={fresh&&workAccessFresh&&!locked&&!editor}/>:null}
       {row.view === 'received' && canOpenNegotiation(row.recipient.id) ? <ServiceConversationPanel

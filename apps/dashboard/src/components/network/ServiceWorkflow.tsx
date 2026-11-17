@@ -11,8 +11,9 @@ import { ServiceRequestCreate } from './ServiceRequestCreate'
 import { ServiceRequestDetail } from './ServiceRequestDetail'
 import { ServiceFavorites } from './ServiceFavorites'
 import { ServiceOperations } from './ServiceOperations'
+import { ServiceReferrals } from './ServiceReferrals'
 
-const SERVICE_TABS = ['managed', 'received', 'preferences'] as const
+const SERVICE_TABS = ['managed', 'received', 'referrals', 'preferences'] as const
 type ServiceTab = typeof SERVICE_TABS[number] | 'favorites' | 'operations'
 type OpenRequest = { id: string; view: ServiceOperationsView; tab: ServiceTab }
 
@@ -41,13 +42,14 @@ export function ServiceWorkflow({options,role,actorId,actorCode,onProject}:{opti
   function navigate(next:ServiceTab){if(allowNetworkNavigation()){setTab(next);setDetail(null);setDraft(null)}}
   function closeDraft() { if (allowNetworkNavigation()) setDraft(null) }
   function openRequest(id: string, view: ServiceOperationsView) { setDraft(null); setDetail({ id, view, tab }) }
-  return <div className="min-w-0 space-y-5"><h2 ref={heading} tabIndex={-1} className="text-xl font-semibold">{t('main.services')}</h2><p className="text-sm text-ink2">{t('service.intro')}</p><nav className="flex flex-wrap gap-2" aria-label={t('service.navigation')}>{tabs.map(value=><button key={value} className={tab===value?NETWORK_PRIMARY:NETWORK_BUTTON} aria-current={tab===value?'page':undefined} onClick={()=>navigate(value)}>{t(value==='favorites'?'favorites.title':value==='operations'?'operations.title':'service.'+value)}</button>)}</nav>
+  return <div className="min-w-0 space-y-5"><h2 ref={heading} tabIndex={-1} className="text-xl font-semibold">{t('main.services')}</h2><p className="text-sm text-ink2">{t('service.intro')}</p><nav className="flex flex-wrap gap-2" aria-label={t('service.navigation')}>{tabs.map(value=><button key={value} className={tab===value?NETWORK_PRIMARY:NETWORK_BUTTON} aria-current={tab===value?'page':undefined} onClick={()=>navigate(value)}>{t(value==='favorites'?'favorites.title':value==='operations'?'operations.title':value==='referrals'?'referrals.title':'service.'+value)}</button>)}</nav>
     {tab==='favorites'?<ServiceFavorites key={actorId} actorId={actorId}/>:tab==='preferences'?<ServicePreferences options={options} actorId={actorId}/>:currentDraft?<>
       <button className={NETWORK_BUTTON} onClick={closeDraft}>{t(rebook?'rebook.back':'service.back')}</button>
       <ServiceRequestCreate key={rebook?.request_id??'new'} options={options} role={role} actorCode={actorCode} rebook={rebook} onCreated={id=>openRequest(id,'managed')}/>
     </>:currentDetail?<ServiceRequestDetail key={`${tab}:${currentDetail.view}:${currentDetail.id}`} id={currentDetail.id}
       view={currentDetail.view} role={role} options={options} onBack={()=>setDetail(null)} onProject={onProject} onRebook={setDraft}
-      backLabel={tab==='operations'?t('operations.back'):undefined}/>:tab==='operations'?
+      backLabel={tab==='operations'?t('operations.back'):tab==='referrals'?t('referrals.back'):undefined}/>:tab==='referrals'?
+      <ServiceReferrals key={actorId} options={options} openRequest={id=>openRequest(id,'received')}/>:tab==='operations'?
       <ServiceOperations actorId={actorId} scope={operationsScope} onScope={setOperationsScope} onOpen={openRequest}/>:<ServiceRequestList key={tab} view={tab} onOpen={id=>openRequest(id,tab)} onCreate={()=>setDraft('new')}/>}
   </div>
 }
