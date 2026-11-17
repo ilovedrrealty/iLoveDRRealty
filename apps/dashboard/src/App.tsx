@@ -6,7 +6,7 @@ import DashLayout from './layouts/DashLayout'
 import Dashboard from './pages/Dashboard'
 import AdminDash from './pages/AdminDash'
 import { landingBaseUrl } from './lib/siteUrls'
-import { readShortlistGrant } from '../../../packages/shortlist-links'
+import { dashboardLoginHint } from '../../../packages/dashboard-links'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 
@@ -24,16 +24,15 @@ function DashboardPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { data: user, loading, error, updateUser } = useCurrentUser()
-  const shortlistGrant = view === 'shortlists' ? readShortlistGrant(searchParams, 'grant') : null
+  const loginHint = dashboardLoginHint(view, searchParams)
 
   useEffect(() => {
     if (!loading && (error || !user)) {
-      const destination = shortlistGrant
-        ? `?shortlist=${shortlistGrant}`
-        : view === 'professional-profile' ? '?join=professional' : view === 'professional-directory' ? '?directory=professionals' : ''
+      const destination = loginHint ??
+        (view === 'professional-profile' ? '?join=professional' : view === 'professional-directory' ? '?directory=professionals' : '')
       window.location.href = `${LANDING_URL.replace(/\/$/, '')}/login${destination}`
     }
-  }, [loading, user, error, view, shortlistGrant])
+  }, [loading, user, error, view, loginHint])
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-paper">

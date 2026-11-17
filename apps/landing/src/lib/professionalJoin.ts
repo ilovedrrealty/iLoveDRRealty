@@ -1,4 +1,4 @@
-import { readShortlistGrant, shortlistPath } from '../../../../packages/shortlist-links'
+import { dashboardDestination } from '../../../../packages/dashboard-links'
 
 const JOIN_KEY = 'ildr.professional-join.v1'
 const DIRECTORY_KEY = 'ildr.professional-directory.v1'
@@ -41,8 +41,8 @@ export function professionalAuthParams(): Record<string, string> | undefined {
 /** A join hint selects a fixed screen. It never changes account permissions. */
 export function dashboardAfterAuth(dashboardURL: string): string {
   if (typeof window !== 'undefined') {
-    const grant = readShortlistGrant(new URLSearchParams(window.location.search), 'shortlist')
-    if (grant) return new URL(shortlistPath(grant), dashboardURL).toString()
+    const destination = dashboardDestination(new URLSearchParams(window.location.search))
+    if (destination) return new URL(destination, dashboardURL).toString()
   }
   const destination = rememberProfessionalJoin() ? '/professional-profile' : rememberProfessionalDirectory() ? '/professional-directory' : null
   if (!destination) return dashboardURL
