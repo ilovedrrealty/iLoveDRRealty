@@ -154,7 +154,7 @@ function LeadStatusBadge({ lead }: { lead: Lead }) {
 }
 
 
-export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: string) => void } = {}) {
+export function AdminLeads({ onOpenDelivery, onOpenTransaction }: { onOpenDelivery?: (leadId?: string) => void; onOpenTransaction?: (leadId: string) => void } = {}) {
   const { t } = useTranslation('admin')
   const [leads,        setLeads]        = useState<Lead[]>([])
   const [realtors,     setRealtors]     = useState<AdminAgent[]>([])
@@ -506,6 +506,7 @@ export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: stri
         onStatusUpdated={handleStatusUpdate}
         onOpenDelivery={onOpenDelivery}
         onOpenValuation={setValuationLeadId}
+        onOpenTransaction={onOpenTransaction}
       />
     </div>
   )

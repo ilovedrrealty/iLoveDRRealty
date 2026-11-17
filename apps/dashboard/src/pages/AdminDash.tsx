@@ -20,6 +20,7 @@ import { Editorial } from './admin/Editorial'
 import { AdminProfessionals } from './admin/Professionals'
 import { ProfessionalProfile } from './shared/ProfessionalProfile'
 import { Viewings } from './shared/Viewings'
+import { TransactionRooms } from './shared/TransactionRooms'
 import { Resources } from './buyer/Resources'
 import ProfessionalDirectory from './shared/ProfessionalDirectory'
 import { ToolHub } from './shared/ToolHub'
@@ -34,15 +35,16 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
 
   const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'professional-profile'].includes(view) ? view : 'home'
   const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network', 'viewings', 'editorial'].includes(view)
-  const title = sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
-  const sub = sharedTitle ? '' : t(`pages.${pageKey}.sub`)
+  const transactionView = view === 'transactions' || view === 'transaction-lead'
+  const title = transactionView ? tNav('transactions') : sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
+  const sub = transactionView || sharedTitle ? '' : t(`pages.${pageKey}.sub`)
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function renderView() {
     switch (view) {
       case 'users':    return <AdminUsers />
       case 'listings': return <AdminListings />
-      case 'leads':    return <AdminLeads onOpenDelivery={(leadId) => go('lead-delivery', leadId)} />
+      case 'leads':    return <AdminLeads onOpenDelivery={(leadId) => go('lead-delivery', leadId)} onOpenTransaction={(leadId) => go('transaction-lead', leadId)} />
       case 'lead-delivery': return <LeadDelivery initialLeadId={searchParams.get('openId') ?? ''} onOpenLead={(leadId) => go('leads', leadId)} />
       case 'communications': return <Communications user={user} workspace="Admin" />
       case 'location-review': return <AdminLocationReview />
@@ -50,6 +52,8 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
       case 'property-network': return <PropertyNetwork user={user} />
       case 'bookings': return <AdminBookings />
       case 'viewings': return <Viewings user={user} />
+      case 'transactions': return <TransactionRooms user={user} go={go} />
+      case 'transaction-lead': return <TransactionRooms user={user} go={go} fromLead />
       case 'analytics': return <Analytics />
       case 'settings': return <AdminSettings user={user} onUserUpdate={onUserUpdate} />
       case 'bulk-import': return <BulkImportListings />

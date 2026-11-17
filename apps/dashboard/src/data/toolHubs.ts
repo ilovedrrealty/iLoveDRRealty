@@ -16,6 +16,7 @@ const SHARED: ToolCard[] = [
   { id: 'calculator', icon: 'calculator', view: 'calculator' },
   { id: 'professionals', icon: 'users', view: 'professional-directory' },
   { id: 'network', icon: 'users', view: 'property-network' },
+  { id: 'transactions', icon: 'leads', view: 'transactions' },
   { id: 'resources', icon: 'book', view: 'resources' },
 ]
 

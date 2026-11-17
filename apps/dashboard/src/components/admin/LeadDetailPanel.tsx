@@ -9,6 +9,7 @@ import { ConfirmModal } from '../shared/ConfirmModal'
 import { RealtorCombobox } from './RealtorCombobox'
 import { LeadTrackingDetails } from './LeadTrackingOverview'
 import { ShareContactButton } from '../shared/ShareContactDialog'
+import { isTransactionRoomLead } from '../../api/transactions'
 
 const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
 
@@ -51,9 +52,10 @@ interface Props {
   allowContactShare?: boolean
   onOpenDelivery?: (leadId: string) => void
   onOpenValuation?: (leadId: string) => void
+  onOpenTransaction?: (leadId: string) => void
 }
 
-export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false, onOpenDelivery, onOpenValuation }: Props) {
+export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false, onOpenDelivery, onOpenValuation, onOpenTransaction }: Props) {
   const { t } = useTranslation('admin')
 
   const TYPE_LABEL: Record<string, string> = {
@@ -216,6 +218,9 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
             {lead.type === 'seller_interest' && onOpenValuation && <button type="button"
               className="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold text-sea focus-visible:outline-2 focus-visible:outline-coral"
               onClick={() => onOpenValuation(lead.id)}>{t('open_valuation', { ns: 'seller_valuation' })}</button>}
+            {onOpenTransaction && isTransactionRoomLead(lead) && <button type="button"
+              className="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold text-sea focus-visible:outline-2 focus-visible:outline-coral"
+              onClick={() => onOpenTransaction(lead.id)}>{t('open_from_lead', { ns: 'transactions' })}</button>}
 
             {/* Contact */}
             <div>

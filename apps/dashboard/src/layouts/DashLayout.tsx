@@ -37,6 +37,7 @@ const GENERAL_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: BookOpen,        view: 'resources' },
   { Icon: Users,           view: 'professional-directory' },
   { Icon: GitBranch,       view: 'property-network' },
+  { Icon: ClipboardList,  view: 'transactions' },
   { Icon: Settings,        view: 'settings' },
 ]
 
@@ -79,6 +80,7 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: ClipboardList,   view: 'property-management' },
   { Icon: GitBranch,       view: 'property-network' },
   { Icon: Inbox,           view: 'leads'     },
+  { Icon: ClipboardList,   view: 'transactions' },
   { Icon: Inbox,           view: 'lead-delivery' },
   { Icon: Inbox,           view: 'communications' },
   { Icon: LayoutDashboard, view: 'analytics' },

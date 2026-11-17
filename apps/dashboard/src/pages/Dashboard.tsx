@@ -36,6 +36,7 @@ import { PropertyManagement } from './shared/PropertyManagement'
 import { PropertyNetwork } from './shared/PropertyNetwork'
 import { Shortlists } from './shared/Shortlists'
 import { Viewings } from './shared/Viewings'
+import { TransactionRooms } from './shared/TransactionRooms'
 import { TOOL_WORKSPACE_VIEW, type ToolWorkspace } from '../data/toolHubs'
 
 const ROLE_ORDER: Role[] = ['Buyer', 'Owner', 'Realtor']
@@ -78,6 +79,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function getPageTitle(v: string): string {
+    if (v === 'transactions' || v === 'transaction-lead') return tNav('transactions')
     if ((v === 'shortlists' || v === 'viewings') && canUseShortlists) return tNav(v)
     if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'property-management', 'property-network'].includes(v)) return tNav(v)
     const key = `pages.${v}`
@@ -126,6 +128,10 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
       case 'saved':      return <SavedHomes openShortlists={canUseShortlists ? () => go('shortlists') : undefined} />
       case 'shortlists': return canUseShortlists ? <Shortlists user={user} /> : <p>{tNav('section_unavailable')}</p>
       case 'viewings':   return canUseShortlists ? <Viewings user={user} /> : <p>{tNav('section_unavailable')}</p>
+      case 'transactions': return <TransactionRooms user={user} go={go} />
+      case 'transaction-lead': return user.role === 'realtor'
+        ? <TransactionRooms user={user} go={go} fromLead />
+        : <p>{tNav('section_unavailable')}</p>
       case 'inquiries':  return <Inquiries />
       case 'calculator': return <ROICalculator />
       case 'resources':  return <Resources go={go} />
@@ -149,7 +155,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
       case 'bookings':        return role === 'Admin' ? <AdminBookings /> : <BuyerBookings />
       case 'owner-bookings':    return <OwnerBookings go={go} canManageArrivalGuide={user.role === 'owner'} />
       case 'realtor-bookings':  return <RealtorBookings />
-      case 'leads':      return role === 'Owner' ? <OwnerLeads tone={tone} go={go} isAdmin={user.role === 'admin'} /> : <RealtorLeads go={go} user={user} />
+      case 'leads':      return role === 'Owner' ? <OwnerLeads tone={tone} go={go} isAdmin={user.role === 'admin'} /> : <RealtorLeads go={go} user={user} onOpenTransaction={user.role === 'realtor' ? (id) => go('transaction-lead', id) : undefined} />
       case 'settings':
       case 'settings:connections':
         return <UserSettings user={user} role={role} tone={tone} onUserUpdate={onUserUpdate} initialTab={view === 'settings:connections' ? 'connections' : undefined} />

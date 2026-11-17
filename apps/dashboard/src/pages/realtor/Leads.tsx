@@ -130,7 +130,7 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: UserInfo }) {
+export function RealtorLeads({ go, user, onOpenTransaction }: { go?: (v: string) => void; user?: UserInfo; onOpenTransaction?: (leadId: string) => void }) {
   const { t } = useTranslation('realtor')
   const [leads,        setLeads]        = useState<Lead[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -420,6 +420,7 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
         updateStatusFn={updateRealtorLeadStatus}
         calendlyUrl={user?.calendly_url}
         onOpenValuation={setValuationLeadId}
+        onOpenTransaction={onOpenTransaction && selectedLead?.assigned_realtor_id === user?.id ? onOpenTransaction : undefined}
       />
     </div>
   )
