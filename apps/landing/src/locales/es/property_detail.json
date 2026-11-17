@@ -1,6 +1,38 @@
 {
   "not_found": "Propiedad no encontrada.",
   "loading": "Cargando propiedad…",
+  "development": {
+    "heading": "Disponibilidad del proyecto",
+    "verified_on": "Información del desarrollador verificada el {{date}}.",
+    "current_through": "Disponibilidad confirmada hasta el {{date}}.",
+    "unconfirmed": "La disponibilidad actual está por confirmar. Los detalles corresponden al último informe.",
+    "phase_filter": "Etapa",
+    "all_phases": "Todas las etapas",
+    "units_in": "Unidades en {{phase}}",
+    "no_units": "No hay unidades registradas para esta etapa.",
+    "delivery": "Entrega prevista para {{date}}",
+    "quarter": "T{{quarter}} de {{year}}",
+    "square_meters": "{{area}} m²",
+    "unreported": "Sin datos",
+    "view_floor_plan": "Ver plano",
+    "floor_plan_named": "Ver plano de la unidad {{unit}}",
+    "payment_stages": "Etapas de pago",
+    "updates": "Actualizaciones del proyecto",
+    "status": {
+      "available": "Disponible",
+      "reserved": "Reservada",
+      "sold": "Vendida",
+      "unconfirmed": "Por confirmar"
+    },
+    "column": {
+      "unit": "Unidad",
+      "floor": "Piso",
+      "area": "Superficie",
+      "price": "Precio",
+      "status": "Estado",
+      "plan": "Plano"
+    }
+  },
   "back": "Volver a la búsqueda",
   "share": "Compartir",
   "share_heading": "Compartir esta propiedad",
