@@ -9,7 +9,10 @@ function loadFile(file) {
   const moduleState = { exports: {} }
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: {
     target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS,
-  } }).outputText, { exports: moduleState.exports, module: moduleState, require: id => loadFile(path.resolve(path.dirname(file), id + '.ts')) })
+  } }).outputText, {
+    exports: moduleState.exports, module: moduleState, URLSearchParams,
+    require: id => loadFile(path.resolve(path.dirname(file), id + '.ts')),
+  })
   return moduleState.exports
 }
 const { listingMapPoint, mappedListings, areaSummaryPoints, clusterAreaSummaries, clusterMapListings } = loadFile(path.resolve(__dirname, '../apps/landing/src/data/searchMap.ts'))
