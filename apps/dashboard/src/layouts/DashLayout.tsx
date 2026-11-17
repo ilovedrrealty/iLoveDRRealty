@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import {
   LayoutDashboard, Heart, Search, MessageCircle, CalendarDays, Calculator,
   BookOpen, ClipboardList, Home, Bell, DollarSign,
-  Building2, GitBranch, Users, Settings, Inbox,
+  Building2, GitBranch, Users, Settings, Inbox, Contact,
   Key, Shield, LogOut, Menu, X, Lock, ChevronRight, Globe, Upload, type LucideIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -67,6 +67,7 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: LayoutDashboard, view: 'home'      },
   { Icon: Users,           view: 'users'     },
   { Icon: Users,           view: 'professionals' },
+  { Icon: Contact,         view: 'trade-contacts' },
   { Icon: Users,           view: 'professional-profile' },
   { Icon: Building2,       view: 'listings'  },
   { Icon: Inbox,           view: 'leads'     },

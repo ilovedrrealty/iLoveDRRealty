@@ -11,6 +11,7 @@ import { BulkImportListings } from './admin/BulkImportListings'
 import { ResearchTools } from './shared/ResearchTools'
 import { WebsiteEditor } from './admin/WebsiteEditor'
 import { AdminProfessionals } from './admin/Professionals'
+import { AdminTradeContacts } from './admin/TradeContacts'
 import { ProfessionalProfile } from './shared/ProfessionalProfile'
 import { Resources } from './buyer/Resources'
 import ProfessionalDirectory from './shared/ProfessionalDirectory'
@@ -23,7 +24,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
   const { t } = useTranslation('admin')
   const { t: tNav } = useTranslation('nav')
 
-  const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'professional-profile'].includes(view) ? view : 'home'
+  const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'trade-contacts', 'professional-profile'].includes(view) ? view : 'home'
   const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator'].includes(view)
   const title = sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
   const sub = sharedTitle ? '' : t(`pages.${pageKey}.sub`)
@@ -47,6 +48,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
       case 'calculator': return <ROICalculator />
       case 'website-editor': return <WebsiteEditor userId={user.id} />
       case 'professionals': return <AdminProfessionals />
+      case 'trade-contacts': return <AdminTradeContacts />
       case 'professional-profile': return <ProfessionalProfile />
       case 'professional-directory': return <ProfessionalDirectory />
       default:         return <AdminHome go={go} />
