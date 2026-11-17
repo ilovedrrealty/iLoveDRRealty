@@ -1,6 +1,27 @@
 {
   "not_found": "Propiedad no encontrada.",
   "loading": "Cargando propiedad…",
+  "brochure": {
+    "download": "Descargar folleto de la propiedad",
+    "preparing": "Preparando el folleto…",
+    "error": "No se pudo descargar el folleto. Inténtalo de nuevo.",
+    "document_title": "Folleto de la propiedad",
+    "prices": "Precios publicados",
+    "sale_price": "Precio base de venta",
+    "per_month": "Alquiler por mes",
+    "per_day": "Alquiler por día",
+    "price_unlisted": "Consulta el anuncio vigente para conocer el precio.",
+    "details": "Detalles de la propiedad",
+    "bedrooms": "Habitaciones",
+    "bathrooms": "Baños",
+    "living": "Área habitable",
+    "lot": "Área del terreno",
+    "built": "Año de construcción",
+    "verify": "Consulta el anuncio vigente para confirmar el precio, las promociones y la disponibilidad.",
+    "open_listing": "Ver el anuncio vigente",
+    "types": { "villa": "Villa", "apartment": "Apartamento", "condo": "Condominio", "land": "Terreno", "commercial": "Comercial" },
+    "transactions": { "sale": "En venta", "rent": "En alquiler", "both": "En venta o alquiler" }
+  },
   "development": {
     "heading": "Disponibilidad del proyecto",
     "verified_on": "Información del desarrollador verificada el {{date}}.",
