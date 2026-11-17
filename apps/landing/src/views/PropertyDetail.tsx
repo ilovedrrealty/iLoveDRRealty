@@ -40,6 +40,7 @@ import { createBooking, createPaymentAuth, getUnavailableDates, type BookedRange
 import { getMe } from "../api/auth";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { PAYPAL_ENABLED } from "../lib/features";
+import { viewingRequestUrl } from "../lib/viewingLink";
 
 // Empty while PAYPAL_ENABLED is off, which collapses every PayPal branch below
 // and falls the booking form back to a no-payment "Request to book".
@@ -500,6 +501,8 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
 
   const safeTourUrl = listing.tour_3d_url ? safeUrl(listing.tour_3d_url) : null;
   const activeTourUrl = galleryTab === '3dtour' ? safeTourUrl : null;
+  const viewingUrl = isInquiryPropertyContext(id, listing.id)
+    ? viewingRequestUrl(process.env.NEXT_PUBLIC_DASHBOARD_URL, listing.id) : null;
 
   return (
     <div className="max-w-310 mx-auto px-4 sm:px-6 py-5 pb-20">
@@ -1414,6 +1417,10 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
           )}
 
           {/* Submitter / Agent contact */}
+          {viewingUrl && <a href={viewingUrl}
+            className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-line px-3 py-2 text-sm font-semibold text-sea no-underline hover:bg-paper2">
+            <Calendar size={15} aria-hidden="true" /> {t('sidebar.request_viewing')}
+          </a>}
           {listing.submitted_by_name && (
             <div className="mt-5 pt-4 border-t border-line-soft">
               <div className="text-[10.5px] font-bold text-ink2 uppercase tracking-wide mb-3">
