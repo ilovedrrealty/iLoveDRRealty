@@ -7,12 +7,14 @@ import {
 import { NetworkDate, NETWORK_BUTTON, NETWORK_PRIMARY } from '../../components/network/NetworkShared'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { TransactionRoomEditor, type TransactionEdit } from './TransactionRoomEditor'
+import { TransactionDocuments } from './TransactionDocuments'
 
-const ROOM_SECTIONS = ['tasks', 'milestones', 'members', 'history'] as const
+const ROOM_SECTIONS = ['tasks', 'milestones', 'members', 'documents', 'history'] as const
 const HISTORY_ACTIONS = new Set([
   'room_created', 'room_closed', 'room_retired', 'professional_invited', 'professional_accepted',
   'professional_revoked', 'assignment_changed', 'task_created', 'task_updated', 'milestone_created',
-  'milestone_updated', 'document_uploaded', 'document_approved', 'document_rejected',
+  'milestone_updated', 'document_version_submitted', 'document_version_approved', 'document_version_rejected',
+  'document_version_access_changed', 'document_version_withdrawn',
 ])
 const rowClass = 'flex min-w-0 flex-wrap items-start justify-between gap-3 rounded-xl border border-line bg-white p-4'
 type ContentProps = {
@@ -114,6 +116,8 @@ export function TransactionRoomContent({ room, userId, stale, refresh, onUpdated
             onClick={() => setEditor({ kind: 'revoke', version: room.version, member })}>{t('revoke_access')}</button> : null}
         </li>)}
       </ul> : <p className="text-sm text-ink2">{t('no_members')}</p> : null}
+      {section === 'documents' ? <TransactionDocuments key={room.role} room={room} userId={userId} stale={stale}
+        refresh={refresh} onDenied={onDenied} /> : null}
       {section === 'history' ? <RoomHistory key={room.version} roomId={room.id} userId={userId} onDenied={onDenied} /> : null}
     </section>
     {editor ? <TransactionRoomEditor editor={editor} room={room} userId={userId} stale={stale}
