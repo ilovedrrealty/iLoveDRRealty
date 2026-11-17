@@ -1,4 +1,13 @@
 {
+  "floor_plan": {
+    "title": "Property floor plan",
+    "view": "View floor plan",
+    "download": "Download floor plan (PDF)",
+    "loading": "Opening floor plan…",
+    "unavailable": "The floor plan is unavailable.",
+    "image": "Property floor plan",
+    "close": "Close floor plan"
+  },
   "not_found": "Property not found.",
   "loading": "Loading property…",
   "brochure": {

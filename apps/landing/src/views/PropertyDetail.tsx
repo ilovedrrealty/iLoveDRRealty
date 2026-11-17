@@ -30,6 +30,7 @@ import { listingGallery, TONE_MAP } from "../data/propertyDetailData";
 import { parseListingRoomTour } from "../data/listingRoomTour";
 import { ListingRoomTour } from "../components/ListingRoomTour";
 import { ListingBrochureDownload } from "../components/ListingBrochureDownload";
+import { ListingFloorPlan } from "../components/ListingFloorPlan";
 import { DevelopmentInventory } from "../components/DevelopmentInventory";
 import { fetchListingById, recordListingView } from "../api/listings";
 import type { ApiListingDetail } from "../api/listings";
@@ -1428,7 +1429,10 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
             <Calendar size={15} aria-hidden="true" /> {t('sidebar.request_viewing')}
           </a>}
           {listing.status === 'active' && isInquiryPropertyContext(id, listing.id) && (
-            <ListingBrochureDownload key={listing.id} listingId={listing.id} />
+            <>
+              <ListingBrochureDownload key={listing.id} listingId={listing.id} />
+              <ListingFloorPlan key={'floor-plan-' + listing.id} listingId={listing.id} />
+            </>
           )}
           {listing.submitted_by_name && (
             <div className="mt-5 pt-4 border-t border-line-soft">

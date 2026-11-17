@@ -1,4 +1,13 @@
 {
+  "floor_plan": {
+    "title": "Plano de la propiedad",
+    "view": "Ver plano",
+    "download": "Descargar plano (PDF)",
+    "loading": "Abriendo el plano…",
+    "unavailable": "El plano no está disponible.",
+    "image": "Plano de la propiedad",
+    "close": "Cerrar plano"
+  },
   "not_found": "Propiedad no encontrada.",
   "loading": "Cargando propiedad…",
   "brochure": {

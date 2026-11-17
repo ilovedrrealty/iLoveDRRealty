@@ -7,6 +7,7 @@ import 'react-international-phone/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import { submitListing, updateListing, uploadListingImages, uploadAgreementPdf } from '../../api/listings'
 import { RoomPhotoTourEditor } from '../../components/listings/RoomPhotoTourEditor'
+import { ListingFloorPlanEditor } from '../../components/admin/ListingFloorPlanEditor'
 import type { AdminListing } from '../../api/admin'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { TONE } from './shared'
@@ -1319,6 +1320,7 @@ export function AdminEditListing({ listing, onBack, onSaved }: {
       <h2 className="text-[20px] font-bold text-ink mb-5">{t('submit_listing.edit_heading')}</h2>
 
       {listing.status === 'active' && <RoomPhotoTourEditor key={listing.id} listingId={listing.id} />}
+      {listing.status === 'active' && <ListingFloorPlanEditor key={'floor-plan-' + listing.id} listingId={listing.id} />}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AdminFormBody
