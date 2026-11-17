@@ -140,6 +140,9 @@ test('all twelve actual consumers render the selected EN/ES body and FAQ, withou
 })
 
 test('actual Blog SSR uses the selected locale for statistics, process, FAQs, cards and promotional copy', () => {
+  const marketReports = sourceModule(path.join(app, 'api/marketReports.ts'), {
+    '../data/searchLocations': { SEARCH_CATALOG_LOCATIONS: [] },
+  }, { process: { env: {} }, URLSearchParams })
   for (const lang of ['en', 'es']) {
     const Blog = sourceModule(path.join(app, 'views/Blog.tsx'), {
       react: React,
@@ -147,19 +150,21 @@ test('actual Blog SSR uses the selected locale for statistics, process, FAQs, ca
       '../hooks/useNav': { useNav: () => () => {} },
       '../data/blogData': enData,
       '../data/blogData.es': esData,
+      '../api/marketReports': marketReports,
       '../components/WebsiteResources': { __esModule: true, default: () => null },
       '../components/ProfessionalResourceCard': { __esModule: true, default: () => null },
       '../components/WebsiteSettingsProvider': { useWebsiteImage: (_key, fallback) => fallback },
     }).default
     const html = renderToStaticMarkup(React.createElement(Blog))
     const locale = locales[lang]
-    const expected = [locale.hero.sub, ...locale.stats,
+    const expected = [locale.hero.sub, locale.market_report.title, ...locale.stats,
       ...locale.process.steps.flatMap(item => [item.title, item.desc]),
       ...locale.faq.items.map(item => item.q),
       locale.newsletter.heading, locale.newsletter.sub, locale.newsletter.disclaimer,
       ...enData.GUIDES.map(card => lang === 'es' ? esData.CARDS_ES[card.slug].title : card.title),
     ]
     for (const value of expected) assert.ok(html.includes(escapedText(value)), `${lang}: rendered Blog omitted locale/card copy: ${value}`)
+    assert.ok(html.includes(`href="/local-guides/market-report/?lang=${lang}"`), `${lang}: market report link lost language`)
     assert.ok(!html.includes('first 20yr') && !html.includes('primeros 20 años'), 'Old tax-holiday label leaked')
     if (lang === 'es') assert.ok(!html.includes(escapedText(locales.en.hero.sub)), 'Blog used English fallback')
   }

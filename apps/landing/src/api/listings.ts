@@ -117,10 +117,10 @@ export async function fetchDealListings(): Promise<ApiDealListing[]> {
   }
 }
 
-export async function fetchListingById(id: string): Promise<ApiListingDetail> {
+export async function fetchListingById(id: string, signal?: AbortSignal): Promise<ApiListingDetail> {
   // The API response is no-store. A custom Cache-Control request header would
   // trigger a preflight outside the API's established allowed-header contract.
-  const res = await client.get<ApiListingDetail>(`/listings/${id}`)
+  const res = await client.get<ApiListingDetail>(`/listings/${id}`, { signal })
   return res.data
 }
 

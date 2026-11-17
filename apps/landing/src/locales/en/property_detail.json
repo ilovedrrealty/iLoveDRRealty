@@ -1,6 +1,36 @@
 {
+  "floor_plan": {
+    "title": "Property floor plan",
+    "view": "View floor plan",
+    "download": "Download floor plan (PDF)",
+    "loading": "Opening floor plan…",
+    "unavailable": "The floor plan is unavailable.",
+    "image": "Property floor plan",
+    "close": "Close floor plan"
+  },
   "not_found": "Property not found.",
   "loading": "Loading property…",
+  "brochure": {
+    "download": "Download property brochure",
+    "preparing": "Preparing brochure…",
+    "error": "The brochure could not be downloaded. Please try again.",
+    "document_title": "Property brochure",
+    "prices": "Listed prices",
+    "sale_price": "Base sale price",
+    "per_month": "Rent per month",
+    "per_day": "Rent per day",
+    "price_unlisted": "See the current listing for pricing.",
+    "details": "Property details",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "living": "Living area",
+    "lot": "Lot size",
+    "built": "Year built",
+    "verify": "Check the current listing for price, promotions and availability.",
+    "open_listing": "View the current listing",
+    "types": { "villa": "Villa", "apartment": "Apartment", "condo": "Condominium", "land": "Land", "commercial": "Commercial" },
+    "transactions": { "sale": "For sale", "rent": "For rent", "both": "For sale or rent" }
+  },
   "development": {
     "heading": "Development availability",
     "verified_on": "Developer information verified {{date}}.",
