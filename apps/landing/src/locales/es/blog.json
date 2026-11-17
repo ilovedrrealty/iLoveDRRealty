@@ -1,4 +1,22 @@
 {
+  "editorial": {
+    "directory": "Artículos y guías locales",
+    "description": "Consulta artículos, perfiles de zonas y guías para comprar y vivir en la República Dominicana.",
+    "back_resources": "Todos los recursos",
+    "language": "Idioma",
+    "pagination": "Páginas de guías",
+    "article": "Artículo",
+    "guide": "Guía",
+    "neighborhood": "Zona",
+    "empty": "Todavía no hay páginas publicadas en este idioma.",
+    "loading": "Cargando páginas publicadas…",
+    "unavailable": "Esta página no está disponible.",
+    "error": "No pudimos cargar este contenido.",
+    "retry": "Intentar de nuevo",
+    "previous": "Página anterior",
+    "next": "Página siguiente",
+    "sources": "Fuentes"
+  },
   "hero": {
     "tag": "📚 Centro de Educación y Reubicación",
     "heading_pre": "Tu guía para",
