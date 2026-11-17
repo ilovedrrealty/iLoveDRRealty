@@ -1,4 +1,22 @@
 {
+  "editorial": {
+    "directory": "Articles and local guides",
+    "description": "Browse articles, area profiles, and guides for buying and living in the Dominican Republic.",
+    "back_resources": "All resources",
+    "language": "Language",
+    "pagination": "Guide pages",
+    "article": "Article",
+    "guide": "Guide",
+    "neighborhood": "Neighborhood",
+    "empty": "There are no published pages in this language yet.",
+    "loading": "Loading published pages…",
+    "unavailable": "This page is unavailable.",
+    "error": "We couldn’t load this content.",
+    "retry": "Try again",
+    "previous": "Previous page",
+    "next": "Next page",
+    "sources": "Sources"
+  },
   "hero": {
     "tag": "📚 Education & Relocation Hub",
     "heading_pre": "Your guide to",

@@ -69,6 +69,12 @@ export default function Blog() {
 
       <ProfessionalResourceCard />
       <WebsiteResources />
+      <div className="mx-auto max-w-310 px-4 pt-6 sm:px-7">
+        <a href={isEs ? '/local-guides/?lang=es' : '/local-guides/'}
+          className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 py-2 font-semibold text-ink hover:bg-paper2">
+          {t('editorial.directory')}
+        </a>
+      </div>
 
       {/* ── Featured article ── */}
       <div className="bg-paper pt-12 sm:pt-15 px-4 sm:px-7 pb-7.5">
