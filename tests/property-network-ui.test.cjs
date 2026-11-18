@@ -122,7 +122,9 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
       return responses[name](...args)
     }
   } })
+  const fakeLocation = { pathname: '/property-network', search: '', hash: '', origin: 'https://example.invalid' }
   const fakeWindow = {
+    location: fakeLocation,
     addEventListener(name, callback) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(callback) },
     removeEventListener(name, callback) { listeners.get(name)?.delete(callback) },
     dispatchEvent(event) { for (const callback of listeners.get(event.type) ?? []) callback(event); return !event.defaultPrevented },
@@ -139,7 +141,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
     const source = fs.readFileSync(absolute, 'utf8')
     const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
     vm.runInNewContext(compiled, { module, exports: module.exports, AbortController, URLSearchParams, Date: class extends Date { static now() { return clock } }, Intl, Blob, Event,
-      document: fakeDocument, navigator: fakeNavigator,
+      document: fakeDocument, navigator: fakeNavigator, location: fakeLocation,
       crypto: { randomUUID: () => fixtureId(++nextUUID) }, window: fakeWindow,
       URL: { createObjectURL: () => `blob:synthetic-${++nextBlob}`, revokeObjectURL: value => revoked.push(value) },
       require(name) {
