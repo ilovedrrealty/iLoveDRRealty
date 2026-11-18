@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { isAxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
-import { emptyProfessionalDraft, isAdminManagedProfessional, normalizeProfessionalDraft, professionalCustomServicesInvalid, professionalSubmissionIssues, type AdminProfessional, type ProfessionalDraft, type ProfessionalOptions } from '../../../../../packages/professionals/src'
+import { emptyProfessionalDraft, isAdminManagedProfessional, normalizeProfessionalDraft, professionalCustomServicesInvalid, professionalGoogleIssues, professionalSubmissionIssues, type AdminProfessional, type ProfessionalDraft, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { createAdminProfessional, getAdminProfessional, saveAdminProfessional, submitAdminProfessional, uploadAdminProfessionalPhoto } from '../../api/professionals'
 import { ProfessionalDialog } from '../shared/ProfessionalDialog'
 import { ProfessionalConfirmation } from '../shared/ProfessionalConfirmation'
@@ -57,6 +57,8 @@ export function ManagedProfessionalEditor({ initial, options, onSaved, onClose }
     if (blocked || (profile && !isAdminManagedProfessional(profile))) return
     const normalized = normalizeProfessionalDraft(draft)
     if (professionalCustomServicesInvalid(normalized)) { setError(t('issues.custom_services')); return }
+    const googleIssue = professionalGoogleIssues(normalizeProfessionalDraft(draft))[0]
+    if (googleIssue) { setError(t(`issues.${googleIssue}`)); return }
     setShowIssues(submit)
     if (submit && issues.length) return
     setBusy(true); setError(''); setMessage('')

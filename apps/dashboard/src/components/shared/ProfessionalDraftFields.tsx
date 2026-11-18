@@ -1,6 +1,6 @@
 import { useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ProfessionalDraft, ProfessionalOptions } from '../../../../../packages/professionals/src'
+import { professionalGoogleEmbedLimit, professionalGoogleProfileLimit, type ProfessionalDraft, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { ProfessionalChoices, ProfessionalField, professionalButton, professionalInput } from './ProfessionalFields'
 import { ProfessionalServices, type ProfessionalDraftChange } from './ProfessionalServices'
 
@@ -38,6 +38,15 @@ export function ProfessionalDraftFields({ draft, options, onChange, onUpload, up
             <ProfessionalField label={t('public_whatsapp')} type="tel" value={draft.public_whatsapp} maxLength={30} onChange={value => onChange('public_whatsapp', value)} />
             <ProfessionalField label={t('public_email')} type="email" value={draft.public_email} maxLength={254} onChange={value => onChange('public_email', value)} />
             <ProfessionalField label={t('website_url')} type="url" value={draft.website_url} maxLength={2048} onChange={value => onChange('website_url', value)} />
+          </div>
+          <div className="space-y-3 rounded-xl border border-line p-3">
+            <h3 className="font-semibold text-ink">{t('google.heading')}</h3>
+            <p className="text-xs leading-relaxed text-ink2">{t('google.profile_help')}</p>
+            <ProfessionalField label={t('google.profile_url')} type="url" value={draft.google_profile_url ?? ''}
+              maxLength={professionalGoogleProfileLimit} onChange={value => onChange('google_profile_url', value)} />
+            <ProfessionalField label={t('google.embed_url')} type="url" value={draft.google_maps_embed_url ?? ''}
+              maxLength={professionalGoogleEmbedLimit} onChange={value => onChange('google_maps_embed_url', value)} />
+            <p className="text-xs leading-relaxed text-dim">{t('google.embed_help')}</p>
           </div>
           <label htmlFor={`${fieldId}-consent`} className="flex items-start gap-3 text-sm text-ink2"><input id={`${fieldId}-consent`} className="mt-1 shrink-0 accent-coral" type="checkbox" checked={draft.public_contact_consent} onChange={event => onChange('public_contact_consent', event.target.checked)} /><span>{t(adminManaged ? 'managed_consent' : 'consent')}</span></label>
           <p className="text-xs font-semibold text-amber-800">{t('revoke_help')}</p>

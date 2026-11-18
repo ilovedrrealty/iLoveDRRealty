@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { isAxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
-import { emptyProfessionalDraft, emptyProfessionalOptions, normalizeProfessionalDraft, professionalCustomServicesInvalid, professionalSubmissionIssues, type ProfessionalDraft, type ProfessionalOptions, type ProfessionalProfile as Profile } from '../../../../../packages/professionals/src'
+import { emptyProfessionalDraft, emptyProfessionalOptions, normalizeProfessionalDraft, professionalCustomServicesInvalid, professionalGoogleIssues, professionalSubmissionIssues, type ProfessionalDraft, type ProfessionalOptions, type ProfessionalProfile as Profile } from '../../../../../packages/professionals/src'
 import { getMyProfessionalProfile, getProfessionalOptions, saveProfessionalDraft, submitProfessionalProfile, uploadProfessionalPhoto, withdrawProfessionalProfile } from '../../api/professionals'
 import { professionalButton, professionalPrimary } from '../../components/shared/ProfessionalFields'
 import { ProfessionalDraftFields } from '../../components/shared/ProfessionalDraftFields'
@@ -66,6 +66,8 @@ export function ProfessionalProfile() {
   async function save(submit: boolean) {
     if (blocked) return
     if (professionalCustomServicesInvalid(normalizeProfessionalDraft(draft))) { setError(t('issues.custom_services')); return }
+    const googleIssue = professionalGoogleIssues(normalizeProfessionalDraft(draft))[0]
+    if (googleIssue) { setError(t(`issues.${googleIssue}`)); return }
     setShowIssues(submit)
     if (submit && issues.length) return
     setBusy(true); setError(''); setMessage('')

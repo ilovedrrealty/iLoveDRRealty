@@ -113,7 +113,9 @@
     "public_email": "Enter a valid public business email.",
     "website_url": "Enter a valid HTTPS business website without login credentials.",
     "consent": "Agree to publish the profile and its business contact details.",
-    "company": "Add your real estate company or independent business name."
+    "company": "Add your real estate company or independent business name.",
+    "google_profile_url": "Use a valid Google Maps place, search or official Share link, without login details or API keys.",
+    "google_maps_embed_url": "Add a valid Google profile link and paste only its Google Maps manual embed URL."
   },
   "call": "Call",
   "email": "Email",
@@ -230,5 +232,19 @@
     },
     "attribution": "Geographic outlines: public domain,",
     "reference_source": "Reference points: existing Dominican Republic area catalog. Unknown, conflicting or nationwide-only locations stay unmapped."
+  },
+  "google": {
+    "heading": "Google business profile",
+    "profile_url": "Google Maps profile or share link (optional)",
+    "embed_url": "Google map embed URL (optional)",
+    "profile_help": "Use this business's public Google Maps place or Share link. It will be reviewed with the rest of the profile.",
+    "embed_help": "Optional. In Google Maps, choose Share → Embed a map and copy only its https://www.google.com/maps/embed?pb= link. Add the profile link above to open Google directly.",
+    "member_help": "Open Google to see this business's profile and available reviews. Google controls the map and review information.",
+    "open_profile": "View profile and reviews on Google",
+    "load_help": "Loading the map connects your browser to Google. You can also use the profile link above.",
+    "load_map": "Load Google map",
+    "hide_map": "Hide Google map",
+    "map_title": "Google map for {{name}}",
+    "unavailable": "The map could not load. You can open the profile on Google using the link above."
   }
 }

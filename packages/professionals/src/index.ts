@@ -19,6 +19,8 @@ export type ProfessionalDraft = {
   public_whatsapp: string
   website_url: string
   photo_url: string
+  google_profile_url?: string
+  google_maps_embed_url?: string
   public_contact_consent: boolean
 }
 export type PublicProfessional = Omit<ProfessionalDraft, 'public_contact_consent'> & {
@@ -69,7 +71,7 @@ export type ProfessionalPage<T> = { items: T[]; total: number; limit: number; of
 export const emptyProfessionalDraft = (): ProfessionalDraft => ({
   business_name: '', contact_name: '', category_ids: [], custom_services: [], service_area_ids: [],
   descriptions: { en: '', es: '' }, languages: [], public_phone: '', public_email: '',
-  public_whatsapp: '', website_url: '', photo_url: '', public_contact_consent: false,
+  public_whatsapp: '', website_url: '', photo_url: '', google_profile_url: '', google_maps_embed_url: '', public_contact_consent: false,
 })
 export const emptyProfessionalOptions = (): ProfessionalOptions => ({ categories: [], areas: [], languages: [] })
 export const professionalLabel = (label: ProfessionalLabel, language: string): string =>
@@ -111,6 +113,7 @@ export function normalizeProfessionalDraft(draft: ProfessionalDraft): Profession
     descriptions: { en: draft.descriptions.en.trim(), es: draft.descriptions.es.trim() },
     public_phone: draft.public_phone.replace(/[ ()-]/g, ''), public_whatsapp: draft.public_whatsapp.replace(/[ ()-]/g, ''),
     public_email: draft.public_email.trim(), website_url: draft.website_url.trim(),
+    google_profile_url: (draft.google_profile_url ?? '').trim(), google_maps_embed_url: (draft.google_maps_embed_url ?? '').trim(),
   }
 }
 
@@ -141,5 +144,62 @@ export function professionalSubmissionIssues(draft: ProfessionalDraft): string[]
     if (draft[key].trim() && !professionalContactHref(kind, draft[key].trim())) issues.push(key)
   }
   if (!draft.public_contact_consent) issues.push('consent')
+  issues.push(...professionalGoogleIssues(draft))
+  return issues
+}
+
+export const professionalGoogleProfileLimit = 2048
+export const professionalGoogleEmbedLimit = 4096
+const googleCredentialParameters = new Set(['key', 'api_key', 'apikey', 'client', 'signature', 'token', 'access_token',
+  'callback', 'url', 'link', 'deep_link_id', 'afl', 'ifl', 'ofl', 'redirect', 'redirect_uri', 'redirect_url', 'redirecturl', 'continue', 'return', 'returnurl'])
+
+function googleUrl(value: string | undefined, limit: number): { raw: string; url: URL } | undefined {
+  if (/[\u0000-\u001f\u007f]/.test(value ?? '')) return undefined
+  const raw = (value ?? '').trim()
+  if (!raw || raw.length > limit || /[\s<>"\\]/.test(raw)
+    || /%(?![0-9a-f]{2})/i.test(raw) || /%(?:0[0-9a-f]|1[0-9a-f]|7f)/i.test(raw)) return undefined
+  try {
+    const authority = raw.match(/^https:\/\/([^/?#]+)/i)?.[1]
+    if (!authority || /[:%@]/.test(authority)) return undefined
+    const rawPath = raw.match(/^https:\/\/[^/?#]+([^?#]*)/i)?.[1] ?? ''
+    if (decodeURIComponent(rawPath).split('/').some(segment => segment === '.' || segment === '..')) return undefined
+    const url = new URL(raw)
+    if (url.protocol !== 'https:' || url.username || url.password || url.port || url.hash) return undefined
+    const pairs = [...url.searchParams.entries()], names = pairs.map(([name]) => name.toLowerCase())
+    if (pairs.length > 32 || new Set(names).size !== pairs.length || names.some(name => name.includes('%') || googleCredentialParameters.has(name))) return undefined
+    return { raw, url }
+  } catch { return undefined }
+}
+
+export function professionalGoogleProfileHref(value?: string): string | undefined {
+  const parsed = googleUrl(value, professionalGoogleProfileLimit)
+  if (!parsed) return undefined
+  const { raw, url } = parsed, host = url.hostname, pathname = url.pathname
+  if (host === 'maps.app.goo.gl' && /^\/[A-Za-z0-9_-]{4,180}\/?$/.test(pathname)) return raw
+  if (host === 'g.page' && /^\/(?:r\/)?[A-Za-z0-9_-]{2,180}\/?$/.test(pathname)) return raw
+  if (host === 'www.google.com' || host === 'maps.google.com') {
+    if (pathname.startsWith('/maps/place/') && pathname.slice('/maps/place/'.length).replace(/\//g, '')) return raw
+    if (pathname.startsWith('/maps/search/') && pathname.slice('/maps/search/'.length).replace(/\//g, '')) return raw
+    if (['/maps/search', '/maps/search/'].includes(pathname) && url.searchParams.get('api') === '1' && url.searchParams.get('query')?.trim()) return raw
+    if (['', '/', '/maps', '/maps/'].includes(pathname) && /^[0-9]{1,30}$/.test(url.searchParams.get('cid') ?? '')) return raw
+  }
+  return undefined
+}
+
+export function professionalGoogleEmbedHref(value?: string): string | undefined {
+  const parsed = googleUrl(value, professionalGoogleEmbedLimit)
+  if (!parsed) return undefined
+  const { raw, url } = parsed, pairs = [...url.searchParams.entries()]
+  if (url.hostname !== 'www.google.com' || url.pathname !== '/maps/embed'
+    || pairs.some(([name]) => !['pb', 'hl'].includes(name)) || !url.searchParams.get('pb')?.startsWith('!')
+    || url.searchParams.has('hl') && !/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})?$/.test(url.searchParams.get('hl') ?? '')) return undefined
+  return raw
+}
+
+export function professionalGoogleIssues(draft: Pick<ProfessionalDraft, 'google_profile_url' | 'google_maps_embed_url'>): string[] {
+  const profile = (draft.google_profile_url ?? '').trim(), embed = (draft.google_maps_embed_url ?? '').trim()
+  const issues: string[] = []
+  if (profile && !professionalGoogleProfileHref(profile)) issues.push('google_profile_url')
+  if (embed && (!profile || !professionalGoogleEmbedHref(embed))) issues.push('google_maps_embed_url')
   return issues
 }

@@ -113,7 +113,9 @@
     "public_email": "Ingresa un correo comercial público válido.",
     "website_url": "Ingresa un sitio web HTTPS válido sin credenciales de acceso.",
     "consent": "Acepta publicar el perfil y sus datos de contacto comercial.",
-    "company": "Agrega el nombre de tu empresa inmobiliaria o negocio independiente."
+    "company": "Agrega el nombre de tu empresa inmobiliaria o negocio independiente.",
+    "google_profile_url": "Usa un enlace válido del lugar, búsqueda o para compartir de Google Maps, sin credenciales ni claves de API.",
+    "google_maps_embed_url": "Agrega un enlace válido del perfil de Google y pega solo la URL del mapa insertado de Google Maps."
   },
   "call": "Llamar",
   "email": "Correo",
@@ -230,5 +232,19 @@
     },
     "attribution": "Contornos geográficos: dominio público,",
     "reference_source": "Puntos de referencia: catálogo existente de zonas de República Dominicana. Las ubicaciones desconocidas, contradictorias o de alcance nacional permanecen sin referencia."
+  },
+  "google": {
+    "heading": "Perfil del negocio en Google",
+    "profile_url": "Enlace del negocio en Google Maps (opcional)",
+    "embed_url": "URL del mapa insertado de Google (opcional)",
+    "profile_help": "Usa el enlace público del negocio o el enlace para compartir de Google Maps. Se revisará junto con el resto del perfil.",
+    "embed_help": "Opcional. En Google Maps, elige Compartir → Insertar un mapa y copia solo el enlace https://www.google.com/maps/embed?pb=. Agrega también el enlace del perfil para abrir Google directamente.",
+    "member_help": "Abre Google para ver el perfil del negocio y las reseñas disponibles. Google administra el mapa y la información de las reseñas.",
+    "open_profile": "Ver perfil y reseñas en Google",
+    "load_help": "Al cargar el mapa, tu navegador se conecta a Google. También puedes usar el enlace del perfil.",
+    "load_map": "Cargar mapa de Google",
+    "hide_map": "Ocultar mapa de Google",
+    "map_title": "Mapa de Google de {{name}}",
+    "unavailable": "No se pudo cargar el mapa. Puedes abrir el perfil en Google con el enlace de arriba."
   }
 }

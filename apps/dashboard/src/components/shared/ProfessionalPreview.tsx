@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { professionalContactHref, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalDraft, type ProfessionalOptions } from '../../../../../packages/professionals/src'
+import { ProfessionalGoogleLinks } from './ProfessionalGoogleLinks'
 
-export function ProfessionalPreview({ profile, options }: { profile: Omit<ProfessionalDraft, 'public_contact_consent'>; options: ProfessionalOptions }) {
+export function ProfessionalPreview({ profile, options }: { profile: Omit<ProfessionalDraft, 'public_contact_consent'> & { id?: string; approved_at?: string | null }; options: ProfessionalOptions }) {
   const { t, i18n } = useTranslation('professionals')
   const name = profile.business_name || profile.contact_name
   return <article className="min-w-0 rounded-2xl border border-line bg-white p-5 space-y-4 break-words">
@@ -26,5 +27,7 @@ export function ProfessionalPreview({ profile, options }: { profile: Omit<Profes
           className="max-w-full rounded-lg border border-line px-3 py-2 text-sm font-semibold text-coral">{t(key)}<span className="block break-all text-xs font-normal text-ink2">{value}</span></a> : null
       })}
     </div>
+    <ProfessionalGoogleLinks key={`${profile.id ?? name}:${profile.approved_at ?? ''}:${profile.google_profile_url ?? ''}:${profile.google_maps_embed_url ?? ''}`}
+      name={name} profileUrl={profile.google_profile_url} embedUrl={profile.google_maps_embed_url} />
   </article>
 }
