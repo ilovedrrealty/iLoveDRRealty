@@ -1,3 +1,4 @@
+import { isGroupInvitePath } from './lib/groupInviteMemory'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
@@ -9,10 +10,7 @@ import './index.css'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-    <BrowserRouter>
+const application = <BrowserRouter>
       <App />
       <Toaster
         position="top-right"
@@ -22,6 +20,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         }}
       />
     </BrowserRouter>
-    </GoogleOAuthProvider>
-  </React.StrictMode>
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    {isGroupInvitePath(window.location.pathname) ? application
+      : <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>{application}</GoogleOAuthProvider>}
+  </React.StrictMode>,
 )

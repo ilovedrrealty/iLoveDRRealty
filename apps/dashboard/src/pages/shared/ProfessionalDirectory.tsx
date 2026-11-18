@@ -27,6 +27,7 @@ function FilterChoices({ title, options, values, change, max }: { title: string;
 
 export default function ProfessionalDirectory() {
   const { t, i18n } = useTranslation('professionals')
+  const { t: networkT } = useTranslation('property_network')
   const [params, setParams] = useSearchParams()
   const paramsString = params.toString()
   const filters = useMemo(() => {
@@ -119,7 +120,10 @@ export default function ProfessionalDirectory() {
     setDetail(null); setParams(next, { replace: true })
   }
   return <div className="min-w-0 space-y-6">
-    <header className="rounded-2xl bg-ink p-5 sm:p-7 text-white"><h1 className="text-2xl font-bold">{t('directory_search.title')}</h1><p className="mt-3 max-w-3xl text-sm text-white/75 leading-relaxed">{t('directory_search.intro')}</p><a href="/professional-profile" className="inline-block mt-4 text-sm font-bold text-gold underline">{t('directory_search.join')}</a></header>
+    <header className="rounded-2xl bg-ink p-5 sm:p-7 text-white"><h1 className="text-2xl font-bold">{t('directory_search.title')}</h1><p className="mt-3 max-w-3xl text-sm text-white/75 leading-relaxed">{t('directory_search.intro')}</p>
+      <div className="mt-4 flex flex-wrap gap-4"><a href="/professional-profile" className="text-sm font-bold text-gold underline">{t('directory_search.join')}</a>
+        <a href="/property-network?tab=groups" className="text-sm font-bold text-gold underline">{networkT('groups.title')}</a></div>
+    </header>
     <form onSubmit={event => { event.preventDefault(); apply() }} className="rounded-2xl border border-line bg-white p-4 sm:p-6 space-y-4">
       <label className="block text-sm font-bold text-ink"><span className="block mb-2">{t('directory_search.search')}</span><input maxLength={100} value={query} onChange={event => setQuery(event.target.value)} placeholder={t('directory_search.search_placeholder')} className={professionalInput} /></label>
       <div className="grid sm:grid-cols-2 gap-3 items-start"><FilterChoices title={t('categories')} options={options.categories} values={categories} change={setCategories} max={8} /><FilterChoices title={t('areas')} options={options.areas} values={areas} change={setAreas} max={20} /></div>

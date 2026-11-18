@@ -12,16 +12,20 @@ import { HistorySharing } from '../../components/network/HistorySharing'
 import type { HistoryShareView } from '../../api/historyShares'
 import { CustodyTransfers } from '../../components/network/CustodyTransfers'
 import type { CustodyView } from '../../api/registryCustody'
+import { SocialGroups } from '../../components/network/SocialGroups'
 import { NETWORK_BUTTON, NETWORK_PRIMARY, networkError } from '../../components/network/NetworkShared'
 
 export function PropertyNetwork({ user }: { user: UserInfo }) {
   const { t } = useTranslation('property_network')
   const [params, setParams] = useSearchParams()
-  const tabs = ['properties', 'projects', 'services', ...(user.role !== 'admin' ? ['history-shares', 'property-transfers'] : []), 'people', 'my-profile']
+  const tabs = ['properties', 'projects', 'services', ...(user.role !== 'admin' ? ['history-shares', 'property-transfers'] : []), 'people', 'groups', 'my-profile']
   const selectedTab = params.get('tab') ?? ''
   const tab = tabs.includes(selectedTab) ? selectedTab : 'projects'
   const projectId = params.get('project') ?? ''
   const propertyId = params.get('property') ?? ''
+  const groupId = params.get('group') ?? ''
+  const rawInviteMember = params.get('invite_member') ?? ''
+  const inviteMemberCode = /^[1-9]\d{0,9}$/.test(rawInviteMember) && Number(rawInviteMember) <= 2147483647 ? Number(rawInviteMember) : undefined
   const rawMember = params.get('member') ?? ''
   const memberCode = /^[1-9]\d{0,8}$/.test(rawMember) ? Number(rawMember) : undefined
   const [options, setOptions] = useState<ProfessionalOptions>(emptyProfessionalOptions), [catalogError, setCatalogError] = useState('')
@@ -32,10 +36,11 @@ export function PropertyNetwork({ user }: { user: UserInfo }) {
     getProfessionalOptions(controller.signal).then(value => { if (!controller.signal.aborted) setOptions(value) }).catch(cause => { if (!controller.signal.aborted) setCatalogError(networkError(cause)) })
     return () => controller.abort()
   }, [])
-  function navigate(nextTab: string, key?: 'project' | 'member' | 'property', value?: string, guard = true) {
+  function navigate(nextTab: string, key?: 'project' | 'member' | 'property' | 'group', value?: string, guard = true) {
     if (guard && !window.dispatchEvent(new Event('ildr:before-dashboard-navigation', { cancelable: true }))) return
     const next = new URLSearchParams(params)
-    next.set('tab', nextTab); next.delete('project'); next.delete('member'); next.delete('property')
+    next.set('tab', nextTab); next.delete('project'); next.delete('member'); next.delete('property'); next.delete('group')
+    if (nextTab !== 'groups') next.delete('invite_member')
     if (key && value) next.set(key, value)
     setParams(next)
   }
@@ -57,6 +62,8 @@ export function PropertyNetwork({ user }: { user: UserInfo }) {
     {tab === 'properties' ? propertyId ? <PrivatePropertyDetail key={`${user.id}:${propertyId}`} id={propertyId} options={options} actorRole={user.role} actorCode={user.user_code} onBack={() => navigate('properties', undefined, undefined, false)} onCreateProject={id => navigate('projects', 'property', id, false)} onHistorySent={openSentHistory} onCustodySent={openSentCustody} /> : <PrivatePropertyList options={options} onOpen={id => navigate('properties', 'property', id, false)} /> : null}
     {tab === 'projects' ? projectId ? <ProjectDetail key={`${user.id}:${projectId}`} id={projectId} onBack={() => navigate('projects')} historyCategories={options.categories} onHistorySent={openSentHistory} /> : <ProjectList key={propertyId || 'all'} options={options} initialPropertyId={propertyId || undefined} canCreate={['admin', 'owner', 'realtor'].includes(user.role) && !catalogError} onOpen={id => navigate('projects', 'project', id)} /> : null}
     {tab === 'people' ? memberCode ? <MemberProfile key={memberCode} code={memberCode} onBack={() => navigate('people')} /> : <MemberDirectory onOpen={code => navigate('people', 'member', String(code))} /> : null}
+    {tab === 'groups' ? <SocialGroups key={user.id} actorId={user.id} actorCode={user.user_code} groupId={groupId}
+      inviteCode={inviteMemberCode} onOpen={(id, guard = true) => navigate('groups', id ? 'group' : undefined, id || undefined, guard)} /> : null}
     {tab === 'my-profile' ? <MemberProfile key={`me:${user.id}`} own /> : null}
   </div>
 }

@@ -11,6 +11,7 @@ import { ProfessionalConfirmation } from '../../components/shared/ProfessionalCo
 
 export function ProfessionalProfile() {
   const { t } = useTranslation('professionals')
+  const { t: groupT } = useTranslation('property_network')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [draft, setDraft] = useState<ProfessionalDraft>(emptyProfessionalDraft)
   const [options, setOptions] = useState<ProfessionalOptions>(emptyProfessionalOptions)
@@ -102,6 +103,7 @@ export function ProfessionalProfile() {
   if (loadError) return <div role="alert" className="space-y-3"><p>{t('load_error')}</p><button className={professionalButton} onClick={() => void load()}>{t('retry')}</button></div>
 
   return <div className="min-w-0 space-y-5">
+    <a href="/property-network?tab=groups" className={professionalButton + ' inline-block'}>{groupT('groups.title')}</a>
     <p className="text-sm leading-relaxed text-ink2">{t('profile_intro')}</p>
     <a href="/professional-directory" target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-semibold text-coral">{t('directory')} ↗</a>
     <div className="flex flex-wrap gap-3 rounded-xl border border-line bg-white p-4 text-sm">

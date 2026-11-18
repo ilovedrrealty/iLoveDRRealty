@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import AdminDash from './pages/AdminDash'
 import { landingBaseUrl } from './lib/siteUrls'
 import { dashboardLoginHint } from '../../../packages/dashboard-links'
+import { GroupInvite } from './components/network/GroupInvite'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 
@@ -79,6 +80,7 @@ function DashboardPage() {
 export default function App() {
   return (
     <Routes>
+      <Route path="/group-invite" element={<GroupInvite />} />
       <Route path="/"       element={<DashboardPage />} />
       <Route path="/:view"  element={<DashboardPage />} />
       <Route path="*"       element={<Navigate to="/" replace />} />
