@@ -83,17 +83,21 @@ test('actual React preview escapes hostile text and retains readable exact plain
   assert.ok(html.includes('whitespace-pre-wrap'))
 })
 
-test('Admin and canonical owner inquiry projections enable scoped private sharing', () => {
+test('only Admin lead details and the current scoped Owner feed offer private sharing', () => {
   const read = relative => fs.readFileSync(path.join(root, 'apps/dashboard/src', relative), 'utf8')
   const panel = read('components/admin/LeadDetailPanel.tsx')
+  const owner = read('pages/owner/Leads.tsx')
+  const contactProjection = /<ShareContactButton key=\{lead\.id\} contact=\{\{ name: lead\.name, email: lead\.email, phone: lead\.phone \}\}/g
   assert.match(panel, /allowContactShare = false/)
   assert.match(panel, /allowContactShare \? \(/)
-  assert.match(panel, /contact=\{\{ name: lead\.name, email: lead\.email, phone: lead\.phone \}\}/)
+  assert.equal([...panel.matchAll(contactProjection)].length, 1)
   assert.match(read('pages/admin/Leads.tsx'), /<LeadDetailPanel\s+allowContactShare\b/)
-  const owner = read('pages/owner/Leads.tsx')
-  assert.match(owner, /getOwnerLeads\(page, state, controller.signal\)/)
-  assert.match(owner, /contact=\{\{ name: lead\.name, email: lead\.email, phone: lead\.phone \}\}/)
-  for (const relative of ['pages/realtor/Leads.tsx', 'pages/realtor/Pipeline.tsx', 'pages/buyer/Inquiries.tsx']) {
+  assert.match(owner, /getOwnerLeads\(page, state, controller\.signal\)/)
+  assert.match(read('api/ownerLeads.ts'), /client\.get\('\/owner\/leads'/)
+  assert.equal([...owner.matchAll(contactProjection)].length, 1)
+  assert.match(owner, /data\.items\.map\(lead =>[\s\S]+<ShareContactButton[\s\S]+<InquiryHistory scope="owner"/)
+  for (const relative of ['pages/realtor/Leads.tsx', 'pages/realtor/Pipeline.tsx', 'pages/buyer/Inquiries.tsx',
+    'components/dashboard/InquiryHistory.tsx', 'components/shared/ProfessionalPreview.tsx', 'pages/shared/ProfessionalDirectory.tsx']) {
     assert.doesNotMatch(read(relative), /allowContactShare|ShareContactButton/)
   }
   const dialog = read('components/shared/ShareContactDialog.tsx')

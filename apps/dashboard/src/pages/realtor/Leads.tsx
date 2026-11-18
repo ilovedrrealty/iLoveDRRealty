@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { getRealtorLeads, updateRealtorLeadStatus, type Lead } from '../../api/leads'
 import { FilterPills } from '../admin/shared'
 import { LeadDetailPanel } from '../../components/admin/LeadDetailPanel'
+import { SellerValuationLead } from '../shared/SellerValuationLead'
 import { parsePhone } from '../../utils/phone'
 import type { UserInfo } from '../../lib/auth'
 
@@ -103,7 +104,7 @@ function fmtRelative(iso: string, t: (key: string, opts?: Record<string, unknown
   return t('rel.months_ago', { count: Math.floor(d / 30) })
 }
 
-function TypeBadge({ type }: { type: string }) {
+function TypeBadge({ type, hasValuationRequest }: { type: string; hasValuationRequest?: boolean }) {
   const { t } = useTranslation('realtor')
   const color = TYPE_COLOR[type] ?? '#64748b'
   return (
@@ -111,7 +112,7 @@ function TypeBadge({ type }: { type: string }) {
       className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"
       style={{ background: `${color}18`, color }}
     >
-      {t(`hot_leads.type_${TYPE_KEY[type] ?? type}`, { defaultValue: TYPE_LABEL[type] ?? type })}
+      {hasValuationRequest ? t('request_label', { ns: 'seller_valuation' }) : t(`hot_leads.type_${TYPE_KEY[type] ?? type}`, { defaultValue: TYPE_LABEL[type] ?? type })}
     </span>
   )
 }
@@ -129,7 +130,7 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: UserInfo }) {
+export function RealtorLeads({ go, user, onOpenTransaction }: { go?: (v: string) => void; user?: UserInfo; onOpenTransaction?: (leadId: string) => void }) {
   const { t } = useTranslation('realtor')
   const [leads,        setLeads]        = useState<Lead[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -137,6 +138,7 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
   const [statusFilter, setStatusFilter] = useState('All')
   const [query,        setQuery]        = useState('')
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [valuationLeadId, setValuationLeadId] = useState<string | null>(null)
 
   useEffect(() => {
     getRealtorLeads()
@@ -196,6 +198,8 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
     { label: t('leads_page.kpi_contacted'), value: counts.contacted, sub: t('leads_page.kpi_contacted_sub'), accent: undefined },
     { label: t('leads_page.kpi_closed'),    value: counts.closed,    sub: t('leads_page.kpi_closed_sub'),    accent: undefined },
   ]
+
+  if (valuationLeadId) return <SellerValuationLead leadId={valuationLeadId} onBack={() => setValuationLeadId(null)} />
 
   return (
     <div className="flex flex-col gap-4">
@@ -345,7 +349,7 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
                   onClick={() => setSelectedLead(lead)}
                   className={`grid ${COLS} gap-3 py-3.5 px-5.5 items-center hover:bg-line-soft/40 transition-colors cursor-pointer`}
                 >
-                  <div><TypeBadge type={lead.type} /></div>
+                  <div><TypeBadge type={lead.type} hasValuationRequest={lead.has_valuation_request} /></div>
                   <div className="flex items-center gap-2.5 min-w-0">
                     <LeadAvatar name={lead.name} avatarUrl={lead.from_user_avatar_url} color={TYPE_COLOR[lead.type] ?? '#64748b'} />
                     <div className="min-w-0">
@@ -379,7 +383,7 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
                   className="px-4 py-4 flex flex-col gap-2 cursor-pointer hover:bg-line-soft/40 transition-colors"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <TypeBadge type={lead.type} />
+                    <TypeBadge type={lead.type} hasValuationRequest={lead.has_valuation_request} />
                     <div className="text-[11px] text-dim">{fmtRelative(lead.created_at, t)}</div>
                   </div>
                   <div className="flex items-center gap-2.5">
@@ -415,6 +419,8 @@ export function RealtorLeads({ go, user }: { go?: (v: string) => void; user?: Us
         allowedStatuses={['contacted', 'closed']}
         updateStatusFn={updateRealtorLeadStatus}
         calendlyUrl={user?.calendly_url}
+        onOpenValuation={setValuationLeadId}
+        onOpenTransaction={onOpenTransaction && selectedLead?.assigned_realtor_id === user?.id ? onOpenTransaction : undefined}
       />
     </div>
   )

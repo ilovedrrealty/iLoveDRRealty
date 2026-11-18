@@ -218,7 +218,7 @@ export default function SpanishLandingPage() {
             <div className="relative min-h-90 lg:min-h-135">
               <div
                 className="absolute inset-0 right-17.5 bottom-11 rounded-[6px_70px_6px_6px] shadow-[0_24px_60px_rgba(4,18,43,.16)] bg-cover bg-center"
-                style={{ backgroundImage: 'url(https://pznmfxejanwxtsopxxrp.supabase.co/storage/v1/render/image/public/listing-images/c1fe5e8c-1471-40cf-adc2-ef990f2fa806/a00f46fc-bd43-46b9-b9f0-a29d725638b0.jpg?width=1100&quality=82)' }}
+                style={{ backgroundImage: 'url(https://pznmfxejanwxtsopxxrp.supabase.co/storage/v1/object/public/listing-images/c1fe5e8c-1471-40cf-adc2-ef990f2fa806/a00f46fc-bd43-46b9-b9f0-a29d725638b0.jpg)' }}
               />
               <div
                 className="absolute w-40 sm:w-55 h-36 sm:h-52.5 right-0 bottom-0 border-8 border-white rounded-[30px_8px_30px_8px] shadow-[0_24px_60px_rgba(4,18,43,.16)] bg-cover bg-center"

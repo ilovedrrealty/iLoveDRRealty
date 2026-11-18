@@ -179,6 +179,10 @@ export async function approveListingEdit(id: string): Promise<void> {
   await client.post(`/admin/listing-edits/${id}/approve`)
 }
 
+export async function approveListingRoomPhotoTour(id: string): Promise<void> {
+  await client.post(`/admin/listing-edits/${id}/approve`, { room_photo_tour_reviewed: true })
+}
+
 export async function rejectListingEdit(id: string, reason: string): Promise<void> {
   await client.post(`/admin/listing-edits/${id}/reject`, { reason })
 }

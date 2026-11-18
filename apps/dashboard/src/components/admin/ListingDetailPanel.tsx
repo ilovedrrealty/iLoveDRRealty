@@ -15,6 +15,7 @@ import { TONE } from '../../pages/admin/shared'
 import { ConfirmModal } from '../shared/ConfirmModal'
 import { RealtorCombobox } from './RealtorCombobox'
 import { PAYPAL_ENABLED } from '../../lib/features'
+import { ListingPerformanceAction } from '../listings/ListingPerformanceDialog'
 
 const titleCase = (s: string) =>
   s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s
@@ -766,7 +767,8 @@ export function ListingDetailPanel({
         )}
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
-        <div className="border-t border-line px-5 py-4 flex items-center gap-2.5 shrink-0 bg-paper">
+        <div className="border-t border-line px-5 py-4 flex flex-wrap items-center gap-2.5 shrink-0 bg-paper">
+          <ListingPerformanceAction listingId={listing.id} disabled={working} />
           {isPending ? (
             <>
               <button

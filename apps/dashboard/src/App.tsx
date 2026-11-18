@@ -6,6 +6,7 @@ import DashLayout from './layouts/DashLayout'
 import Dashboard from './pages/Dashboard'
 import AdminDash from './pages/AdminDash'
 import { landingBaseUrl } from './lib/siteUrls'
+import { dashboardLoginHint } from '../../../packages/dashboard-links'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 
@@ -23,13 +24,15 @@ function DashboardPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { data: user, loading, error, updateUser } = useCurrentUser()
+  const loginHint = dashboardLoginHint(view, searchParams)
 
   useEffect(() => {
     if (!loading && (error || !user)) {
-      const destination = view === 'professional-profile' ? '?join=professional' : view === 'professional-directory' ? '?directory=professionals' : ''
+      const destination = loginHint ??
+        (view === 'professional-profile' ? '?join=professional' : view === 'professional-directory' ? '?directory=professionals' : '')
       window.location.href = `${LANDING_URL.replace(/\/$/, '')}/login${destination}`
     }
-  }, [loading, user, error, view])
+  }, [loading, user, error, view, loginHint])
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-paper">
@@ -66,8 +69,8 @@ function DashboardPage() {
   return (
     <DashLayout role={role} view={view} go={go} onLogout={handleLogout} user={user} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined}>
       {role === 'Admin'
-        ? <AdminDash go={go} view={view} user={user} onUserUpdate={updateUser} />
-        : <Dashboard key={role} go={go} view={view} role={role} user={user} onUserUpdate={updateUser} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined} />
+        ? <AdminDash key={`${user.id}:${user.role}`} go={go} view={view} user={user} onUserUpdate={updateUser} />
+        : <Dashboard key={`${user.id}:${user.role}:${role}`} go={go} view={view} role={role} user={user} onUserUpdate={updateUser} onWorkspaceChange={accountRole === 'Admin' ? changeWorkspace : undefined} />
       }
     </DashLayout>
   )

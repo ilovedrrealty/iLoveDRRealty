@@ -56,13 +56,17 @@ function Avatar({ me, size = 32 }: { me: Me; size?: number }) {
   )
 }
 
-function LanguageToggle() {
+export function LanguageToggle() {
   const { i18n } = useTranslation()
+  const pathname = usePathname()
+  const go = useNav()
   const current = i18n.language.startsWith('es') ? 'es' : 'en'
 
-  function pick(lng: string) {
+  function pick(lng: 'en' | 'es') {
     i18n.changeLanguage(lng)
-    localStorage.setItem('ildr_lang', lng)
+    try { localStorage.setItem('ildr_lang', lng) } catch { /* Route switching still works without storage. */ }
+    const article = pathname.match(/^\/(?:es\/)?article\/([^/]+)\/?$/)
+    if (article) go(lng === 'es' ? 'es/article' : 'article', article[1])
   }
 
   return (

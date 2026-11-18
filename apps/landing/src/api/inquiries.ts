@@ -2,6 +2,7 @@ import client from './axios'
 import { trackFormConversion, type LeadReceipt } from '../lib/gtag'
 import { getMeasurementConsent } from '../lib/measurementConsent'
 import { captureTrackingParams, getTrackingParams, trackingPagePath } from '../lib/tracking'
+import type { SellerValuationSubject } from '../data/sellerValuation'
 
 export interface LeadSubmissionAttempt { id?: string; signature?: string }
 const activeSubmissions = new WeakMap<LeadSubmissionAttempt, { signature: string; promise: Promise<LeadReceipt> }>()
@@ -83,6 +84,9 @@ async function submitTrackedLead(payload: Record<string, unknown>, attempt: Lead
   }
   const pending = (async () => {
     const response = await client.post<LeadReceipt>('/leads', { ...payload, submission_id: attempt.id })
+    if (payload.valuation_subject && response.data?.valuation_request_registered !== true) {
+      throw new Error('Valuation receipt could not be confirmed')
+    }
     // Measurement must never turn a durably accepted inquiry into a form error.
     if (measure) { try { trackFormConversion(response.data) } catch { /* best-effort advertising measurement */ } }
     return response.data
@@ -121,9 +125,12 @@ export async function submitContactLead(data: {
   locale?: 'en' | 'es'
   conversionIntent?: 'buy' | 'sell' | 'rent' | 'general'
   contactConsent: boolean
+  valuationSubject?: SellerValuationSubject
   attempt: LeadSubmissionAttempt
 }): Promise<LeadReceipt> {
   const type = data.tab === 'seller' ? 'seller_interest' : data.tab === 'renter' ? 'rental_interest' : 'buyer_interest'
+  const valuationSubject = type === 'seller_interest' ? data.valuationSubject : undefined
+  if (valuationSubject && !data.contactConsent) throw new Error('Contact consent is required')
   const parts = [`Interest: ${data.interest}`, data.message].filter(Boolean)
   const payload = {
     type,
@@ -131,6 +138,7 @@ export async function submitContactLead(data: {
     email: data.email,
     phone: data.phone || undefined,
     message: parts.join('\n\n').slice(0, 2000),
+    ...(valuationSubject ? { valuation_subject: valuationSubject } : {}),
     tracking: inquiryTracking(data.form || 'contact', data.locale || 'en',
       data.conversionIntent || (data.tab === 'seller' ? 'sell' : data.tab === 'renter' ? 'rent' : 'buy'), data.contactConsent),
   }

@@ -9,11 +9,24 @@ function loadFile(file) {
   const moduleState = { exports: {} }
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: {
     target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS,
-  } }).outputText, { exports: moduleState.exports, module: moduleState, require: id => loadFile(path.resolve(path.dirname(file), id + '.ts')) })
+  } }).outputText, {
+    exports: moduleState.exports, module: moduleState, URLSearchParams,
+    require: id => loadFile(path.resolve(path.dirname(file), id + '.ts')),
+  })
   return moduleState.exports
 }
 const { listingMapPoint, mappedListings, areaSummaryPoints, clusterAreaSummaries, clusterMapListings } = loadFile(path.resolve(__dirname, '../apps/landing/src/data/searchMap.ts'))
 const clone = value => JSON.parse(JSON.stringify(value))
+
+function loadListingsApi(get) {
+  const client = { get }
+  client.default = client
+  const moduleState = { exports: {} }
+  const source = fs.readFileSync(path.resolve(__dirname, '../apps/landing/src/api/listings.ts'), 'utf8')
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports: moduleState.exports, module: moduleState, require: id => { assert.equal(id, './axios'); return client } })
+  return moduleState.exports
+}
 
 test('pins retain the listing coordinates exactly without region offsets', () => {
   assert.deepEqual(clone(listingMapPoint({ latitude: 19.7543, longitude: -70.4125 })), { lat: 19.7543, lng: -70.4125 })
@@ -73,13 +86,11 @@ test('thousands of exact property positions create a bounded marker set without 
 
 test('map requests retain all listing filters and comparable price settings without card pagination', async () => {
   let requested
-  const client = { get: async (url, options) => { requested = { url, ...options }; return { data: { items: [{ id: 'test', price: '123.45' }], total: 1 } } } }
-  client.default = client
-  const moduleState = { exports: {} }
-  const source = fs.readFileSync(path.resolve(__dirname, '../apps/landing/src/api/listings.ts'), 'utf8')
-  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText,
-    { exports: moduleState.exports, module: moduleState, require: id => { assert.equal(id, './axios'); return client } })
-  const response = await moduleState.exports.fetchListingMap({ page: 4, pageSize: 24, purpose: 'rent', locations: ['Cabarete', 'Sosúa'], types: ['Villa', 'Condo'], minPrice: 100, maxPrice: 2000, beds: 2, minRoi: 4, features: ['Pool'], priceCurrency: 'USD', usdToDop: 60, rentalPeriod: 'month' }, { south: 18, north: 20, west: -71, east: -68 })
+  const { fetchListingMap } = loadListingsApi(async (url, options) => {
+    requested = { url, ...options }
+    return { data: { items: [{ id: 'test', price: '123.45' }], total: 1 } }
+  })
+  const response = await fetchListingMap({ page: 4, pageSize: 24, purpose: 'rent', locations: ['Cabarete', 'Sosúa'], types: ['Villa', 'Condo'], minPrice: 100, maxPrice: 2000, beds: 2, minRoi: 4, features: ['Pool'], priceCurrency: 'USD', usdToDop: 60, rentalPeriod: 'month' }, { south: 18, north: 20, west: -71, east: -68 })
   assert.equal(requested.url, '/listings/map')
   assert.deepEqual(clone(requested.params.types), ['villa', 'condo'])
   assert.deepEqual(clone(requested.params.locations), ['Cabarete', 'Sosúa'])
@@ -91,6 +102,53 @@ test('map requests retain all listing filters and comparable price settings with
   assert.equal(Object.hasOwn(requested.params, 'page'), false)
   assert.equal(Object.hasOwn(requested.params, 'page_size'), false)
   assert.equal(response.items[0].price, 123.45)
+})
+
+test('cards and bounded map send the same applied area and preserve server coverage even with no matches', async () => {
+  const requests = []
+  const { fetchListings, fetchListingMap } = loadListingsApi(async (url, options) => {
+    requests.push({ url, params: options.params })
+    return { data: { items: [], total: 0, page: 2, page_size: 24, spatial_excluded_unlocated: 42 } }
+  })
+  const spatial = 'radius,19.75,-70.41,5'
+  const filters = { spatial, page: 2, pageSize: 24, purpose: 'sale', locations: ['Cabarete'], priceCurrency: 'USD' }
+  const page = await fetchListings(filters)
+  const map = await fetchListingMap(filters, { south: 19.7, north: 19.8, west: -70.5, east: -70.3 })
+  assert.equal(requests[0].params.spatial, spatial)
+  assert.equal(requests[1].params.spatial, spatial)
+  assert.equal(requests[0].params.page, 2)
+  assert.equal(requests[1].params.page, undefined)
+  assert.equal(requests[1].params.south, 19.7)
+  assert.equal(page.spatialExcludedUnlocated, 42)
+  assert.equal(map.spatial_excluded_unlocated, 42)
+})
+
+test('the client never shows unfiltered legacy results as a successful map search', async () => {
+  const { fetchListings, fetchListingMap } = loadListingsApi(async () => ({ data: { items: [], total: 2400 } }))
+  const filters = { spatial: 'radius,19.75,-70.41,5' }
+  await assert.rejects(fetchListings(filters), /did not apply/)
+  await assert.rejects(fetchListingMap(filters), /did not apply/)
+  assert.equal((await fetchListings()).total, 2400)
+  assert.equal((await fetchListingMap({})).total, 2400)
+})
+
+test('search URLs preserve applied geometry and hold ambiguous or malformed areas until explicitly cleared', () => {
+  const { readSearchFilters, writeSearchFilters } = loadFile(path.resolve(__dirname, '../apps/landing/src/data/searchFilters.ts'))
+  const current = new URLSearchParams({ spatial: 'radius,19.75,-70.41,5', location: 'Cabarete', lang: 'es', page: '3' })
+  const parsed = readSearchFilters(current)
+  assert.equal(parsed.spatialInvalid, false)
+  assert.equal(parsed.spatial.km, 5)
+  const reload = writeSearchFilters(parsed, current)
+  assert.equal(reload.get('spatial'), current.get('spatial'))
+  assert.equal(reload.get('lang'), 'es')
+  assert.equal(reload.get('page'), '3')
+  for (const invalid of [new URLSearchParams('spatial='), new URLSearchParams('spatial=polygon,abc'), new URLSearchParams([...current, ['spatial', current.get('spatial')]])]) {
+    const incoming = readSearchFilters(invalid)
+    assert.equal(incoming.spatial, null)
+    assert.equal(incoming.spatialInvalid, true)
+    assert.deepEqual(writeSearchFilters({ ...incoming, purpose: 'rent' }, invalid).getAll('spatial'), invalid.getAll('spatial'))
+    assert.equal(writeSearchFilters({ ...incoming, spatialInvalid: false, page: 1 }, invalid).has('spatial'), false)
+  }
 })
 
 test('approximate areas cluster across neighbouring grid boundaries and keep the largest known centre', () => {

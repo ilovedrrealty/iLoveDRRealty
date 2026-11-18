@@ -13,14 +13,14 @@
     "active_listings":  "Propiedades activas",
     "upcoming_bookings":"Próximas reservas",
     "open_leads":       "Contactos abiertos",
-    "revenue_month":    "Ingresos este mes",
+    "arrivals_month":   "Reservas confirmadas este mes",
     "active_one":       "1 activa",
     "active_many":      "{{count}} activas",
     "bookings_next":    "Próxima: {{date}}",
     "bookings_none":    "Sin programar",
     "leads_count":      "{{count}} total",
     "leads_none":       "Sin contactos aún",
-    "revenue_sub":      "Este mes (confirmados)"
+    "arrivals_sub":     "Entradas programadas hasta {{date}} · hora de República Dominicana"
   },
   "listings": {
     "title":            "Propiedades activas",
@@ -33,10 +33,12 @@
     "views":            "vistas",
     "leads":            "contactos"
   },
-  "revenue": {
-    "title":          "Ingresos",
-    "sub":            "Últimos 6 meses (reservas confirmadas)",
-    "view_breakdown": "Ver desglose completo →"
+  "arrival_activity": {
+    "title":          "Actividad de reservas confirmadas",
+    "sub":            "6 meses calendario hasta {{date}} · hora de República Dominicana",
+    "definition":     "Cuenta reservas confirmadas por su fecha de entrada programada, hasta hoy. No confirma la llegada del huésped ni el pago.",
+    "month_count":    "{{month}}: {{count}} reservas confirmadas por fecha de entrada programada",
+    "view_bookings":  "Ver reservas de huéspedes →"
   },
   "agent": {
     "title":        "Tu agente",
@@ -56,7 +58,10 @@
     "all":            "Todas →",
     "empty_heading":  "Sin próximas reservas",
     "empty_sub":      "Las reservas de huéspedes aparecerán aquí.",
-    "guest_fallback": "Huésped"
+    "guest_fallback": "Huésped",
+    "loading":        "Cargando actividad de reservas…",
+    "load_error":     "No se pudieron cargar las reservas. Los recuentos no están disponibles.",
+    "retry":          "Volver a cargar las reservas"
   },
   "leads_card": {
     "title":         "Contactos recientes",

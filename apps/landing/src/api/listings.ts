@@ -1,6 +1,7 @@
 import client from './axios'
 import type { Listing } from '../data/listings'
 import type { ListingMapData, MapBounds } from '../data/searchMap'
+import type { ListingRoomTour } from '../data/listingRoomTour'
 
 export interface ApiDealListing {
   id: string
@@ -71,6 +72,8 @@ export interface ApiListingDetail {
   maps_url: string | null
   latitude: number | null
   longitude: number | null
+  location_precision?: 'exact' | 'area' | 'hidden'
+  location_verified?: boolean
   tag: string | null
   tags: string[]
   video_links: string[]
@@ -80,6 +83,7 @@ export interface ApiListingDetail {
   association_fee: number | null
   deposit_policy: string | null
   images: string[]
+  room_photo_tour?: ListingRoomTour | null
   status: string
   submitted_by_name: string | null
   submitted_by_email: string | null
@@ -113,8 +117,10 @@ export async function fetchDealListings(): Promise<ApiDealListing[]> {
   }
 }
 
-export async function fetchListingById(id: string): Promise<ApiListingDetail> {
-  const res = await client.get<ApiListingDetail>(`/listings/${id}`)
+export async function fetchListingById(id: string, signal?: AbortSignal): Promise<ApiListingDetail> {
+  // The API response is no-store. A custom Cache-Control request header would
+  // trigger a preflight outside the API's established allowed-header contract.
+  const res = await client.get<ApiListingDetail>(`/listings/${id}`, { signal })
   return res.data
 }
 
@@ -171,6 +177,7 @@ export interface ListingsQuery {
   priceCurrency?: 'USD' | 'DOP'
   usdToDop?: number
   rentalPeriod?: 'month' | 'day'
+  spatial?: string
   signal?: AbortSignal
 }
 
@@ -191,6 +198,7 @@ export interface ListingsPage {
   pageSize: number
   medianPrice: number | null
   avgRoi: number | null
+  spatialExcludedUnlocated?: number
 }
 
 interface ApiListingPage {
@@ -200,6 +208,13 @@ interface ApiListingPage {
   page_size: number
   median_price: number | null
   avg_roi: number | null
+  spatial_excluded_unlocated?: number
+}
+
+function spatialCoverage(spatial: string | undefined, excluded: unknown): number | undefined {
+  if (spatial === undefined) return undefined
+  if (typeof excluded === 'number' && Number.isSafeInteger(excluded) && excluded >= 0) return excluded
+  throw new Error('The property search API did not apply the requested map area')
 }
 
 export async function fetchListings(q: ListingsQuery = {}): Promise<ListingsPage> {
@@ -224,6 +239,7 @@ export async function fetchListings(q: ListingsQuery = {}): Promise<ListingsPage
       price_currency: q.priceCurrency,
       usd_to_dop: q.usdToDop,
       rental_period: q.rentalPeriod,
+      spatial: q.spatial,
     },
   })
   return {
@@ -233,6 +249,7 @@ export async function fetchListings(q: ListingsQuery = {}): Promise<ListingsPage
     pageSize: res.data.page_size,
     medianPrice: res.data.median_price,
     avgRoi: res.data.avg_roi,
+    spatialExcludedUnlocated: spatialCoverage(q.spatial, res.data.spatial_excluded_unlocated),
   }
 }
 
@@ -244,9 +261,13 @@ export async function fetchListingMap(q: ListingsQuery, bounds?: MapBounds | nul
       purpose: q.purpose, type: q.type, types: q.types?.map(type => type.toLowerCase()),
       region: q.region, locations: q.locations, min_price: q.minPrice, max_price: q.maxPrice,
       beds: q.beds, min_roi: q.minRoi, features: q.features, exclude_ids: q.excludeIds,
-      price_currency: q.priceCurrency, usd_to_dop: q.usdToDop, rental_period: q.rentalPeriod,
+      price_currency: q.priceCurrency, usd_to_dop: q.usdToDop, rental_period: q.rentalPeriod, spatial: q.spatial,
       ...bounds,
     },
   })
-  return { ...res.data, items: res.data.items.map(item => ({ ...item, price: item.price == null ? null : Number(item.price) })) }
+  return {
+    ...res.data,
+    spatial_excluded_unlocated: spatialCoverage(q.spatial, res.data.spatial_excluded_unlocated),
+    items: res.data.items.map(item => ({ ...item, price: item.price == null ? null : Number(item.price) })),
+  }
 }

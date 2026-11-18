@@ -17,7 +17,12 @@ declare global {
 // never on a mere click of the submit button.
 const measuredLeadIds = new Set<string>()
 const DEDUP_KEY = 'ildr_measured_leads_v1'
-export interface LeadReceipt { id: string; status: string; measurement?: { eligible: boolean; reason: string; lead_type?: string; intake_source?: string } }
+export interface LeadReceipt {
+  id: string
+  status: string
+  valuation_request_registered?: boolean
+  measurement?: { eligible: boolean; reason: string; lead_type?: string; intake_source?: string }
+}
 
 export function trackFormConversion(receipt: LeadReceipt): boolean {
   if (!isProductionMeasurementHost() || getMeasurementConsent() !== 'granted' ||

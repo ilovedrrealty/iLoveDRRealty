@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ClipboardList, Search } from 'lucide-react'
-import { getAdminLeads, type Lead } from '../../api/leads'
+import { getAdminLeads, isOwnerAccessLead, type Lead } from '../../api/leads'
 import { getAdminAgents, type AdminAgent } from '../../api/admin'
 import { TONE, FilterPills } from './shared'
 import { LeadDetailPanel } from '../../components/admin/LeadDetailPanel'
 import { LeadTrackingOverview } from '../../components/admin/LeadTrackingOverview'
+import { SellerValuationLead } from '../shared/SellerValuationLead'
 import { parsePhone } from '../../utils/phone'
 
 const TYPE_LABEL: Record<string, string> = {
@@ -28,7 +29,7 @@ const TYPE_COLOR: Record<string, string> = {
 }
 
 function effectiveType(lead: Lead): string {
-  if (lead.type === 'seller_interest' && !lead.property_id) return 'owner_access'
+  if (isOwnerAccessLead(lead)) return 'owner_access'
   return lead.type
 }
 
@@ -109,7 +110,7 @@ function TypeBadge({ lead }: { lead: Lead }) {
       className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"
       style={{ background: `${color}18`, color }}
     >
-      {t(`lead_panel.type_${etype}`, { defaultValue: TYPE_LABEL[etype] ?? etype })}
+      {lead.has_valuation_request ? t('request_label', { ns: 'seller_valuation' }) : t(`lead_panel.type_${etype}`, { defaultValue: TYPE_LABEL[etype] ?? etype })}
     </span>
   )
 }
@@ -153,7 +154,7 @@ function LeadStatusBadge({ lead }: { lead: Lead }) {
 }
 
 
-export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: string) => void } = {}) {
+export function AdminLeads({ onOpenDelivery, onOpenTransaction }: { onOpenDelivery?: (leadId?: string) => void; onOpenTransaction?: (leadId: string) => void } = {}) {
   const { t } = useTranslation('admin')
   const [leads,        setLeads]        = useState<Lead[]>([])
   const [realtors,     setRealtors]     = useState<AdminAgent[]>([])
@@ -162,6 +163,7 @@ export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: stri
   const [statusFilter, setStatusFilter] = useState('All')
   const [query,        setQuery]        = useState('')
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [valuationLeadId, setValuationLeadId] = useState<string | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => {
@@ -181,7 +183,9 @@ export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: stri
     const lead = leads.find(l => l.id === openId)
     if (lead) {
       setSelectedLead(lead)
-      setSearchParams({}, { replace: true })
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('openId')
+      setSearchParams(nextParams, { replace: true })
     }
   }, [leads, searchParams])
 
@@ -253,17 +257,12 @@ export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: stri
     { label: t('leads_page.kpi_closed'),    value: counts.closed,    sub: t('leads_page.kpi_closed_sub'),    accent: undefined },
   ]
 
+  if (valuationLeadId) return <SellerValuationLead leadId={valuationLeadId} onBack={() => setValuationLeadId(null)} />
+
   return (
     <div className="flex flex-col gap-4">
+      {onOpenDelivery ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-paper p-4"><p className="text-sm text-ink2">{t('leads_page.delivery_hint')}</p><button type="button" onClick={() => onOpenDelivery(selectedLead?.id)} className="min-h-10 rounded-lg border border-line px-4 py-2 text-sm font-semibold text-sea">{t('leads_page.open_delivery')}</button></div> : null}
       <LeadTrackingOverview />
-      {onOpenDelivery ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-paper p-4">
-          <p className="text-sm text-ink2">{t('leads_page.delivery_hint')}</p>
-          <button type="button" onClick={() => onOpenDelivery(selectedLead?.id)} className="min-h-10 rounded-lg border border-line px-4 py-2 text-sm font-semibold text-sea">
-            {t('leads_page.open_delivery')}
-          </button>
-        </div>
-      ) : null}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -505,6 +504,9 @@ export function AdminLeads({ onOpenDelivery }: { onOpenDelivery?: (leadId?: stri
         onClose={() => setSelectedLead(null)}
         onAssigned={handleAssigned}
         onStatusUpdated={handleStatusUpdate}
+        onOpenDelivery={onOpenDelivery}
+        onOpenValuation={setValuationLeadId}
+        onOpenTransaction={onOpenTransaction}
       />
     </div>
   )

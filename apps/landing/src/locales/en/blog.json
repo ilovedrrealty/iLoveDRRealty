@@ -1,22 +1,106 @@
 {
+  "editorial": {
+    "directory": "Articles and local guides",
+    "description": "Browse articles, area profiles, and guides for buying and living in the Dominican Republic.",
+    "back_resources": "All resources",
+    "language": "Language",
+    "pagination": "Guide pages",
+    "article": "Article",
+    "guide": "Guide",
+    "neighborhood": "Neighborhood",
+    "empty": "There are no published pages in this language yet.",
+    "loading": "Loading published pages…",
+    "unavailable": "This page is unavailable.",
+    "error": "We couldn’t load this content.",
+    "retry": "Try again",
+    "previous": "Previous page",
+    "next": "Next page",
+    "sources": "Sources",
+    "compare_neighborhoods": "Compare neighborhoods"
+  },
+  "comparison": {
+    "title": "Compare neighborhoods",
+    "directory": "Back to local guides",
+    "language": "Comparison language",
+    "intro": "Compare published neighborhood facts and see when each source was checked.",
+    "choose": "Choose 2 or 3 neighborhoods",
+    "loading_areas": "Loading neighborhoods…",
+    "loading_comparison": "Loading comparison…",
+    "empty": "There are no comparable neighborhoods on this page yet.",
+    "error": "Could not load neighborhood information.",
+    "retry": "Try again",
+    "pages": "Neighborhood pages",
+    "previous": "Previous page",
+    "next": "Next page",
+    "selected": "{{count}} of 3 selected",
+    "selection": "Selected neighborhoods",
+    "remove": "Remove {{area}}",
+    "compare": "Compare selected neighborhoods",
+    "results": "Neighborhood comparison",
+    "withdrawn": "A selected neighborhood is no longer available. You can change your selection.",
+    "read_profile": "Read about {{area}}",
+    "property_search": "Search listings in {{location}}",
+    "checked_on": "Checked on",
+    "unknown": "No sourced fact available.",
+    "topics": {
+      "access": "Access", "utilities": "Utilities", "internet": "Internet",
+      "services": "Nearby services", "transport": "Transportation", "lifestyle": "Lifestyle"
+    }
+  },
+  "market_report": {
+    "title": "Local market report",
+    "back": "Back to local guides",
+    "language": "Report language",
+    "intro": "See current asking prices from the properties listed for sale with I Love DR Realty.",
+    "location": "Report location",
+    "all_locations": "All locations in our sale inventory",
+    "apply": "View report",
+    "invalid_location": "Choose a report location from the list.",
+    "loading": "Loading the latest report…",
+    "error": "Could not load the market report.",
+    "retry": "Try again",
+    "total": "Active sale listings · {{total}}",
+    "as_of": "As of",
+    "time_zone": "Santo Domingo time",
+    "search_location": "Search sale listings in {{location}}",
+    "search_all": "Search all sale listings",
+    "currency_omitted_one": "{{countLabel}} listing with an unspecified or unsupported currency appears only in the total.",
+    "currency_omitted_other": "{{countLabel}} listings with unspecified or unsupported currencies appear only in the total.",
+    "empty": "There are no active sale listings in this report.",
+    "no_currency_groups": "There are no listings with asking amounts in USD or DOP in this report.",
+    "listings": "Listings",
+    "priced_listings": "Listings with a usable asking price",
+    "sized_listings": "Listings used for price per m²",
+    "minimum": "Lowest asking price",
+    "median": "Median asking price",
+    "maximum": "Highest asking price",
+    "no_prices": "No asking prices are available for this group.",
+    "per_sqm": "Median asking price per m²",
+    "basis": { "living": "Living area", "lot": "Lot area" },
+    "basis_unavailable": "Area comparison unavailable for commercial listings.",
+    "unavailable": "Unavailable",
+    "method": "How the report is calculated",
+    "method_asking": "Each group uses base asking prices before promotions, in the listing’s recorded currency. The median is the middle usable asking price or the midpoint of the two middle prices.",
+    "method_area": "Price per m² uses recorded living area for villas, apartments and condos and recorded lot area for land. The report calculates each listing’s price per m² and takes the median of those values."
+  },
   "hero": {
     "tag": "📚 Education & Relocation Hub",
     "heading_pre": "Your guide to",
     "heading_em": "living & investing",
     "heading_post": "in the DR",
-    "sub": "Expert-curated guides, market intelligence, and community wisdom — for first-time visitors, future residents, and serious investors.",
+    "sub": "Practical guides for researching property, planning a move and comparing costs in the Dominican Republic.",
     "search_placeholder": "Search guides, topics, or questions…",
     "search_cta": "Search"
   },
   "stats": [
-    "Expats in DR",
-    "Income tax (first 20yr)",
-    "YoY property growth",
-    "To 12+ countries",
-    "Avg monthly cost"
+    "Articles in the guide library",
+    "Article languages",
+    "Purchase-planning stages",
+    "Selected guide topics",
+    "Dated guide edition"
   ],
   "featured": {
-    "eyebrow": "★ Featured this week",
+    "eyebrow": "★ Featured guide",
     "heading": "Where to start your Dominican journey",
     "read_cta": "Read the guide →"
   },
@@ -35,80 +119,80 @@
   "guides": {
     "all_label": "All guides",
     "count_suffix": "guides",
-    "sorted": "Sorted by reader favorites",
+    "sorted": "Selected guides",
     "read_cta": "Read guide →",
     "read_suffix": "read"
   },
   "process": {
     "eyebrow": "Step-by-step",
     "heading": "The Dominican buying process",
-    "sub": "From browsing to keys in hand — a clear, honest guide to buying property in the DR as a foreigner.",
+    "sub": "Use these stages to organize questions and documents; the actual schedule depends on your transaction.",
     "step_label": "STEP",
     "steps": [
       {
         "title": "Search & discover",
-        "desc": "Define your goals, budget, and regions."
+        "desc": "Define goals, budget and shortlisted regions."
       },
       {
         "title": "Make an offer",
-        "desc": "Letter of Intent, negotiation, agreed terms."
+        "desc": "Review offer, reservation and deposit conditions."
       },
       {
         "title": "Due diligence",
-        "desc": "Title search, surveys, ~30 days."
+        "desc": "Check title, survey, authority, permits and condition."
       },
       {
         "title": "Promise of sale",
-        "desc": "Promesa de venta, 10–30% in escrow."
+        "desc": "Agree price, deadlines, custody and release conditions."
       },
       {
         "title": "Financing",
-        "desc": "Local bank, international, or all-cash."
+        "desc": "Confirm funding, currency and any lender approval."
       },
       {
         "title": "Closing & transfer",
-        "desc": "Notary, 3% transfer tax, registered title."
+        "desc": "Confirm applicable taxes, documents and registration."
       }
     ]
   },
   "faq": {
     "eyebrow": "❓ Frequently asked",
     "heading": "Your questions, answered",
-    "sub": "The six questions buyers ask us most, with honest answers from our team.",
+    "sub": "Questions to resolve before committing to a property.",
     "items": [
       {
         "q": "Can foreigners own property in the Dominican Republic?",
-        "a": "Yes. Foreigners have the same property rights as Dominican citizens and can own land and real estate outright in their own name — no residency required."
+        "a": "Foreigners can generally acquire Dominican property without residence under the national-treatment framework. Confirm the exact title, ownership structure, coastal/public-domain, environmental and use restrictions with independent counsel."
       },
       {
         "q": "What taxes do I pay when buying property?",
-        "a": "A one-time 3% transfer tax (Impuesto de Transferencia) at closing, plus an annual 1% property tax (IPI) on value above the exemption threshold. CONFOTUR-approved projects can waive these."
+        "a": "The general real-estate transfer-tax rate is 3%, subject to the actual DGII basis and authorized relief. Individual-owner annual IPI generally applies at 1% above the annual exemption on combined taxable assessed holdings. Verify the year, owner structure and specific approvals; a CONFOTUR label is not automatic relief."
       },
       {
         "q": "How long does the buying process take?",
-        "a": "Typically 30–60 days from accepted offer to title transfer, with due diligence being the longest phase at roughly 30 days."
+        "a": "The schedule depends on documents, title and survey issues, financing, required approvals and registry processing. Agree evidence-based milestones; no fixed completion time is promised here."
       },
       {
         "q": "Do I need a Dominican attorney?",
-        "a": "Strongly recommended. A local real estate attorney handles title searches, due diligence, and the closing — protecting you from boundary disputes and title defects."
+        "a": "Engage independent Dominican counsel, verify professional standing and conflicts, and agree the written scope. Ask who handles title, survey, seller authority, contract conditions, custody and registration; professional review does not guarantee every risk is removed."
       },
       {
         "q": "What is residency and do I need it to buy property?",
-        "a": "You do NOT need residency to buy. Residency (including the Law 171-07 investor/retiree route) offers tax benefits and the right to live in the DR long-term, but ownership is open to all foreigners."
+        "a": "Buying and residence are separate processes. A purchase does not itself grant residence, extend a visitor stay or create blanket tax relief. Check current visa/residence requirements and any separately approved benefits for your circumstances."
       },
       {
         "q": "Can I rent out my property when I'm not using it?",
-        "a": "Yes. Short- and long-term rentals are common, and I♥DR Realty's booking tools let owners manage availability and payments directly."
+        "a": "Confirm the property’s lawful rental use, association rules, permits, tax obligations, insurance and management arrangements before offering it. Do not assume that a listing or booking tool establishes rental permission or supports payment processing."
       }
     ]
   },
   "newsletter": {
-    "tag": "✉️ Weekly briefing",
-    "heading": "DR real estate intelligence, every Friday",
-    "sub": "Market updates, new listings, and community stories — curated for buyers, investors, and DR-curious readers. Free.",
+    "tag": "✉️ Property updates",
+    "heading": "Guides and property updates",
+    "sub": "Property research, new listings and practical information for readers considering the DR.",
     "placeholder": "your@email.com",
     "cta": "Subscribe free",
-    "disclaimer": "Join 14,000+ subscribers · Unsubscribe anytime"
+    "disclaimer": "Review the subscription terms before submitting your email."
   },
   "article": {
     "back": "← Back to Resources",
@@ -117,12 +201,12 @@
     "reads_label": "reads",
     "key_facts": "Key facts",
     "keep_reading": "Keep reading",
-    "expert_tip": "Expert tip",
+    "expert_tip": "Practical tip",
     "faq_heading": "Frequently asked questions",
     "talk": "Talk to our team →",
     "more_guides": "← More guides",
     "cta_title": "Ready to make your move?",
-    "cta_body": "Our bilingual team helps buyers and investors navigate the DR market.",
+    "cta_body": "Discuss your property search and the questions to resolve before taking the next step.",
     "cta_button": "Get in touch →"
   },
   "custom_resources": "Property resources & services",

@@ -12,7 +12,7 @@ export const PILLARS = [
   { icon: I.globe,  title: 'Global reach from day one',  desc: "Your listing appears across our platform, partner sites, AI search engines, and our social channels — reaching buyers in the diaspora and beyond, not just the local market.", tone: c.sea },
   { icon: I.bolt,   title: 'Verified, trust-first',       desc: "Every listing on our platform is reviewed for accuracy. That gatekeeping protects buyers — which is exactly why serious buyers come here first.", tone: c.coral },
   { icon: I.layers, title: 'Lead management built in',    desc: "Inquiries route to your dashboard and into GoHighLevel automatically. Hot leads tagged, follow-ups scheduled, nothing slips through.", tone: c.green },
-  { icon: I.chart,  title: 'Data-backed pricing',         desc: "We benchmark your property against recent comparable sales in your neighborhood — not aspirational asking prices, actual closings.", tone: c.gold },
+  { icon: I.chart,  title: 'Data-backed pricing',         desc: "We review comparable listings and include verified sale data when it is available.", tone: c.gold },
 ]
 
 export const REACH = [
@@ -25,11 +25,11 @@ export const REACH = [
 ]
 
 export const STEPS: [string, string, string][] = [
-  ['01', 'Free home valuation',    "Tell us about your property. We pull comparable sales, neighborhood trends, and current demand to give you a realistic price range — not an inflated number to win your listing."],
+  ['01', 'Free home valuation',    "Tell us about your property. An agent reviews comparable listings, neighborhood demand, and any verified sales before preparing a price range."],
   ['02', 'Listing prep',           "Professional-grade listing with optimized photos, bilingual copy, location map, amenities, and pricing strategy. Reviewed by our admin team before going live."],
   ['03', 'Marketing launch',       "Listing pushed to our platform, partner sites, social channels, and the buyer-request database for instant matching with qualified leads."],
   ['04', 'Lead qualification',     "Inquiries filtered. You only spend time on serious buyers — pre-approved, budget-confirmed, and matched to your property's profile."],
-  ['05', 'Offers & negotiation',   "We handle the back-and-forth, surface comparable closings to back your position, and protect your interests through the negotiation."],
+  ['05', 'Offers & negotiation',   "We help with offers and use documented comparable properties to support your position."],
   ['06', 'Closing support',        "Attorney coordination, title transfer, escrow, deposit handling, and final handover — managed and tracked end to end."],
 ]
 

@@ -3,7 +3,9 @@ import { isAxiosError } from 'axios'
 import { CheckSquare, ExternalLink, Plus, Printer, Save, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { CHECKLIST_ITEMS } from '../../data/researchTools'
-import { emptyResearchData, getResearchWorkspace, listResearchWorkspaces, saveResearchWorkspace, safeResearchUrl, type ResearchData, type ResearchSummary } from '../../api/researchWorkspaces'
+import { emptyResearchData, getResearchWorkspace, listResearchWorkspaces, PurchaseCostsUnconfirmed, saveResearchWorkspace, safeResearchUrl, type ResearchData, type ResearchSummary } from '../../api/researchWorkspaces'
+import { preparePurchaseCosts, purchaseCostRows, type PurchaseCostRow } from '../../data/purchaseCosts'
+import { PurchaseCostWorksheet } from './PurchaseCostWorksheet'
 
 const FIELD = 'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-sea disabled:opacity-60'
 const BUTTON = 'inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-2 text-[12px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-default'
@@ -13,6 +15,8 @@ export function SavedResearchWorkspace() {
   const [items, setItems] = useState<ResearchSummary[]>([])
   const [current, setCurrent] = useState<ResearchSummary | null>(null)
   const [data, setData] = useState<ResearchData>(emptyResearchData)
+  const [costRows, setCostRows] = useState<PurchaseCostRow[]>([])
+  const [costsChanged, setCostsChanged] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(true)
   const [ready, setReady] = useState(false)
@@ -38,28 +42,48 @@ export function SavedResearchWorkspace() {
     return () => window.removeEventListener('beforeunload', warn)
   }, [dirty])
 
+  function markEdited() {
+    setDirty(true); setMessage(''); setError('')
+  }
   function update(next: Partial<ResearchData>) {
-    setData(previous => ({ ...previous, ...next })); setDirty(true); setMessage(''); setError('')
+    setData(previous => ({ ...previous, ...next }))
+    markEdited()
+  }
+  function updateCosts(rows: PurchaseCostRow[]) {
+    setCostRows(rows); setCostsChanged(true); markEdited()
+  }
+  function replaceDraft(draft: ResearchData) {
+    setData(draft)
+    setCostRows(purchaseCostRows(draft.purchase_costs))
+    setCostsChanged(false)
+    setDirty(false)
   }
   async function open(id: string) {
     setBusy(true); setError(''); setMessage('')
     try {
       if (id) {
         const row = await getResearchWorkspace(id)
-        setCurrent(row); setData(row.data)
-      } else { setCurrent(null); setData(emptyResearchData()) }
-      setDirty(false)
+        setCurrent(row); replaceDraft(row.data)
+      } else { setCurrent(null); replaceDraft(emptyResearchData()) }
     } catch { setError('load_error') }
     finally { setBusy(false) }
   }
+  const costs = preparePurchaseCosts(costRows)
   async function save() {
+    if (!costs) return
     setBusy(true); setError(''); setMessage('')
     try {
-      const row = await saveResearchWorkspace(data, current)
-      setCurrent(row); setData(row.data); setDirty(false); setMessage('saved')
+      const { purchase_costs: _previousCosts, ...draft } = data
+      const row = await saveResearchWorkspace(costsChanged ? { ...draft, purchase_costs: costs } : draft, current)
+      setCurrent(row); replaceDraft(row.data); setMessage('saved')
       setItems(previous => [row, ...previous.filter(item => item.id !== row.id)])
     } catch (failure) {
-      setError(isAxiosError(failure) && failure.response?.status === 409 ? 'conflict' : 'save_error')
+      if (failure instanceof PurchaseCostsUnconfirmed) {
+        const row = failure.workspace
+        setCurrent(row)
+        setItems(previous => [row, ...previous.filter(item => item.id !== row.id)])
+        setError('costs_unconfirmed')
+      } else setError(isAxiosError(failure) && failure.response?.status === 409 ? 'conflict' : 'save_error')
     } finally { setBusy(false) }
   }
   const completed = CHECKLIST_ITEMS.filter(id => data.checks[id]).length
@@ -86,6 +110,7 @@ export function SavedResearchWorkspace() {
         </fieldset>
       </div>
       <div className="hidden print:block"><h3>{data.title}</h3><p>{data.reference}</p><p className="whitespace-pre-wrap">{data.notes}</p></div>
+      <PurchaseCostWorksheet rows={costRows} costs={costs} disabled={busy || !ready} onChange={updateCosts} />
       <p className="text-[12px] font-semibold text-ink2" aria-live="polite">{t('checklist.progress', { done: completed, total: CHECKLIST_ITEMS.length })}</p>
       <fieldset disabled={busy || !ready} className="flex flex-col divide-y divide-line p-0 m-0 border-0 min-w-0">
         {CHECKLIST_ITEMS.map(id => <div key={id} className="py-3 research-tools-card">
@@ -112,7 +137,7 @@ export function SavedResearchWorkspace() {
         <button type="button" disabled={busy || !ready || data.links.length >= 10} onClick={() => update({ links: [...data.links, { title: '', url: '' }] })} className={`${BUTTON} research-no-print`}><Plus size={14} />{t('saved.add_link')}</button>
       </div>
       <div className="research-no-print mt-5 flex flex-wrap items-center gap-3">
-        <button type="button" disabled={busy || !ready || !dirty || !data.title.trim()} onClick={() => void save()} className={`${BUTTON} bg-sea text-white border-sea`}><Save size={14} />{t(busy && dirty ? 'saved.saving' : 'saved.save')}</button>
+        <button type="button" disabled={busy || !ready || !dirty || !data.title.trim() || !costs} onClick={() => void save()} className={`${BUTTON} bg-sea text-white border-sea`}><Save size={14} />{t(busy && dirty ? 'saved.saving' : 'saved.save')}</button>
         {dirty && <button type="button" disabled={busy} onClick={() => void open(current?.id ?? '')} className={`${BUTTON} text-ink2`}>{t('saved.discard')}</button>}
         <p role="status" className="text-[12px] text-dim m-0">{message ? t(`saved.${message}`) : busy ? t('saved.loading') : dirty ? t('saved.unsaved') : current ? t('saved.saved_at', { date: savedAt }) : t('saved.start')}</p>
       </div>

@@ -4,7 +4,7 @@ import type { AdminProfessional, AdminProfessionalSummary, ProfessionalDraft, Pr
 export async function getProfessionalOptions(signal?: AbortSignal): Promise<ProfessionalOptions> {
   return (await client.get<ProfessionalOptions>('/professionals/options', { signal })).data
 }
-export async function getProfessionals(params: { category: string[]; area: string[]; q: string; limit: number; offset: number }, signal?: AbortSignal): Promise<ProfessionalPage<PublicProfessional>> {
+export async function getProfessionals(params: { category: string[]; area: string[]; language?: string; q: string; limit: number; offset: number }, signal?: AbortSignal): Promise<ProfessionalPage<PublicProfessional>> {
   return (await client.get<ProfessionalPage<PublicProfessional>>('/professionals', { params, paramsSerializer: { indexes: null }, signal })).data
 }
 export async function getProfessional(id: string, signal?: AbortSignal): Promise<PublicProfessional> {

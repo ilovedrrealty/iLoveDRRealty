@@ -1,136 +1,116 @@
-import { Users, Home, DollarSign, TrendingUp, Globe } from 'lucide-react'
-import { TONE, BAR_DATA, MAX_BAR, REVENUE_DATA, MAX_REV, REGIONS } from './shared'
+import { useEffect, useState, type ReactNode } from 'react'
+import { CalendarDays, ClipboardList, Home, RefreshCw, Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { ANALYTICS_BUCKET_KEYS, getAdminAnalytics, type AdminAnalytics, type AnalyticsDays } from '../../api/analytics'
+
+const { roles: ROLES, listingStatuses: LISTINGS, purposes: PURPOSES, propertyTypes: PROPERTY_TYPES,
+  leadStatuses: LEAD_STATUSES, leadTypes: LEAD_TYPES, bookingStatuses: BOOKINGS } = ANALYTICS_BUCKET_KEYS
+const SERIES = ['accounts_created', 'inquiries_received', 'booking_records_created'] as const
+const COLORS = ['#0b63ab', '#c41230', '#15803d']
+
+function Panel({ title, children, description }: { title: string; children: ReactNode; description?: string }) {
+  return <section className="rounded-2xl border border-line bg-paper p-4 sm:p-5">
+    <h2 className="font-sans text-base font-bold text-ink">{title}</h2>
+    {description ? <p className="mt-1 text-xs leading-relaxed text-ink2">{description}</p> : null}
+    <div className="mt-4">{children}</div>
+  </section>
+}
+
+function CountList({ counts, keys, label, format, color = '#0b63ab' }: {
+  counts: Record<string, number>; keys: readonly string[]; label: (key: string) => string
+  format: (value: number) => string; color?: string
+}) {
+  const total = keys.reduce((sum, key) => sum + counts[key], 0)
+  return <dl className="space-y-3">{keys.map(key => {
+    const count = counts[key]
+    return <div key={key}>
+      <div className="flex items-baseline justify-between gap-3 text-sm"><dt className="text-ink2">{label(key)}</dt><dd className="font-semibold tabular-nums text-ink">{format(count)}</dd></div>
+      <div aria-hidden="true" className="mt-1 h-1.5 overflow-hidden rounded-full bg-line-soft"><div className="h-full rounded-full" style={{ width: `${total ? count / total * 100 : 0}%`, background: color }} /></div>
+    </div>
+  })}</dl>
+}
 
 export function Analytics() {
-  return (
-    <>
-      {/* Top KPIs */}
-      <div className="grid grid-cols-2 gap-3 mb-5 lg:grid-cols-4 lg:gap-4 lg:mb-6">
+  const { t, i18n } = useTranslation('admin')
+  const [days, setDays] = useState<AnalyticsDays>(30)
+  const [refresh, setRefresh] = useState(0)
+  const [data, setData] = useState<AdminAnalytics | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const locale = i18n.language.startsWith('es') ? 'es-DO' : 'en-US'
+  const format = (value: number) => value.toLocaleString(locale)
+  const label = (group: string, key: string) => t(`analytics_page.${group}.${key}`)
+  const shortDate = (value: string) => new Intl.DateTimeFormat(locale, { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(new Date(value.length === 10 ? `${value}T00:00:00Z` : value))
+  const dateTime = (value: string) => new Intl.DateTimeFormat(locale, { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+
+  useEffect(() => {
+    const controller = new AbortController()
+    let active = true
+    setLoading(true)
+    setFailed(false)
+    setData(null)
+    getAdminAnalytics(days, controller.signal)
+      .then(report => { if (active && !controller.signal.aborted) setData(report) })
+      .catch(() => { if (active && !controller.signal.aborted) setFailed(true) })
+      .finally(() => { if (active && !controller.signal.aborted) setLoading(false) })
+    return () => { active = false; controller.abort() }
+  }, [days, refresh])
+
+  const dailyMax = data ? Math.max(1, ...data.daily.flatMap(day => SERIES.map(key => day[key]))) : 1
+  const noDailyActivity = data?.daily.every(day => SERIES.every(key => day[key] === 0))
+
+  return <div className="space-y-5" aria-busy={loading}>
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div><label htmlFor="analytics-days" className="mb-1 block text-xs font-semibold text-ink2">{t('analytics_page.period_label')}</label>
+        <select id="analytics-days" value={days} onChange={event => {
+          const next = Number(event.target.value)
+          if (next === 7 || next === 30 || next === 90) setDays(next)
+        }} className="min-h-10 rounded-lg border border-line bg-paper px-3 text-sm text-ink">
+          {[7, 30, 90].map(value => <option key={value} value={value}>{t('analytics_page.last_days', { count: value })}</option>)}
+        </select>
+      </div>
+      <button type="button" disabled={loading} onClick={() => setRefresh(value => value + 1)} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-paper px-3 text-sm font-semibold text-ink disabled:cursor-wait disabled:opacity-60"><RefreshCw size={15} aria-hidden="true" />{t('analytics_page.refresh')}</button>
+    </div>
+    {loading ? <div role="status" className="rounded-xl border border-line bg-paper p-6 text-sm text-ink2">{t('analytics_page.loading')}</div> : null}
+    {failed ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-900"><p>{t('analytics_page.error')}</p><button type="button" onClick={() => setRefresh(value => value + 1)} className="mt-3 min-h-9 rounded-lg border border-red-300 bg-white px-3 font-semibold">{t('analytics_page.retry')}</button></div> : null}
+    {data ? <>
+      <p className="text-xs leading-relaxed text-ink2">{t('analytics_page.window', { start: shortDate(data.window.start_at), end: shortDate(data.window.end_at) })}{' · '}{t('analytics_page.updated', { date: dateTime(data.generated_at) })}</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { Icon: Users,      label: 'Total Users',        value: '1,284', delta: '+34 today',     color: '#0b63ab' },
-          { Icon: Home,       label: 'Active Listings',    value: '4,847', delta: '+124 this week', color: '#1f7a3d' },
-          { Icon: DollarSign, label: 'Monthly Revenue',    value: '$124K', delta: '+9% vs Apr',     color: TONE      },
-          { Icon: TrendingUp, label: 'Avg Days on Market', value: '42',    delta: '−3 vs Apr',      color: '#f0a800' },
-        ].map(({ Icon, label, value, delta, color }, i) => (
-          <div key={i} className="bg-paper border border-line rounded-xl py-4.5 px-5">
-            <Icon size={18} className="mb-2" color={color} />
-            <div className="font-sans text-2xl font-bold text-ink leading-none">{value}</div>
-            <div className="text-[12.5px] font-semibold mt-1.5 text-ink2">{label}</div>
-            <div className="text-[11.5px] mt-0.5 font-semibold" style={{ color }}>{delta}</div>
-          </div>
-        ))}
+          { Icon: Users, title: t('analytics_page.accounts'), value: data.snapshot.accounts, note: t('analytics_page.active_status', { count: data.snapshot.active_accounts }) },
+          { Icon: Home, title: t('analytics_page.active_listings'), value: data.snapshot.active_listings, note: t('analytics_page.current_snapshot') },
+          { Icon: ClipboardList, title: t('analytics_page.inquiries'), value: data.period.inquiries.received, note: t('analytics_page.period_count') },
+          { Icon: CalendarDays, title: t('analytics_page.bookings'), value: data.period.booking_records_created, note: t('analytics_page.booking_count_note') },
+        ].map(({ Icon, title, value, note }) => <section key={title} className="rounded-xl border border-line bg-paper p-4"><Icon size={18} className="mb-2 text-coral" aria-hidden="true" /><div className="text-2xl font-bold tabular-nums text-ink">{format(value)}</div><h2 className="mt-1 text-sm font-semibold text-ink">{title}</h2><p className="mt-1 text-xs text-ink2">{note}</p></section>)}
       </div>
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_1fr]">
-
-        {/* Left: user growth + revenue */}
-        <div className="flex flex-col gap-5">
-
-          <div className="bg-paper border border-line rounded-2xl p-5.5">
-            <div className="font-sans text-[17px] font-bold text-ink mb-0.5">User growth</div>
-            <div className="text-xs text-dim mb-4">New registrations per month</div>
-            <div className="flex items-end gap-2 h-28">
-              {BAR_DATA.map((d, i) => {
-                const h = (d.users / MAX_BAR) * 96
-                const isLast = i === BAR_DATA.length - 1
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                    <div className={`text-[10px] ${isLast ? 'font-bold text-ink' : 'text-dim'}`}>
-                      {d.users >= 1000 ? (d.users / 1000).toFixed(1) + 'K' : d.users}
-                    </div>
-                    <div className="w-full rounded-t-lg" style={{ height: h, background: isLast ? TONE : `${TONE}50` }} />
-                    <div className="text-[10px] text-dim">{d.month}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="bg-paper border border-line rounded-2xl p-5.5">
-            <div className="font-sans text-[17px] font-bold text-ink mb-0.5">Revenue trend</div>
-            <div className="text-xs text-dim mb-4">Monthly platform revenue (USD thousands)</div>
-            <div className="relative h-28">
-              <svg viewBox="0 0 300 96" className="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={TONE} stopOpacity=".2" />
-                    <stop offset="100%" stopColor={TONE} stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <polyline
-                  points={REVENUE_DATA.map((d, i) => {
-                    const x = (i / (REVENUE_DATA.length - 1)) * 280 + 10
-                    const y = 86 - (d.rev / MAX_REV) * 76
-                    return `${x},${y}`
-                  }).join(' ') + ` 290,86 10,86`}
-                  fill="url(#revGrad)"
-                  stroke="none"
-                />
-                <polyline
-                  points={REVENUE_DATA.map((d, i) => {
-                    const x = (i / (REVENUE_DATA.length - 1)) * 280 + 10
-                    const y = 86 - (d.rev / MAX_REV) * 76
-                    return `${x},${y}`
-                  }).join(' ')}
-                  fill="none"
-                  stroke={TONE}
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-                {REVENUE_DATA.map((d, i) => {
-                  const x = (i / (REVENUE_DATA.length - 1)) * 280 + 10
-                  const y = 86 - (d.rev / MAX_REV) * 76
-                  const isLast = i === REVENUE_DATA.length - 1
-                  return <circle key={i} cx={x} cy={y} r={isLast ? 4 : 2.5} fill={isLast ? TONE : '#fff'} stroke={TONE} strokeWidth="1.5" />
-                })}
-              </svg>
-              <div className="flex justify-between mt-1 px-2.5">
-                {REVENUE_DATA.map(d => (
-                  <div key={d.month} className="text-[10px] text-dim">{d.month}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Right: listings by region */}
-        <div className="bg-paper border border-line rounded-2xl p-5.5">
-          <div className="font-sans text-[17px] font-bold text-ink mb-0.5">Listings by region</div>
-          <div className="text-xs text-dim mb-5">Active listings distribution</div>
-          <div className="flex flex-col gap-3.5">
-            {REGIONS.map((r, i) => (
-              <div key={i}>
-                <div className="flex justify-between text-[12.5px] mb-1.5">
-                  <span className="font-semibold text-ink flex items-center gap-1.5"><Globe size={11} className="text-dim" />{r.name}</span>
-                  <span className="text-dim font-medium">{r.count.toLocaleString()} · {r.pct}%</span>
-                </div>
-                <div className="h-2 bg-line rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${r.pct}%`, background: i === 0 ? TONE : `${TONE}${Math.round(80 - i * 12).toString(16)}` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-5 pt-4 border-t border-line grid grid-cols-2 gap-3">
-            {[
-              { label: 'Avg price', value: '$487K' },
-              { label: 'For rent',  value: '38%'   },
-              { label: 'For sale',  value: '62%'   },
-              { label: 'New (7d)',  value: '+124'   },
-            ].map(({ label, value }, i) => (
-              <div key={i} className="text-center py-2 bg-line-soft rounded-lg">
-                <div className="font-sans text-[18px] font-bold text-ink">{value}</div>
-                <div className="text-[11px] text-dim">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
+      <Panel title={t('analytics_page.activity_title')} description={t('analytics_page.activity_note')}>
+        <ul className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-ink2">{SERIES.map((key, i) => <li key={key} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLORS[i] }} aria-hidden="true" />{label('daily', key)}</li>)}</ul>
+        {noDailyActivity ? <p className="mb-4 rounded-lg bg-line-soft p-3 text-sm text-ink2">{t('analytics_page.empty_activity')}</p> : null}
+        <div className="overflow-x-auto" aria-hidden="true"><div className="flex h-32 items-end gap-1 border-b border-line" style={{ minWidth: data.daily.length * 12 }}>{data.daily.map(day => <div key={day.date} className="flex h-full flex-1 items-end justify-center gap-px">{SERIES.map((key, i) => <div key={key} className="min-w-px max-w-3 flex-1 rounded-t-sm" style={{ height: `${day[key] / dailyMax * 100}%`, background: COLORS[i] }} />)}</div>)}</div></div>
+        <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] text-ink2"><span>{shortDate(data.daily[0].date)}</span><span>{shortDate(data.daily[data.daily.length - 1].date)}</span></div>
+        <details className="mt-4 text-sm"><summary className="cursor-pointer font-semibold text-ink">{t('analytics_page.show_daily_values')}</summary><div className="mt-3 max-h-80 overflow-auto"><table className="w-full text-left text-xs"><caption className="sr-only">{t('analytics_page.daily_table_caption')}</caption><thead><tr className="border-b border-line text-ink2"><th scope="col" className="p-2">{t('analytics_page.date')}</th>{SERIES.map(key => <th key={key} scope="col" className="p-2 text-right">{label('daily', key)}</th>)}</tr></thead><tbody>{data.daily.map(day => <tr key={day.date} className="border-b border-line"><th scope="row" className="whitespace-nowrap p-2 font-normal text-ink2">{shortDate(day.date)}</th>{SERIES.map(key => <td key={key} className="p-2 text-right tabular-nums text-ink">{format(day[key])}</td>)}</tr>)}</tbody></table></div></details>
+      </Panel>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Panel title={t('analytics_page.inquiry_status_title')} description={t('analytics_page.cohort_note')}><CountList counts={data.period.inquiries.current_status} keys={LEAD_STATUSES} label={key => label('lead_status', key)} format={format} color="#c41230" /></Panel>
+        <Panel title={t('analytics_page.inquiry_type_title')} description={t('analytics_page.inquiry_scope')}><CountList counts={data.period.inquiries.by_type} keys={LEAD_TYPES} label={key => label('lead_type', key)} format={format} color="#c41230" /></Panel>
       </div>
-    </>
-  )
+      <Panel title={t('analytics_page.followup_title')} description={t('analytics_page.followup_note')}>
+        <dl className="grid gap-4 sm:grid-cols-3">{[
+          { title: t('analytics_page.contact_recorded'), value: data.period.inquiries.contact_recorded },
+          { title: t('analytics_page.crm_linked'), value: data.period.inquiries.crm_linked },
+          { title: t('analytics_page.crm_errors'), value: data.period.inquiries.crm_errors },
+        ].map(({ title, value }) => <div key={title}><dt className="text-xs text-ink2">{title}</dt><dd className="mt-1 text-xl font-bold tabular-nums text-ink">{format(value)}</dd></div>)}</dl>
+        <p className="mt-4 text-xs leading-relaxed text-ink2">{t('analytics_page.tracking_note', { tests: format(data.period.inquiries.excluded_internal_tests), unknown: format(data.period.inquiries.unknown_tracking) })}</p>
+        <a href="/leads?workspace=admin" className="mt-3 inline-block text-sm font-semibold text-coral underline underline-offset-2">{t('analytics_page.open_leads')}</a>
+      </Panel>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Panel title={t('analytics_page.listing_status_title')} description={t('analytics_page.snapshot_listing_note', { total: format(data.snapshot.listing_records), created: format(data.period.listings_created) })}><CountList counts={data.snapshot.listings_by_status} keys={LISTINGS} label={key => label('listing_status', key)} format={format} /></Panel>
+        <Panel title={t('analytics_page.account_roles_title')} description={t('analytics_page.snapshot_accounts_note', { created: format(data.period.accounts_created) })}><CountList counts={data.snapshot.accounts_by_role} keys={ROLES} label={key => label('account_role', key)} format={format} /></Panel>
+        <Panel title={t('analytics_page.active_purpose_title')} description={t('analytics_page.current_snapshot')}><CountList counts={data.snapshot.active_listings_by_purpose} keys={PURPOSES} label={key => label('purpose', key)} format={format} color="#15803d" /></Panel>
+        <Panel title={t('analytics_page.active_type_title')} description={t('analytics_page.current_snapshot')}><CountList counts={data.snapshot.active_listings_by_type} keys={PROPERTY_TYPES} label={key => label('property_type', key)} format={format} color="#15803d" /></Panel>
+        <Panel title={t('analytics_page.booking_status_title')} description={t('analytics_page.booking_scope')}><CountList counts={data.period.booking_current_status} keys={BOOKINGS} label={key => label('booking_status', key)} format={format} /></Panel>
+      </div>
+      <p className="rounded-xl border border-line bg-line-soft p-4 text-xs leading-relaxed text-ink2">{t('analytics_page.report_scope')}</p>
+    </> : null}
+  </div>
 }

@@ -66,6 +66,33 @@
       "followup": "Record the professional review and remaining follow-up tasks"
     }
   },
+  "purchase_costs": {
+    "heading": "Purchase cost worksheet",
+    "intro": "Record each cost in its original currency as an estimate, quote, or payment. Save this review to keep the worksheet.",
+    "amount_help": "Use up to two decimal places. Leave an unrecorded amount blank. Enter 0.00 for a recorded zero.",
+    "row": "Cost {{number}}",
+    "category": "Cost category",
+    "currency": "Currency",
+    "basis_label": "Amount basis",
+    "amount": "Amount",
+    "label": "Description (optional)",
+    "add": "Add cost",
+    "remove": "Remove cost {{number}}",
+    "invalid": "Check that each entered amount is within the allowed range and uses up to two decimal places.",
+    "totals": "Purchase cost totals",
+    "total": "{{currency}} total",
+    "empty": "No amounts",
+    "categories": {
+      "transfer_tax": "Transfer tax",
+      "legal": "Legal fees",
+      "notary_registry": "Notary and registry fees",
+      "survey": "Survey",
+      "inspection": "Inspection",
+      "financing": "Financing",
+      "other": "Other"
+    },
+    "basis": { "estimate": "Estimate", "quote": "Quote", "paid": "Paid" }
+  },
   "saved": {
     "intro": "Save a separate checklist, notes and document links for each property review. Return to this account to continue later.",
     "privacy": "Saved privately to your account. Other members cannot open your reviews. Save before leaving this page. Document links keep their existing sharing permissions; avoid public links to confidential records.",
@@ -91,6 +118,7 @@
     "discard": "Discard unsaved edits and reload",
     "load_error": "Your saved reviews could not be loaded. Check your sign-in and try again.",
     "save_error": "The review was not saved. Check your sign-in, field limits and HTTPS links, then retry. Your edits remain on this page.",
+    "costs_unconfirmed": "The saved purchase costs could not be verified. Your edits remain on this page.",
     "conflict": "The review changed in another tab or the account reached its saved-review limit. Your edits are still here. Copy any needed notes before discarding and reloading."
   }
 }

@@ -1,0 +1,88 @@
+{
+  "action": "Rendimiento",
+  "title": "Rendimiento de la propiedad",
+  "close": "Cerrar rendimiento de la propiedad",
+  "loading": "Cargando el rendimiento de la propiedad…",
+  "retry": "Reintentar",
+  "unavailable": "No disponible",
+  "dates": {
+    "start": "Fecha de inicio",
+    "end": "Fecha de fin",
+    "apply": "Aplicar fechas",
+    "time_zone": "Hora de Santo Domingo"
+  },
+  "views": {
+    "lifetime": "Solicitudes de vista acumuladas",
+    "lifetime_help": "Solicitudes de vista aceptadas desde que se creó el anuncio. Las solicitudes repetidas pueden contar.",
+    "tracked": "Solicitudes de vista registradas",
+    "coverage": {
+      "complete": "El conteo incluye todas las fechas de este informe.",
+      "partial": "El conteo cubre las fechas registradas. Algunas fechas faltan o están en curso.",
+      "unavailable": "No hay conteos diarios disponibles para estas fechas."
+    },
+    "recording": "Registro de vistas",
+    "began": "El registro diario comenzó el",
+    "no_tracking": "El registro diario de vistas aún no ha comenzado.",
+    "daily": "Conteo diario de vistas",
+    "count": "Solicitudes",
+    "coverage_title": "Cobertura",
+    "states": { "complete": "Completa", "partial": "Parcial", "unavailable": "No disponible" }
+  },
+  "inquiries": {
+    "title": "Consultas sobre la propiedad",
+    "help": "Consultas recibidas sobre esta propiedad durante el período seleccionado. Se excluyen las pruebas internas identificadas."
+  },
+  "confirmed": {
+    "title": "Citas confirmadas",
+    "help": "Citas actualmente confirmadas para fechas dentro de este informe."
+  },
+  "completed": {
+    "title": "Visitas realizadas registradas",
+    "help": "Visitas que el equipo registró como realizadas durante las fechas de este informe.",
+    "record_help": "Selecciona la fecha en que se realizó la visita.",
+    "entries": "Fechas de visitas realizadas"
+  },
+  "milestones": {
+    "heading": "Hitos del anuncio",
+    "empty": "No hay hitos del anuncio para estas fechas.",
+    "truncated": "Se muestran los hitos más recientes del período. Elige un período más corto para ver más.",
+    "kinds": {
+      "submitted": "Anuncio enviado",
+      "approved": "Anuncio aprobado",
+      "archived": "Anuncio archivado",
+      "rejected": "Anuncio rechazado",
+      "edit_approved": "Edición del anuncio aprobada"
+    }
+  },
+  "entries": {
+    "record": "Añadir registro de rendimiento",
+    "type": "Tipo de registro",
+    "date": "Fecha",
+    "note": "Nota visible para el propietario",
+    "share": "Compartir esta nota con el propietario",
+    "sharing_help": "Resume los comentarios o el progreso. Omite los nombres de visitantes, los datos de contacto y los enlaces privados.",
+    "save": "Guardar registro",
+    "saving": "Guardando registro…",
+    "retry": "Reintentar registro",
+    "saved": "Se guardó el registro de rendimiento.",
+    "cancel": "Cancelar registro",
+    "discard": "¿Cerrar y descartar el registro sin guardar?",
+    "notes": "Comentarios y progreso de promoción",
+    "notes_empty": "No hay notas visibles para el propietario en estas fechas.",
+    "notes_recent_empty": "Los registros recientes que se muestran no incluyen notas visibles para el propietario.",
+    "truncated": "Se muestran los registros más recientes del período. Elige un período más corto para ver más.",
+    "kinds": {
+      "completed_showing": "Visita realizada",
+      "owner_feedback": "Comentarios para el propietario",
+      "marketing_update": "Actualización de promoción"
+    }
+  },
+  "errors": {
+    "access": "Tu cuenta no tiene acceso a este informe.",
+    "read": "No se pudo actualizar el rendimiento de la propiedad.",
+    "range": "Elige un período válido de hasta 366 días.",
+    "validation": "Revisa la fecha y la nota visible para el propietario, e inténtalo de nuevo.",
+    "conflict": "Esta referencia ya está en uso. Cancela y revisa el informe antes de crear un nuevo registro.",
+    "uncertain": "No se pudo confirmar el guardado. Reintenta con el mismo registro para comprobar su estado."
+  }
+}

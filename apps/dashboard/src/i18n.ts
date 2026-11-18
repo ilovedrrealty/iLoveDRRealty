@@ -18,21 +18,36 @@ import esSettings from './locale/es/settings.json'
 
 import enWebsiteEditor from './locale/en/website_editor.json'
 import esWebsiteEditor from './locale/es/website_editor.json'
+import enEditorial from './locale/en/editorial.json'
+import esEditorial from './locale/es/editorial.json'
+import enDevelopmentInventory from './locale/en/development_inventory.json'
+import esDevelopmentInventory from './locale/es/development_inventory.json'
+import enSellerValuation from './locale/en/seller_valuation.json'
+import esSellerValuation from './locale/es/seller_valuation.json'
+import enListingPerformance from './locale/en/listing_performance.json'
+import esListingPerformance from './locale/es/listing_performance.json'
+import enTransactions from './locale/en/transactions.json'
+import esTransactions from './locale/es/transactions.json'
 import enResearchTools from './locale/en/research_tools.json'
 import esResearchTools from './locale/es/research_tools.json'
 import enProfessionals from './locale/en/professionals.json'
 import esProfessionals from './locale/es/professionals.json'
 import enToolHubs from './locale/en/tool_hubs.json'
 import esToolHubs from './locale/es/tool_hubs.json'
-import enContactShare from './locale/en/contact_share.json'
-import esContactShare from './locale/es/contact_share.json'
-
 import enLeadDelivery from './locale/en/lead_delivery.json'
 import esLeadDelivery from './locale/es/lead_delivery.json'
-import enCommunications from './locale/en/communications.json'
-import esCommunications from './locale/es/communications.json'
+import enLocationReview from './locale/en/location_review.json'
+import esLocationReview from './locale/es/location_review.json'
+import enManagement from './locale/en/management.json'
+import esManagement from './locale/es/management.json'
 import enInquiryFeeds from './locale/en/inquiry_feeds.json'
 import esInquiryFeeds from './locale/es/inquiry_feeds.json'
+import enContactShare from './locale/en/contact_share.json'
+import esContactShare from './locale/es/contact_share.json'
+import enPropertyNetwork from './locale/en/property_network.json'
+import esPropertyNetwork from './locale/es/property_network.json'
+import enCommunications from './locale/en/communications.json'
+import esCommunications from './locale/es/communications.json'
 
 const savedLang = (localStorage.getItem('ildr_lang') as 'en' | 'es') ?? 'en'
 
@@ -47,13 +62,21 @@ i18n.use(initReactI18next).init({
       realtor:  enRealtor,
       settings: enSettings,
       website_editor: enWebsiteEditor,
+      editorial: enEditorial,
+      development_inventory: enDevelopmentInventory,
+      seller_valuation: enSellerValuation,
+      listing_performance: enListingPerformance,
+      transactions: enTransactions,
       research_tools: enResearchTools,
       professionals: enProfessionals,
       tool_hubs: enToolHubs,
-      contact_share: enContactShare,
       lead_delivery: enLeadDelivery,
-      communications: enCommunications,
+      location_review: enLocationReview,
+      management: enManagement,
       inquiry_feeds: enInquiryFeeds,
+      contact_share: enContactShare,
+      property_network: enPropertyNetwork,
+      communications: enCommunications,
     },
     es: {
       nav:      esNav,
@@ -64,18 +87,26 @@ i18n.use(initReactI18next).init({
       realtor:  esRealtor,
       settings: esSettings,
       website_editor: esWebsiteEditor,
+      editorial: esEditorial,
+      development_inventory: esDevelopmentInventory,
+      seller_valuation: esSellerValuation,
+      listing_performance: esListingPerformance,
+      transactions: esTransactions,
       research_tools: esResearchTools,
       professionals: esProfessionals,
       tool_hubs: esToolHubs,
-      contact_share: esContactShare,
       lead_delivery: esLeadDelivery,
-      communications: esCommunications,
+      location_review: esLocationReview,
+      management: esManagement,
       inquiry_feeds: esInquiryFeeds,
+      contact_share: esContactShare,
+      property_network: esPropertyNetwork,
+      communications: esCommunications,
     },
   },
   lng: savedLang,
   fallbackLng: 'en',
-  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'research_tools', 'professionals', 'tool_hubs', 'contact_share', 'lead_delivery', 'communications', 'inquiry_feeds'],
+  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'editorial', 'development_inventory', 'seller_valuation', 'listing_performance', 'transactions', 'research_tools', 'professionals', 'tool_hubs', 'lead_delivery', 'location_review', 'management', 'inquiry_feeds', 'contact_share', 'property_network', 'communications'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
 })
