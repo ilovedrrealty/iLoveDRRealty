@@ -12,7 +12,7 @@ export default function Page() {
       <div className="mb-8">
         <div className="text-2.75 font-bold tracking-[.18em] uppercase text-sea mb-3">Legal</div>
         <h1 className="text-7 font-bold text-ink mb-2 tracking-[-.02em]">Privacy Policy</h1>
-        <p className="text-[13px] text-dim">Last updated: October 22, 2026</p>
+        <p className="text-[13px] text-dim">Last updated November 17, 2026</p>
       </div>
 
       <div className="listing-prose">
@@ -71,6 +71,25 @@ export default function Page() {
         <p>
           You may ask us to access, correct, or delete the information we hold about you at any
           time by contacting us using the details below.
+        </p>
+
+        <h2>Newsletter choices</h2>
+        <p>
+          Newsletter signup is optional and has its own consent checkbox. We keep your email,
+          selected language and consent record privately. A request remains pending until you
+          deliberately confirm through the email link. Our email delivery provider, Resend,
+          processes the confirmation message when delivery is enabled. You can use a newsletter
+          email's unsubscribe link to stop future newsletter messages. Submitting a property
+          inquiry or creating an account does not enroll you in the newsletter.
+        </p>
+        <p lang="es">
+          La suscripción al boletín es opcional y requiere marcar su propia casilla de consentimiento.
+          Guardamos de forma privada tu correo, idioma elegido y registro de consentimiento.
+          La solicitud queda pendiente hasta que confirmes expresamente mediante el enlace del
+          correo. Nuestro proveedor de correo, Resend, procesa el mensaje de confirmación cuando
+          el envío está habilitado. Puedes usar el enlace para cancelar la suscripción en un correo
+          del boletín y dejar de recibir futuros mensajes. Enviar una consulta inmobiliaria o crear
+          una cuenta no te suscribe al boletín.
         </p>
 
         <h2>Contact us</h2>

@@ -103,12 +103,39 @@
     ]
   },
   "newsletter": {
-    "tag": "✉️ Boletín semanal",
-    "heading": "Inteligencia inmobiliaria de la RD, cada viernes",
-    "sub": "Actualizaciones del mercado, nuevos listados e historias de la comunidad — curadas para compradores, inversores y lectores interesados en la RD. Gratis.",
+    "tag": "✉️ Novedades inmobiliarias",
+    "heading": "Guías y novedades de propiedades",
+    "sub": "Investigación inmobiliaria, nuevos anuncios e información práctica para quienes consideran la RD.",
     "placeholder": "tu@correo.com",
-    "cta": "Suscribirse gratis",
-    "disclaimer": "Únete a más de 14,000 suscriptores · Cancela en cualquier momento"
+    "email_label": "Correo electrónico",
+    "consent": "Acepto recibir por correo electrónico novedades inmobiliarias y guías de I Love DR Realty. Puedo cancelar mi suscripción en cualquier momento.",
+    "cta": "Solicitar una suscripción gratuita",
+    "sending": "Enviando solicitud…",
+    "confirmation_note": "Confirma tu correo para completar la suscripción.",
+    "privacy": "Política de privacidad",
+    "terms": "Términos del servicio",
+    "signup_status": {
+      "accepted": "Recibimos tu solicitud. Si tu dirección requiere confirmación, busca nuestro correo en tu bandeja de entrada o en correo no deseado. Abre el enlace y confirma para completar la suscripción.",
+      "invalid": "Revisa tu dirección de correo y vuelve a intentarlo.",
+      "rate_limited": "Espera un momento antes de volver a intentarlo.",
+      "unavailable": "Las suscripciones al boletín no están disponibles en este momento. Inténtalo más tarde."
+    },
+    "manage": {
+      "heading": "Preferencias del boletín",
+      "language": "Elegir idioma",
+      "loading": "Abriendo el enlace del boletín…",
+      "confirm_note": "Confirma que quieres recibir por correo novedades inmobiliarias y guías de I Love DR Realty.",
+      "unsubscribe_note": "Confirma que quieres dejar de recibir el boletín de I Love DR Realty.",
+      "confirm_button": "Confirmar suscripción",
+      "unsubscribe_button": "Cancelar suscripción",
+      "working": "Actualizando tu preferencia…",
+      "subscribed": "Confirmamos tu suscripción al boletín.",
+      "unsubscribed": "Cancelamos tu suscripción al boletín.",
+      "invalid": "Este enlace no es válido o ha vencido. Usa el enlace de tu correo más reciente del boletín.",
+      "rate_limited": "Espera un momento antes de volver a intentarlo.",
+      "unavailable": "No pudimos actualizar tu preferencia en este momento. Inténtalo más tarde.",
+      "back": "Volver a recursos"
+    }
   },
   "article": {
     "back": "← Volver a Recursos",

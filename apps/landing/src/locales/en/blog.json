@@ -103,12 +103,39 @@
     ]
   },
   "newsletter": {
-    "tag": "✉️ Weekly briefing",
-    "heading": "DR real estate intelligence, every Friday",
-    "sub": "Market updates, new listings, and community stories — curated for buyers, investors, and DR-curious readers. Free.",
+    "tag": "✉️ Property updates",
+    "heading": "Guides and property updates",
+    "sub": "Property research, new listings and practical information for readers considering the DR.",
     "placeholder": "your@email.com",
-    "cta": "Subscribe free",
-    "disclaimer": "Join 14,000+ subscribers · Unsubscribe anytime"
+    "email_label": "Email address",
+    "consent": "I agree to receive property updates and guides by email from I Love DR Realty. I can unsubscribe at any time.",
+    "cta": "Request a free subscription",
+    "sending": "Submitting request…",
+    "confirmation_note": "Confirm your email address to finish subscribing.",
+    "privacy": "Privacy policy",
+    "terms": "Terms of service",
+    "signup_status": {
+      "accepted": "Request received. If your address needs confirmation, look for our email in your inbox or spam folder. Open the link and confirm to finish.",
+      "invalid": "Check your email address and try again.",
+      "rate_limited": "Please wait a little before trying again.",
+      "unavailable": "Newsletter signup is temporarily unavailable. Try again later."
+    },
+    "manage": {
+      "heading": "Newsletter preferences",
+      "language": "Choose a language",
+      "loading": "Opening your newsletter link…",
+      "confirm_note": "Confirm that you want property updates and guides by email from I Love DR Realty.",
+      "unsubscribe_note": "Confirm that you want to stop receiving the I Love DR Realty newsletter.",
+      "confirm_button": "Confirm subscription",
+      "unsubscribe_button": "Unsubscribe",
+      "working": "Updating your preference…",
+      "subscribed": "Your newsletter subscription is confirmed.",
+      "unsubscribed": "You’re unsubscribed from the newsletter.",
+      "invalid": "This link is invalid or has expired. Use the link from your most recent newsletter email.",
+      "rate_limited": "Please wait a little before trying again.",
+      "unavailable": "We couldn’t update your preference right now. Try again later.",
+      "back": "Back to resources"
+    }
   },
   "article": {
     "back": "← Back to Resources",

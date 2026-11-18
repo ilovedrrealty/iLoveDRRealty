@@ -163,8 +163,11 @@ test('all four inquiry forms use the shared receipt path, independent contact co
     assert.doesNotMatch(source, /trackFormConversion|getTrackingReferenceLine|client\.post\(['"]\/leads/, file)
   }
   const layout = fs.readFileSync(path.join(root, 'app/layout.tsx'), 'utf8')
+  const shell = fs.readFileSync(path.join(root, 'components/LandingRouteShell.tsx'), 'utf8')
   assert.doesNotMatch(layout, /googletagmanager|gtag\('config'/)
-  assert.match(layout, /MeasurementPreferences/)
+  assert.match(layout, /LandingRouteShell/)
+  assert.doesNotMatch(shell, /googletagmanager|gtag\('config'/)
+  assert.match(shell, /MeasurementPreferences/)
 })
 
 test('two tabs honor latest persisted consent, exact-key updates and storage clear before future events', () => {

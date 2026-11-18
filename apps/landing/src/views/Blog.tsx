@@ -1,6 +1,7 @@
 'use client'
 import WebsiteResources from '../components/WebsiteResources'
 import ProfessionalResourceCard from '../components/ProfessionalResourceCard'
+import NewsletterSignup from '../components/NewsletterSignup'
 import { useWebsiteImage } from '../components/WebsiteSettingsProvider'
 import { useNav } from '../hooks/useNav'
 import { useState } from 'react'
@@ -22,7 +23,6 @@ export default function Blog() {
   const faqItems = t('faq.items', { returnObjects: true }) as Array<{ q: string; a: string }>
   const [cat, setCat] = useState<CatKey>('All')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [email, setEmail] = useState('')
 
   // Apply Spanish card text where available; fall back to English.
   const trCard = <T extends { slug: string }>(c: T): T => (isEs && CARDS_ES[c.slug]) ? { ...c, ...CARDS_ES[c.slug] } : c
@@ -316,20 +316,7 @@ export default function Blog() {
           <p className="text-4 text-white/88 leading-[1.6] max-w-135 mx-auto mb-7 font-sans">
             {t('newsletter.sub')}
           </p>
-          <div className="flex gap-2.5 max-w-120 mx-auto bg-white/18 p-1.5 rounded-full backdrop-blur-2.5 border border-white/30">
-            <input
-              placeholder={t('newsletter.placeholder')}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="flex-1 min-w-0 py-3.25 px-4.5 rounded-full border-none font-sans text-sm bg-transparent text-white outline-none"
-            />
-            <button className="bg-white text-coral-deep border-none py-2.75 px-4 sm:px-5.5 rounded-full font-sans text-[13.5px] font-bold cursor-pointer shrink-0">
-              {t('newsletter.cta')}
-            </button>
-          </div>
-          <div className="mt-4.5 text-xs text-white/65 font-sans">
-            {t('newsletter.disclaimer')}
-          </div>
+          <NewsletterSignup />
         </div>
       </div>
 
