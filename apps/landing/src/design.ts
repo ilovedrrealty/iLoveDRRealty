@@ -28,6 +28,7 @@ export const NAV_ITEMS: [string, string][] = [
   ['landing',    'Home'],
   ['buying',     'Buying'],
   ['selling',    'Selling'],
+  ['rentals',    'Renting'],
   ['team',       'Our Team'],
   ['contact',    'Contact'],
   ['get-started', 'Get Started'],
