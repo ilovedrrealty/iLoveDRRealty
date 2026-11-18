@@ -39,6 +39,11 @@ test('area summaries retain distinct totals when professionals serve multiple ar
   valid.areas[1].record_count = 2
   assert.equal(readDirectoryMap(valid).mapped_total, 2)
   assert.equal(readDirectoryMap({ ...summary(), total: 0, mapped_total: 0, unmapped_total: 0, areas: [] }).total, 0)
+  const international = summary()
+  international.catalog.reference_country_code = 'CA'
+  international.areas[0] = { ...international.areas[0], reference_country_code: 'CA', latitude: 43.65, longitude: -79.38 }
+  international.areas[1].reference_country_code = null
+  assert.deepEqual(clone(readDirectoryMap(international)), international)
 })
 
 test('map reader refuses private record payloads, exact-office claims and incomplete or inconsistent aggregates', () => {
@@ -46,7 +51,8 @@ test('map reader refuses private record payloads, exact-office claims and incomp
   for (const change of [value => { value.records = [{ name: 'PRIVATE' }] }, value => { value.areas[0].email = 'private@example.com' },
     value => { value.areas[0].precision = 'exact_office' }, value => { value.total++ }, value => { value.complete = false },
     value => { value.areas[0].latitude = NaN }, value => { value.areas[0].longitude = 181 },
-    value => { value.areas.push(value.areas[0]) }, value => { value.areas[0].record_count = 4 }]) {
+    value => { value.areas.push(value.areas[0]) }, value => { value.areas[0].record_count = 4 },
+    value => { value.catalog.reference_country_code = 'ca' }, value => { value.areas[0].reference_country_code = 'CAN' }]) {
     const value = summary(); change(value)
     assert.throws(() => readDirectoryMap(value), /Invalid directory map response/)
   }

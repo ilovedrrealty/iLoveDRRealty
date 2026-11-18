@@ -30,6 +30,7 @@ function keys(value: Record<string, unknown>, allowed: string[]) {
 }
 const count = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0
 const text = (value: unknown): value is string => typeof value === 'string' && value.length > 0
+const countryCode = (value: unknown): value is string => typeof value === 'string' && /^[A-Z]{2}$/.test(value)
 
 export function readDirectoryMap(value: unknown): DirectoryMapSummary {
   const invalid = () => { throw new Error('Invalid directory map response') }
@@ -38,7 +39,7 @@ export function readDirectoryMap(value: unknown): DirectoryMapSummary {
     || value.total !== value.mapped_total + value.unmapped_total || value.complete !== true || !Array.isArray(value.areas)) return invalid()
   const catalog = value.catalog
   if (!record(catalog) || !keys(catalog, ['id', 'reference_country_code', 'source_reference', 'purpose'])
-    || !text(catalog.id) || !text(catalog.source_reference) || catalog.reference_country_code !== 'DO'
+    || !text(catalog.id) || !text(catalog.source_reference) || !countryCode(catalog.reference_country_code)
     || catalog.purpose !== 'approximate_area_references') return invalid()
   const areaKeys = new Set<string>()
   for (const area of value.areas) {
@@ -47,7 +48,7 @@ export function readDirectoryMap(value: unknown): DirectoryMapSummary {
       || !text(area.area_key) || !text(area.label) || !text(area.source_reference)
       || typeof area.latitude !== 'number' || !Number.isFinite(area.latitude) || Math.abs(area.latitude) > 90
       || typeof area.longitude !== 'number' || !Number.isFinite(area.longitude) || Math.abs(area.longitude) > 180
-      || (area.reference_country_code !== null && area.reference_country_code !== 'DO')
+      || (area.reference_country_code !== null && !countryCode(area.reference_country_code))
       || area.precision !== 'area_reference' || !['record_area', 'service_area'].includes(String(area.purpose))
       || area.source_kind !== 'existing_area_catalog' || !['provincial_capital', 'popular_locality'].includes(String(area.area_kind))
       || !count(area.record_count) || area.record_count < 1 || area.record_count > value.total) return invalid()
