@@ -239,7 +239,9 @@
       "province": "Provincia",
       "locality": "Municipio o localidad",
       "verification_status": "Tipo de fuente",
-      "contact_channel": "Contacto disponible"
+      "contact_channel": "Contacto disponible",
+      "subtype": "Especialidad / subtipo",
+      "service_area": "Texto de zona de servicio"
     },
     "statuses": {
       "owner_source": "Fuente aportada por el propietario",

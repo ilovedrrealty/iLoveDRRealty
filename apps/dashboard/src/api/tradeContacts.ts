@@ -1,4 +1,5 @@
 import client from './axios'
+import type { DirectoryLocationFilters } from './directoryMaps'
 
 export const TRADE_CONTACT_BATCH_LIMIT = 250
 export const TRADE_CONTACT_FILE_LIMIT = 512 * 1024
@@ -22,9 +23,10 @@ export type TradeContactEntry = Record<RequiredTradeContactField, string>
 export type TradeContact = TradeContactEntry & { id: string; source_count?: number }
 export type TradeContactPage = { items: TradeContact[]; total: number }
 export type TradeContactImport = { inserted: number; updated: number; unchanged: number }
-export type TradeContactFilters = { q: string; category: string; province: string; locality: string;
+export type TradeContactFilters = DirectoryLocationFilters & { q: string; category: string; province: string; locality: string;
+  subtype?: string; service_area?: string;
   verification_status: '' | TradeVerificationStatus; contact_channel: '' | 'phone' | 'email' | 'website' | 'no_contact' }
-export type TradeContactOptions = { categories: string[]; provinces: string[]; localities: string[] }
+export type TradeContactOptions = { categories: string[]; provinces: string[]; localities: string[]; subtypes: string[]; service_areas: string[] }
 export type TradeContactTable = { columns: string[]; rows: { row_number: number; values: string[] }[];
   file_sha256: string; sheets: string[]; sheet: string | null; suggested_mapping: Record<string, number> }
 export type TradeContactIssue = { row: number; field: string; code: 'required' | 'invalid' | 'note_limit' }
@@ -109,6 +111,9 @@ export async function listTradeContacts(filters: TradeContactFilters, offset: nu
       q: filters.q || undefined, category: filters.category || undefined, province: filters.province || undefined,
       locality: filters.locality || undefined, verification_status: filters.verification_status || undefined,
       contact_channel: filters.contact_channel || undefined,
+      subtype: filters.subtype || undefined, service_area: filters.service_area || undefined,
+      map_area: filters.map_area || undefined,
+      location_status: filters.location_status && filters.location_status !== 'all' ? filters.location_status : undefined,
       limit: TRADE_CONTACT_PAGE_SIZE, offset,
     },
     signal,

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
 import { emptyProfessionalOptions, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalOption, type ProfessionalOptions, type ProfessionalPage, type PublicProfessional } from '../../../../../packages/professionals/src'
 import { getProfessional, getProfessionalOptions, getProfessionals } from '../../api/professionals'
+import { getProfessionalMap, type DirectoryMapSummary, type DirectoryLocationStatus } from '../../api/directoryMaps'
+import { DirectoryAreaMap } from '../../components/shared/DirectoryAreaMap'
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { ProfessionalPreview } from '../../components/shared/ProfessionalPreview'
 import { professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
@@ -30,7 +32,9 @@ export default function ProfessionalDirectory() {
   const filters = useMemo(() => {
     const parsed = new URLSearchParams(paramsString)
     const rawOffset = Number(parsed.get('offset') ?? 0)
+    const location = parsed.get('location_status')
     return { q: (parsed.get('q') ?? '').slice(0, 100), language: (parsed.get('language') ?? '').slice(0, 40), category: [...new Set(parsed.getAll('category'))], area: [...new Set(parsed.getAll('area'))],
+      map_area: (parsed.get('map_area') ?? '').slice(0, 100), location_status: (location === 'mapped' || location === 'unmapped' ? location : 'all') as DirectoryLocationStatus,
       offset: Number.isFinite(rawOffset) && rawOffset >= 0 ? Math.min(9984, Math.floor(rawOffset / LIMIT) * LIMIT) : 0 }
   }, [paramsString])
   const filterKey = JSON.stringify(filters)
@@ -41,6 +45,9 @@ export default function ProfessionalDirectory() {
   const [language, setLanguage] = useState(filters.language)
   const [options, setOptions] = useState<ProfessionalOptions>(emptyProfessionalOptions)
   const [page, setPage] = useState(emptyPage)
+  const [map, setMap] = useState<DirectoryMapSummary | null>(null)
+  const [loadedKey, setLoadedKey] = useState('')
+  const accessEpoch = useRef(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [authError, setAuthError] = useState(false)
@@ -50,16 +57,36 @@ export default function ProfessionalDirectory() {
   const [detailError, setDetailError] = useState(false)
 
   useEffect(() => {
+    const revalidate = () => { if (document.visibilityState === 'visible') setRefresh(value => value + 1) }
+    window.addEventListener('focus', revalidate)
+    document.addEventListener('visibilitychange', revalidate)
+    return () => { window.removeEventListener('focus', revalidate); document.removeEventListener('visibilitychange', revalidate) }
+  }, [])
+  useEffect(() => {
     const requested = JSON.parse(filterKey) as typeof filters
     setQuery(requested.q); setCategories(requested.category); setAreas(requested.area); setLanguage(requested.language)
   }, [filterKey])
   useEffect(() => {
     const controller = new AbortController()
+    const epoch = accessEpoch.current
     const requested = JSON.parse(filterKey) as typeof filters
-    setLoading(true); setError(false); setAuthError(false); setPage(emptyPage)
-    Promise.all([getProfessionalOptions(controller.signal), getProfessionals({ ...requested, language: requested.language || undefined, limit: LIMIT }, controller.signal)])
-      .then(([nextOptions, next]) => { if (!controller.signal.aborted) { setOptions(nextOptions); setPage(next) } })
-      .catch(cause => { if (!controller.signal.aborted) { setError(true); setAuthError(isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)); setDetail(null) } })
+    setLoading(true); setError(false); setPage(emptyPage); setMap(null)
+    Promise.all([getProfessionalOptions(controller.signal), getProfessionals({ ...requested,
+      map_area: requested.map_area || undefined, location_status: requested.location_status === 'all' ? undefined : requested.location_status,
+      language: requested.language || undefined, limit: LIMIT }, controller.signal), getProfessionalMap(requested, controller.signal)])
+      .then(([nextOptions, next, nextMap]) => {
+        if (next.total !== nextMap.total) throw new Error('Directory changed while loading')
+        if (!controller.signal.aborted && epoch === accessEpoch.current) {
+          setOptions(nextOptions); setPage(next); setMap(nextMap); setLoadedKey(filterKey); setAuthError(false)
+        }
+      })
+      .catch(cause => {
+        if (controller.signal.aborted || epoch !== accessEpoch.current) return
+        setError(true); setPage(emptyPage); setMap(null); setDetail(null); setLoadedKey(filterKey)
+        if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) {
+          accessEpoch.current++; setAuthError(true); setOptions(emptyProfessionalOptions)
+        }
+      })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [filterKey, refresh])
@@ -67,21 +94,30 @@ export default function ProfessionalDirectory() {
     setDetail(null); setDetailError(false)
     if (!selectedId || authError) return
     const controller = new AbortController()
+    const epoch = accessEpoch.current
     setDetailLoading(true)
     getProfessional(selectedId, controller.signal)
-      .then(next => { if (!controller.signal.aborted) setDetail(next) })
-      .catch(cause => { if (!controller.signal.aborted) { setDetailError(true); if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) { setAuthError(true); setPage(emptyPage) } } })
+      .then(next => { if (!controller.signal.aborted && epoch === accessEpoch.current) setDetail(next) })
+      .catch(cause => { if (!controller.signal.aborted && epoch === accessEpoch.current) { setDetailError(true); if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) { accessEpoch.current++; setAuthError(true); setPage(emptyPage); setMap(null); setDetail(null); setOptions(emptyProfessionalOptions) } } })
       .finally(() => { if (!controller.signal.aborted) setDetailLoading(false) })
     return () => controller.abort()
-  }, [selectedId, authError])
+  }, [selectedId, authError, filterKey, refresh])
   function apply(clear = false) {
     const next = new URLSearchParams(paramsString)
     for (const key of ['q', 'category', 'area', 'language', 'offset', 'profile']) next.delete(key)
+    if (clear) { next.delete('map_area'); next.delete('location_status') }
     if (!clear) { if (query.trim()) next.set('q', query.trim()); if (language) next.set('language', language); categories.forEach(id => next.append('category', id)); areas.forEach(id => next.append('area', id)) }
     setParams(next, { replace: true })
   }
   function select(id?: string) { const next = new URLSearchParams(paramsString); id ? next.set('profile', id) : next.delete('profile'); setParams(next, { replace: true }) }
   function paginate(offset: number) { const next = new URLSearchParams(paramsString); next.delete('profile'); offset ? next.set('offset', String(offset)) : next.delete('offset'); setParams(next, { replace: true }) }
+  function chooseLocation(mapArea: string, status: DirectoryLocationStatus) {
+    const next = new URLSearchParams(paramsString)
+    for (const key of ['map_area', 'location_status', 'offset', 'profile']) next.delete(key)
+    if (mapArea) next.set('map_area', mapArea)
+    if (status !== 'all') next.set('location_status', status)
+    setDetail(null); setParams(next, { replace: true })
+  }
   return <div className="min-w-0 space-y-6">
     <header className="rounded-2xl bg-ink p-5 sm:p-7 text-white"><h1 className="text-2xl font-bold">{t('directory_search.title')}</h1><p className="mt-3 max-w-3xl text-sm text-white/75 leading-relaxed">{t('directory_search.intro')}</p><a href="/professional-profile" className="inline-block mt-4 text-sm font-bold text-gold underline">{t('directory_search.join')}</a></header>
     <form onSubmit={event => { event.preventDefault(); apply() }} className="rounded-2xl border border-line bg-white p-4 sm:p-6 space-y-4">
@@ -91,7 +127,9 @@ export default function ProfessionalDirectory() {
       <p className="text-xs text-dim">{t('directory_search.filter_help')}</p>
       <div className="flex flex-wrap gap-3"><button type="submit" className={professionalPrimary}>{t('directory_search.apply')}</button><button type="button" className={professionalButton} onClick={() => { setQuery(''); setCategories([]); setAreas([]); setLanguage(''); apply(true) }}>{t('directory_search.clear')}</button></div>
     </form>
-    {authError ? <div role="alert" className="rounded-xl border border-line bg-white p-5 space-y-3"><p>{t('directory_search.auth_error')}</p><a className={professionalPrimary} href={`${LANDING_URL.replace(/\/$/, '')}/login/?directory=professionals`}>{t('directory_search.login')}</a></div> : loading ? <p role="status" className="text-sm text-ink2">{t('directory_search.loading')}</p> : error ? <div role="alert" className="rounded-xl border border-line p-5 space-y-3"><p>{t('directory_search.error')}</p><button className={professionalButton} onClick={() => setRefresh(value => value + 1)}>{t('retry')}</button></div> : <>
+    {authError ? <div role="alert" className="rounded-xl border border-line bg-white p-5 space-y-3"><p>{t('directory_search.auth_error')}</p><a className={professionalPrimary} href={`${LANDING_URL.replace(/\/$/, '')}/login/?directory=professionals`}>{t('directory_search.login')}</a></div> : loading || loadedKey !== filterKey ? <p role="status" className="text-sm text-ink2">{t('directory_search.loading')}</p> : error ? <div role="alert" className="rounded-xl border border-line p-5 space-y-3"><p>{t('directory_search.error')}</p><button className={professionalButton} onClick={() => setRefresh(value => value + 1)}>{t('retry')}</button></div> : <>
+      {map && <DirectoryAreaMap summary={map} selectedArea={filters.map_area} locationStatus={filters.location_status}
+        onArea={key => chooseLocation(key, 'all')} onLocationStatus={status => chooseLocation('', status)} onClear={() => apply(true)} />}
       <p role="status" className="text-sm text-dim">{t('directory_search.results', { count: page.total })}</p>
       {!page.items.length && <div className="rounded-2xl border border-line bg-white p-6"><h2 className="font-bold text-lg text-ink">{t('directory_search.empty')}</h2><p className="text-sm text-ink2 mt-2">{t('directory_search.empty_help')}</p></div>}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">{page.items.map(profile => <article key={profile.id} className="min-w-0 rounded-2xl border border-line bg-white p-5 flex flex-col gap-4">
@@ -105,7 +143,7 @@ export default function ProfessionalDirectory() {
       {page.total > LIMIT && <nav aria-label={t('directory_search.browse')} className="flex flex-wrap items-center gap-3"><button className={professionalButton} disabled={!filters.offset} onClick={() => paginate(Math.max(0, filters.offset - LIMIT))}>{t('directory_search.previous')}</button><span className="text-xs text-dim">{t('directory_search.page', { page: Math.floor(filters.offset / LIMIT) + 1, pages: Math.max(1, Math.ceil(page.total / LIMIT)) })}</span><button className={professionalButton} disabled={filters.offset + LIMIT >= page.total || filters.offset + LIMIT > 9984} onClick={() => paginate(filters.offset + LIMIT)}>{t('directory_search.next')}</button></nav>}
     </>}
     <p className="text-xs leading-relaxed text-dim">{t('directory_search.review_note')}</p>
-    {selectedId && !authError && <ProfessionalDialog title={detail?.business_name || detail?.contact_name || t('directory_search.title')} closeLabel={t('directory_search.close')} onClose={() => select()}>
+    {selectedId && !authError && !loading && !error && loadedKey === filterKey && <ProfessionalDialog title={detail?.business_name || detail?.contact_name || t('directory_search.title')} closeLabel={t('directory_search.close')} onClose={() => select()}>
       {detailError ? <p role="alert">{t('directory_search.unavailable')}</p> : detailLoading || !detail ? <p role="status">{t('directory_search.loading')}</p> : <ProfessionalPreview key={detail.id} profile={detail} options={options} />}
     </ProfessionalDialog>}
   </div>

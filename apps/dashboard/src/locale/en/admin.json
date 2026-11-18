@@ -239,7 +239,9 @@
       "province": "Province",
       "locality": "Municipality or locality",
       "verification_status": "Source type",
-      "contact_channel": "Contact available"
+      "contact_channel": "Contact available",
+      "subtype": "Specialty / subtype",
+      "service_area": "Service area text"
     },
     "statuses": {
       "owner_source": "Owner-provided source",

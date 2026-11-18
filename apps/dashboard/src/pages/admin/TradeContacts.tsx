@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { isAxiosError } from 'axios'
+import { getTradeContactMap, type DirectoryMapSummary, type DirectoryLocationStatus } from '../../api/directoryMaps'
 import {
   getTradeContactOptions, httpsTradeContactLink, importTradeContacts, listTradeContacts, optionalTradeContactFields,
   readTradeContact, requiredTradeContactFields, TRADE_CONTACT_BATCH_LIMIT,
@@ -7,10 +9,11 @@ import {
   type TradeContactFilters, type TradeContactImport, type TradeContactOptions, type TradeContactPage,
 } from '../../api/tradeContacts'
 import { ContactFileImport } from '../../components/admin/ContactFileImport'
+import { DirectoryAreaMap } from '../../components/shared/DirectoryAreaMap'
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
 
-const emptyFilters: TradeContactFilters = { q: '', category: '', province: '', locality: '', verification_status: '', contact_channel: '' }
+const emptyFilters: TradeContactFilters = { q: '', category: '', subtype: '', province: '', locality: '', service_area: '', verification_status: '', contact_channel: '', map_area: '', location_status: 'all' }
 const emptyPage: TradeContactPage = { items: [], total: 0 }
 const panel = 'min-w-0 rounded-2xl border border-line bg-white p-4 sm:p-5'
 const entryFields = [...optionalTradeContactFields, 'source_authority', 'source_url', 'verified_on'] as const
@@ -109,36 +112,59 @@ export function AdminTradeContacts() {
   const [listError, setListError] = useState(false)
   const [revision, setRevision] = useState(0)
   const [editor, setEditor] = useState<'manual' | 'file' | null>(null)
-  const [options, setOptions] = useState<TradeContactOptions>({ categories: [], provinces: [], localities: [] })
+  const [options, setOptions] = useState<TradeContactOptions>({ categories: [], provinces: [], localities: [], subtypes: [], service_areas: [] })
+  const [map, setMap] = useState<DirectoryMapSummary | null>(null)
+  const [loadedKey, setLoadedKey] = useState('')
+  const [authError, setAuthError] = useState(false)
   const [review, setReview] = useState<ReviewedBatch | null>(null)
   const [receipt, setReceipt] = useState<TradeContactImport | null>(null)
   const [importError, setImportError] = useState<ImportMessage | null>(null)
   const [busy, setBusy] = useState<'read' | 'preview' | 'save' | null>(null)
   const reviewHeading = useRef<HTMLHeadingElement>(null)
+  const requestKey = JSON.stringify([filters, offset, revision])
 
+  useEffect(() => {
+    const revalidate = () => { if (document.visibilityState === 'visible') setRevision(value => value + 1) }
+    window.addEventListener('focus', revalidate)
+    document.addEventListener('visibilitychange', revalidate)
+    return () => { window.removeEventListener('focus', revalidate); document.removeEventListener('visibilitychange', revalidate) }
+  }, [])
   useEffect(() => {
     const controller = new AbortController()
     setLoading(true)
     setListError(false)
-    listTradeContacts(filters, offset, controller.signal)
-      .then(next => { if (!controller.signal.aborted) setPage(next) })
-      .catch(() => { if (!controller.signal.aborted) setListError(true) })
+    setMap(null)
+    setPage(emptyPage)
+    Promise.all([listTradeContacts(filters, offset, controller.signal), getTradeContactMap(filters, controller.signal), getTradeContactOptions(controller.signal)])
+      .then(([next, nextMap, nextOptions]) => {
+        if (next.total !== nextMap.total) throw new Error('Directory changed while loading')
+        if (!controller.signal.aborted) { setPage(next); setMap(nextMap); setOptions(nextOptions); setLoadedKey(requestKey); setAuthError(false) }
+      })
+      .catch(cause => {
+        if (controller.signal.aborted) return
+        setListError(true); setPage(emptyPage); setMap(null); setLoadedKey(requestKey)
+        if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) {
+          setAuthError(true); setEditor(null); setReview(null); setReceipt(null); setImportError(null)
+          setOptions({ categories: [], provinces: [], localities: [], subtypes: [], service_areas: [] })
+        }
+      })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [filters, offset, revision])
   useEffect(() => {
     if (review) reviewHeading.current?.focus()
   }, [review])
-  useEffect(() => {
-    const controller = new AbortController()
-    getTradeContactOptions(controller.signal).then(next => { if (!controller.signal.aborted) setOptions(next) }).catch(() => {})
-    return () => controller.abort()
-  }, [revision])
-
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setOffset(0)
-    setFilters({ ...inputs, q: inputs.q.trim(), category: inputs.category.trim(), province: inputs.province.trim(), locality: inputs.locality.trim() })
+    setFilters({ ...inputs, q: inputs.q.trim(), category: inputs.category.trim(), subtype: inputs.subtype?.trim(),
+      province: inputs.province.trim(), locality: inputs.locality.trim(), service_area: inputs.service_area?.trim() })
+  }
+
+  function clearFilters() { setInputs(emptyFilters); setFilters(emptyFilters); setOffset(0) }
+  function chooseLocation(map_area: string, location_status: DirectoryLocationStatus) {
+    const next = { ...filters, map_area, location_status }
+    setInputs(next); setFilters(next); setOffset(0)
   }
 
   function resetEditor(next: typeof editor) {
@@ -182,6 +208,9 @@ export function AdminTradeContacts() {
     }
   }
 
+  if (authError) return <div role="alert" className={`${panel} space-y-3`}><p>{t('list_error')}</p>
+    <button type="button" className={professionalButton} onClick={() => setRevision(value => value + 1)}>{t('retry')}</button></div>
+
   return <div className="min-w-0 space-y-5">
     <div className="flex flex-wrap gap-2">
       <button type="button" className={professionalPrimary} onClick={() => resetEditor('manual')}>{t('add')}</button>
@@ -191,9 +220,9 @@ export function AdminTradeContacts() {
       {t('saved', receipt)}
     </p>}
     <form className={`${panel} grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-3`} onSubmit={search}>
-      {(['q', 'category', 'province', 'locality'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">
+      {(['q', 'category', 'subtype', 'province', 'locality', 'service_area'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">
         <span className="mb-1.5 block">{t(`filters.${key}`)}</span>
-        <input className={professionalInput} type={key === 'q' ? 'search' : 'text'} value={inputs[key]} maxLength={120} list={key === 'q' ? undefined : `trade-contact-${key}`}
+        <input className={professionalInput} type={key === 'q' ? 'search' : 'text'} value={inputs[key] ?? ''} maxLength={120} list={key === 'q' ? undefined : `trade-contact-${key}`}
           onChange={event => setInputs(previous => ({ ...previous, [key]: event.target.value }))} />
       </label>)}
       {(['verification_status', 'contact_channel'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">
@@ -207,16 +236,18 @@ export function AdminTradeContacts() {
             <option key={value} value={value}>{t(key === 'verification_status' ? `statuses.${value}` : `channels.${value}`)}</option>)}
         </select>
       </label>)}
-      {(['category', 'province', 'locality'] as const).map(key => <datalist key={key} id={`trade-contact-${key}`}>
-        {options[key === 'category' ? 'categories' : key === 'province' ? 'provinces' : 'localities'].map(value => <option key={value} value={value} />)}
+      {(['category', 'subtype', 'province', 'locality', 'service_area'] as const).map(key => <datalist key={key} id={`trade-contact-${key}`}>
+        {(options[key === 'category' ? 'categories' : key === 'province' ? 'provinces' : key === 'locality' ? 'localities' : key === 'subtype' ? 'subtypes' : 'service_areas'] ?? []).map(value => <option key={value} value={value} />)}
       </datalist>)}
       <div className="flex flex-wrap gap-2"><button type="submit" className={professionalButton}>{t('search')}</button>
-        <button type="button" className={professionalButton} onClick={() => { setInputs(emptyFilters); setFilters(emptyFilters); setOffset(0) }}>{t('clear_filters')}</button></div>
+        <button type="button" className={professionalButton} onClick={clearFilters}>{t('clear_filters')}</button></div>
     </form>
-    {loading ? <p role="status" className="text-sm text-ink2">{t('loading')}</p> : listError ?
+    {loading || loadedKey !== requestKey ? <p role="status" className="text-sm text-ink2">{t('loading')}</p> : listError ?
       <div className={`${panel} space-y-3`}><p role="alert" className="text-sm text-red-800">{t('list_error')}</p>
         <button type="button" className={professionalButton} onClick={() => setRevision(value => value + 1)}>{t('retry')}</button>
       </div> : <>
+        {map && <DirectoryAreaMap summary={map} selectedArea={filters.map_area ?? ''} locationStatus={filters.location_status ?? 'all'}
+          onArea={key => chooseLocation(key, 'all')} onLocationStatus={status => chooseLocation('', status)} onClear={clearFilters} />}
         <p role="status" className="text-sm text-ink2">{t('results', { count: page.total })}</p>
         {!page.items.length && <p className={`${panel} text-sm text-ink2`}>{t('empty')}</p>}
         <div className="grid min-w-0 gap-3 lg:grid-cols-2">

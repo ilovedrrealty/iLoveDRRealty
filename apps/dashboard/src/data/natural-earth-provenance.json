@@ -1,0 +1,15 @@
+{
+  "source": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_110m_admin_0_countries.geojson",
+  "release": "v5.1.2",
+  "source_bytes": 838726,
+  "source_sha256": "6866c877d39cba9c357620878839b336d569f8c662d3cfab4cb1dbe2d39c977f",
+  "output": "natural-earth-countries-110m-v5.1.2.json",
+  "output_bytes": 254024,
+  "output_sha256": "0e63cc1512ccfd5a6b9febe578abff1588e74fdb2cc735c31c2f8fd3ad93bfa5",
+  "features": 177,
+  "license": "Public domain",
+  "terms": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "purpose": "Geographic context for area-reference directory maps; not exact business/office locations, geocoder, tiles, API subscription or boundary/legal survey",
+  "transformation": "Retain source geometry unchanged; retain only ADM0_A3 and English country label; compact JSON",
+  "fetched_at_utc": "2026-11-18T07:28:17.144Z"
+}

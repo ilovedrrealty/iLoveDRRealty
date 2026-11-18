@@ -195,5 +195,40 @@
     "join": "Crear o administrar tu perfil profesional",
     "auth_error": "Inicia sesión con una cuenta activa y verificada para buscar profesionales y ver sus datos de contacto.",
     "login": "Iniciar sesión de nuevo"
+  },
+  "directory_map": {
+    "title": "Mapa de zonas del directorio",
+    "help": "Los marcadores muestran puntos de referencia aproximados de zonas registradas o de servicio. No son direcciones comerciales ni oficinas verificadas. Un punto de referencia en República Dominicana no establece el país de una empresa.",
+    "location_filter": "Registros con y sin referencia de zona",
+    "counts": {
+      "all": "Todos los resultados: {{count}}",
+      "mapped": "Con referencia de zona: {{count}}",
+      "unmapped": "Sin referencia: {{count}}"
+    },
+    "scope_help": "Los totales incluyen todos los registros que coinciden con los filtros aplicados, en todas las páginas. Elija Todos los resultados para quitar el filtro de ubicación.",
+    "clear_all": "Borrar todos los filtros",
+    "selected": "Zona seleccionada: {{area}}",
+    "clear_area": "Quitar zona seleccionada",
+    "map_view": "Vista geográfica",
+    "views": {
+      "dominican_republic": "República Dominicana",
+      "caribbean": "Contexto del Caribe"
+    },
+    "geography": "Contornos geográficos de República Dominicana y los países vecinos",
+    "country_labels": {
+      "dominican_republic": "República Dominicana",
+      "haiti": "Haití",
+      "puerto_rico": "Puerto Rico"
+    },
+    "area_button": "Filtrar por {{area}} · {{count}} registros coincidentes · referencia de zona aproximada",
+    "no_references": "Ninguna referencia de zona utilizable coincide con estos filtros. Los registros sin referencia permanecen en la lista.",
+    "multiple_help": "Un profesional puede atender varias zonas. Los recuentos por zona pueden coincidir; los totales de arriba cuentan cada registro una sola vez. Elija un marcador o una zona de abajo para filtrar la lista.",
+    "area_choices": "Filtrar el directorio por una referencia de zona",
+    "purposes": {
+      "record_area": "Referencia de zona registrada",
+      "service_area": "Referencia de zona de servicio"
+    },
+    "attribution": "Contornos geográficos: dominio público,",
+    "reference_source": "Puntos de referencia: catálogo existente de zonas de República Dominicana. Las ubicaciones desconocidas, contradictorias o de alcance nacional permanecen sin referencia."
   }
 }

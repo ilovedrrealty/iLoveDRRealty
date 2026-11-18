@@ -195,5 +195,40 @@
     "join": "Create or manage your professional profile",
     "auth_error": "Sign in with an active, verified account to search professionals and view contact details.",
     "login": "Sign in again"
+  },
+  "directory_map": {
+    "title": "Directory area map",
+    "help": "Markers show approximate reference points for recorded areas or service areas. They are not business addresses or verified office locations. A reference point in the Dominican Republic does not establish a business’s country.",
+    "location_filter": "Records with and without an area reference",
+    "counts": {
+      "all": "All matching: {{count}}",
+      "mapped": "With area reference: {{count}}",
+      "unmapped": "Unmapped: {{count}}"
+    },
+    "scope_help": "Counts cover all records matching the applied filters, across every list page. Choose All matching to remove the location filter.",
+    "clear_all": "Clear all filters",
+    "selected": "Selected area: {{area}}",
+    "clear_area": "Clear selected area",
+    "map_view": "Geographic view",
+    "views": {
+      "dominican_republic": "Dominican Republic",
+      "caribbean": "Caribbean context"
+    },
+    "geography": "Geographic outlines of the Dominican Republic and neighboring countries",
+    "country_labels": {
+      "dominican_republic": "Dominican Republic",
+      "haiti": "Haiti",
+      "puerto_rico": "Puerto Rico"
+    },
+    "area_button": "Filter by {{area}} · {{count}} matching records · approximate area reference",
+    "no_references": "No usable area references match these filters. Unmapped records remain in the list.",
+    "multiple_help": "A professional may serve more than one area. Area counts can overlap; the totals above count each matching record once. Choose a marker or an area below to filter the list.",
+    "area_choices": "Filter the directory by an area reference",
+    "purposes": {
+      "record_area": "Recorded area reference",
+      "service_area": "Service area reference"
+    },
+    "attribution": "Geographic outlines: public domain,",
+    "reference_source": "Reference points: existing Dominican Republic area catalog. Unknown, conflicting or nationwide-only locations stay unmapped."
   }
 }
