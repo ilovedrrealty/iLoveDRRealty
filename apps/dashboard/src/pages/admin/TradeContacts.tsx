@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  httpsTradeContactLink, importTradeContacts, listTradeContacts, optionalTradeContactFields,
-  readTradeContact, readTradeContactFile, requiredTradeContactFields, TRADE_CONTACT_BATCH_LIMIT, TRADE_CONTACT_FILE_LIMIT,
+  getTradeContactOptions, httpsTradeContactLink, importTradeContacts, listTradeContacts, optionalTradeContactFields,
+  readTradeContact, requiredTradeContactFields, TRADE_CONTACT_BATCH_LIMIT,
   TRADE_CONTACT_PAGE_SIZE, tradeVerificationStatuses, type TradeContact, type TradeContactEntry,
-  type TradeContactFilters, type TradeContactImport, type TradeContactPage,
+  type TradeContactFilters, type TradeContactImport, type TradeContactOptions, type TradeContactPage,
 } from '../../api/tradeContacts'
+import { ContactFileImport } from '../../components/admin/ContactFileImport'
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
 
-const emptyFilters: TradeContactFilters = { q: '', category: '', province: '' }
+const emptyFilters: TradeContactFilters = { q: '', category: '', province: '', locality: '', verification_status: '', contact_channel: '' }
 const emptyPage: TradeContactPage = { items: [], total: 0 }
 const panel = 'min-w-0 rounded-2xl border border-line bg-white p-4 sm:p-5'
 const entryFields = [...optionalTradeContactFields, 'source_authority', 'source_url', 'verified_on'] as const
@@ -108,7 +109,7 @@ export function AdminTradeContacts() {
   const [listError, setListError] = useState(false)
   const [revision, setRevision] = useState(0)
   const [editor, setEditor] = useState<'manual' | 'file' | null>(null)
-  const [selection, setSelection] = useState<{ filename: string; entries: TradeContactEntry[] } | null>(null)
+  const [options, setOptions] = useState<TradeContactOptions>({ categories: [], provinces: [], localities: [] })
   const [review, setReview] = useState<ReviewedBatch | null>(null)
   const [receipt, setReceipt] = useState<TradeContactImport | null>(null)
   const [importError, setImportError] = useState<ImportMessage | null>(null)
@@ -128,43 +129,24 @@ export function AdminTradeContacts() {
   useEffect(() => {
     if (review) reviewHeading.current?.focus()
   }, [review])
+  useEffect(() => {
+    const controller = new AbortController()
+    getTradeContactOptions(controller.signal).then(next => { if (!controller.signal.aborted) setOptions(next) }).catch(() => {})
+    return () => controller.abort()
+  }, [revision])
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setOffset(0)
-    setFilters({ q: inputs.q.trim(), category: inputs.category.trim(), province: inputs.province.trim() })
+    setFilters({ ...inputs, q: inputs.q.trim(), category: inputs.category.trim(), province: inputs.province.trim(), locality: inputs.locality.trim() })
   }
 
   function resetEditor(next: typeof editor) {
     if (busy) return
     setEditor(next)
     setImportError(null)
-    setSelection(null)
     setReview(null)
     if (next) setReceipt(null)
-  }
-
-  async function chooseFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0]
-    event.currentTarget.value = ''
-    if (!file || busy) return
-    setSelection(null)
-    setReview(null)
-    setImportError(null)
-    if (file.size > TRADE_CONTACT_FILE_LIMIT) {
-      setImportError({ code: 'file_size' })
-      return
-    }
-    setBusy('read')
-    try {
-      const parsed = readTradeContactFile(await file.text())
-      if ('error' in parsed) setImportError({ code: parsed.error, row: parsed.row })
-      else setSelection({ filename: file.name, entries: parsed.entries })
-    } catch {
-      setImportError({ code: 'invalid_file' })
-    } finally {
-      setBusy(null)
-    }
   }
 
   async function preview(entries: TradeContactEntry[]) {
@@ -190,7 +172,6 @@ export function AdminTradeContacts() {
       const result = await importTradeContacts(review.entries, false)
       setReceipt(result)
       setReview(null)
-      setSelection(null)
       setEditor(null)
       setOffset(0)
       setRevision(value => value + 1)
@@ -209,13 +190,28 @@ export function AdminTradeContacts() {
     {receipt && <p role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-900">
       {t('saved', receipt)}
     </p>}
-    <form className={`${panel} grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto]`} onSubmit={search}>
-      {(['q', 'category', 'province'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">
+    <form className={`${panel} grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-3`} onSubmit={search}>
+      {(['q', 'category', 'province', 'locality'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">
         <span className="mb-1.5 block">{t(`filters.${key}`)}</span>
-        <input className={professionalInput} type={key === 'q' ? 'search' : 'text'} value={inputs[key]} maxLength={120}
+        <input className={professionalInput} type={key === 'q' ? 'search' : 'text'} value={inputs[key]} maxLength={120} list={key === 'q' ? undefined : `trade-contact-${key}`}
           onChange={event => setInputs(previous => ({ ...previous, [key]: event.target.value }))} />
       </label>)}
-      <button type="submit" className={professionalButton}>{t('search')}</button>
+      {(['verification_status', 'contact_channel'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">
+        <span className="mb-1.5 block">{t(`filters.${key}`)}</span>
+        <select className={`${professionalInput} min-w-0 max-w-full`} value={inputs[key]} onChange={event => {
+          const value = event.target.value
+          setInputs(previous => key === 'verification_status' ? { ...previous, verification_status: value as TradeContactFilters['verification_status'] }
+            : { ...previous, contact_channel: value as TradeContactFilters['contact_channel'] })
+        }}><option value="">{t('any_filter')}</option>
+          {(key === 'verification_status' ? tradeVerificationStatuses : ['phone', 'email', 'website', 'no_contact']).map(value =>
+            <option key={value} value={value}>{t(key === 'verification_status' ? `statuses.${value}` : `channels.${value}`)}</option>)}
+        </select>
+      </label>)}
+      {(['category', 'province', 'locality'] as const).map(key => <datalist key={key} id={`trade-contact-${key}`}>
+        {options[key === 'category' ? 'categories' : key === 'province' ? 'provinces' : 'localities'].map(value => <option key={value} value={value} />)}
+      </datalist>)}
+      <div className="flex flex-wrap gap-2"><button type="submit" className={professionalButton}>{t('search')}</button>
+        <button type="button" className={professionalButton} onClick={() => { setInputs(emptyFilters); setFilters(emptyFilters); setOffset(0) }}>{t('clear_filters')}</button></div>
     </form>
     {loading ? <p role="status" className="text-sm text-ink2">{t('loading')}</p> : listError ?
       <div className={`${panel} space-y-3`}><p role="alert" className="text-sm text-red-800">{t('list_error')}</p>
@@ -237,22 +233,14 @@ export function AdminTradeContacts() {
     {editor && <ProfessionalDialog title={t(editor === 'manual' ? 'add' : 'import')} closeLabel={t('close')} onClose={() => resetEditor(null)}>
       <div className="min-w-0 space-y-4">
         {editor === 'manual' ? <div hidden={!!review}><ContactEntryForm disabled={!!busy || !!review} onPreview={entry => void preview([entry])} /></div> :
-          !review && <div className="space-y-4">
-            <p className="text-sm text-ink2">{t('file_help', { limit: TRADE_CONTACT_BATCH_LIMIT })}</p>
+          <div hidden={!!review} className="space-y-4">
+            <ContactFileImport disabled={!!busy || !!review} onBusy={value => setBusy(value ? 'read' : null)}
+              onJSONPreview={entries => void preview(entries)} onReviewed={(entries, result) => setReview({ entries, result })} />
             <details className="rounded-xl border border-line bg-white p-3 text-sm">
               <summary className="cursor-pointer font-semibold text-ink">{t('json_example')}</summary>
               <pre className="max-w-full overflow-x-auto whitespace-pre-wrap [overflow-wrap:anywhere]">{JSON.stringify(example, null, 2)}</pre>
               <p className="text-xs text-ink2 [overflow-wrap:anywhere]">{t('json_optional')} {optionalTradeContactFields.join(', ')}, source_details</p>
             </details>
-            <label className="block text-sm font-semibold text-ink">
-              <span className="mb-1.5 block">{t('select_file')}</span>
-              <input type="file" className={professionalInput} accept=".json,application/json" disabled={!!busy} onChange={event => void chooseFile(event)} />
-            </label>
-            {selection && <p className="text-sm text-ink2 [overflow-wrap:anywhere]">
-              {t('selected_file', { filename: selection.filename, count: selection.entries.length })}
-            </p>}
-            <button type="button" className={professionalButton} disabled={!selection || !!busy}
-              onClick={() => { if (selection) void preview(selection.entries) }}>{t('preview')}</button>
           </div>}
         {busy && <p role="status" className="text-sm text-ink2">{t(busy === 'read' ? 'reading' : busy === 'preview' ? 'previewing' : 'saving')}</p>}
         {importError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">
@@ -263,6 +251,12 @@ export function AdminTradeContacts() {
           {review.entries.length === 1 && <p className="font-semibold text-ink [overflow-wrap:anywhere]">{review.entries[0].name}</p>}
           <p role="status" className="text-sm text-ink2">{t('planned', review.result)}</p>
           <p className="text-sm text-ink2">{t('review_note')}</p>
+          <details className="min-w-0 rounded-xl border border-line p-3"><summary className="cursor-pointer font-semibold text-ink">{t('review_contacts', { count: review.entries.length })}</summary>
+            <ul className="mt-3 space-y-3 text-sm">{review.entries.map((entry, index) => <li key={index} className="min-w-0 break-words border-t border-line pt-2">
+              <p className="font-semibold">{entry.name}</p><p>{[entry.category, entry.locality, entry.province].filter(Boolean).join(' · ')}</p>
+              <p>{[entry.phone, entry.email, entry.website].filter(Boolean).join(' · ')}</p><p className="text-xs text-dim">{t(`statuses.${entry.verification_status}`)} · {entry.source_authority}</p>
+            </li>)}</ul>
+          </details>
           <div className="flex flex-wrap gap-2">
             <button type="button" className={professionalPrimary} disabled={!!busy}
               onClick={() => void save()}>{t(editor === 'manual' ? 'save' : 'confirm_import')}</button>

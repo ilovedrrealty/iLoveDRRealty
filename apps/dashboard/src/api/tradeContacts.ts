@@ -22,7 +22,14 @@ export type TradeContactEntry = Record<RequiredTradeContactField, string>
 export type TradeContact = TradeContactEntry & { id: string; source_count?: number }
 export type TradeContactPage = { items: TradeContact[]; total: number }
 export type TradeContactImport = { inserted: number; updated: number; unchanged: number }
-export type TradeContactFilters = { q: string; category: string; province: string }
+export type TradeContactFilters = { q: string; category: string; province: string; locality: string;
+  verification_status: '' | TradeVerificationStatus; contact_channel: '' | 'phone' | 'email' | 'website' | 'no_contact' }
+export type TradeContactOptions = { categories: string[]; provinces: string[]; localities: string[] }
+export type TradeContactTable = { columns: string[]; rows: { row_number: number; values: string[] }[];
+  file_sha256: string; sheets: string[]; sheet: string | null; suggested_mapping: Record<string, number> }
+export type TradeContactIssue = { row: number; field: string; code: 'required' | 'invalid' }
+export type TradeContactPreview = { entries: TradeContactEntry[]; issues: TradeContactIssue[];
+  issue_count: number; result: TradeContactImport | null }
 
 const inputFields = new Set<string>([
   ...requiredTradeContactFields, ...optionalTradeContactFields, 'verification_status', 'source_details',
@@ -100,6 +107,8 @@ export async function listTradeContacts(filters: TradeContactFilters, offset: nu
   const { data } = await client.get<TradeContactPage>('/admin/trade-contacts', {
     params: {
       q: filters.q || undefined, category: filters.category || undefined, province: filters.province || undefined,
+      locality: filters.locality || undefined, verification_status: filters.verification_status || undefined,
+      contact_channel: filters.contact_channel || undefined,
       limit: TRADE_CONTACT_PAGE_SIZE, offset,
     },
     signal,
@@ -110,4 +119,22 @@ export async function listTradeContacts(filters: TradeContactFilters, offset: nu
 export async function importTradeContacts(entries: TradeContactEntry[], dryRun: boolean) {
   const { data } = await client.post<TradeContactImport>('/admin/trade-contacts/import', { dry_run: dryRun, entries })
   return data
+}
+
+export async function getTradeContactOptions(signal?: AbortSignal) {
+  return (await client.get<TradeContactOptions>('/admin/trade-contacts/options', { signal })).data
+}
+
+export async function analyzeTradeContactFile(file: File, sheet?: string, delimiter = 'auto', signal?: AbortSignal) {
+  const data = new FormData()
+  data.append('file', file)
+  if (sheet) data.append('sheet', sheet)
+  data.append('delimiter', delimiter)
+  return (await client.post<TradeContactTable>('/admin/trade-contacts/preview-file', data, { signal, timeout: 15000 })).data
+}
+
+export async function previewTradeContactMapping(table: TradeContactTable, mapping: Record<string, number>,
+  defaults: Record<string, string>, signal?: AbortSignal) {
+  return (await client.post<TradeContactPreview>('/admin/trade-contacts/preview-mapping', { table, mapping, defaults },
+    { signal, timeout: 15000 })).data
 }
