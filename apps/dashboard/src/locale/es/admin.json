@@ -264,7 +264,8 @@
       "source_authority": "Nombre de la fuente",
       "source_url": "Enlace de la fuente",
       "verified_on": "Fecha de revisión",
-      "verification_status": "Tipo de fuente"
+      "verification_status": "Tipo de fuente",
+      "source_details": "Notas de la fuente"
     },
     "errors": {
       "file_size": "Este archivo supera los 512 KB. Divídelo en archivos más pequeños.",
@@ -317,7 +318,8 @@
       "row_issue": "Fila {{row}} · {{field}}: {{reason}}",
       "issues": {
         "required": "falta un valor obligatorio",
-        "invalid": "revise el valor y su formato"
+        "invalid": "revise el valor y su formato",
+        "note_limit": "Las notas existentes y la referencia del archivo superan los 20 campos. No se importó nada; revise las notas sin quitar información protegida."
       },
       "first_issues": "Se muestran los primeros {{count}} problemas. Corrija el archivo o las columnas y revise nuevamente."
     },

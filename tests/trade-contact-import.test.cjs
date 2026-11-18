@@ -69,7 +69,7 @@ test('file analysis sends multipart data and a worksheet without importing anyth
 })
 
 test('column review preserves mappings and shared evidence independently of final confirmation', async () => {
-  const response = { entries: [entry], issues: [], issue_count: 0, result: { inserted: 1, updated: 0, unchanged: 0 } }
+  const response = { entries: [entry], issues: [], issue_count: 0, result: { inserted: 1, updated: 0, unchanged: 0 }, preserve_source_details: true }
   const api = load(response), signal = new AbortController().signal
   const table = { columns: ['Nombre'], rows: [{ row_number: 2, values: [entry.name] }],
     file_sha256: 'a'.repeat(64), sheets: [], sheet: null, suggested_mapping: { name: 0 } }
@@ -82,6 +82,8 @@ test('column review preserves mappings and shared evidence independently of fina
   await api.importTradeContacts([entry], false)
   assert.equal(api.calls[1][1], '/admin/trade-contacts/import')
   assert.deepEqual(clone(api.calls[1][2]), { dry_run: false, entries: [entry] })
+  await api.importTradeContacts([entry], false, true)
+  assert.deepEqual(clone(api.calls[2][2]), { dry_run: false, entries: [entry], preserve_source_details: true })
 })
 
 test('both languages expose filters, mapping errors and explicit review/confirmation', () => {

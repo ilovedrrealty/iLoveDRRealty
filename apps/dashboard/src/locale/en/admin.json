@@ -264,7 +264,8 @@
       "source_authority": "Source name",
       "source_url": "Source link",
       "verified_on": "Date checked",
-      "verification_status": "Source type"
+      "verification_status": "Source type",
+      "source_details": "Source notes"
     },
     "errors": {
       "file_size": "This file exceeds 512 KB. Divide it into smaller files.",
@@ -317,7 +318,8 @@
       "row_issue": "Row {{row}} · {{field}}: {{reason}}",
       "issues": {
         "required": "required value missing",
-        "invalid": "check the value and format"
+        "invalid": "check the value and format",
+        "note_limit": "Existing source notes plus this file evidence exceed 20 fields. Nothing was imported; review the source notes without removing protected information."
       },
       "first_issues": "Showing the first {{count}} issues. Correct the file or column mapping and review again."
     },

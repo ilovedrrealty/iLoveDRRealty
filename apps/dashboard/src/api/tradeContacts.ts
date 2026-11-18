@@ -27,9 +27,9 @@ export type TradeContactFilters = { q: string; category: string; province: strin
 export type TradeContactOptions = { categories: string[]; provinces: string[]; localities: string[] }
 export type TradeContactTable = { columns: string[]; rows: { row_number: number; values: string[] }[];
   file_sha256: string; sheets: string[]; sheet: string | null; suggested_mapping: Record<string, number> }
-export type TradeContactIssue = { row: number; field: string; code: 'required' | 'invalid' }
+export type TradeContactIssue = { row: number; field: string; code: 'required' | 'invalid' | 'note_limit' }
 export type TradeContactPreview = { entries: TradeContactEntry[]; issues: TradeContactIssue[];
-  issue_count: number; result: TradeContactImport | null }
+  issue_count: number; result: TradeContactImport | null; preserve_source_details: true }
 
 const inputFields = new Set<string>([
   ...requiredTradeContactFields, ...optionalTradeContactFields, 'verification_status', 'source_details',
@@ -116,8 +116,9 @@ export async function listTradeContacts(filters: TradeContactFilters, offset: nu
   return data
 }
 
-export async function importTradeContacts(entries: TradeContactEntry[], dryRun: boolean) {
-  const { data } = await client.post<TradeContactImport>('/admin/trade-contacts/import', { dry_run: dryRun, entries })
+export async function importTradeContacts(entries: TradeContactEntry[], dryRun: boolean, preserveSourceDetails = false) {
+  const body = { dry_run: dryRun, entries, ...(preserveSourceDetails ? { preserve_source_details: true } : {}) }
+  const { data } = await client.post<TradeContactImport>('/admin/trade-contacts/import', body)
   return data
 }
 

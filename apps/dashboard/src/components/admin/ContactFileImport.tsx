@@ -13,7 +13,7 @@ const errorCodes = new Set(['file_size', 'unsupported_file', 'invalid_file', 'in
 
 export function ContactFileImport({ disabled, onBusy, onJSONPreview, onReviewed }: {
   disabled: boolean; onBusy: (value: boolean) => void; onJSONPreview: (entries: TradeContactEntry[]) => void
-  onReviewed: (entries: TradeContactEntry[], result: TradeContactImport) => void
+  onReviewed: (entries: TradeContactEntry[], result: TradeContactImport, preserveSourceDetails: true) => void
 }) {
   const { t } = useTranslation('admin', { keyPrefix: 'trade_contacts_page' })
   const [file, setFile] = useState<File | null>(null)
@@ -75,7 +75,7 @@ export function ContactFileImport({ disabled, onBusy, onJSONPreview, onReviewed 
       const next = await previewTradeContactMapping(table, mapping, defaults, operation.signal)
       if (operation.signal.aborted) return
       if (next.issue_count) { setIssues(next.issues); setIssueCount(next.issue_count) }
-      else if (next.result && next.entries.length) onReviewed(next.entries, next.result)
+      else if (next.result && next.entries.length && next.preserve_source_details === true) onReviewed(next.entries, next.result, true)
       else setError({ code: 'preview_failed' })
     } catch (cause) { if (!operation.signal.aborted) failure(cause) }
     finally { if (!operation.signal.aborted) onBusy(false) }

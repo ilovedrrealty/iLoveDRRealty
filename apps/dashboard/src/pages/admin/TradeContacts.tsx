@@ -25,7 +25,7 @@ type ImportMessage = {
   code: 'file_size' | 'invalid_file' | 'invalid_row' | 'too_many_rows' | 'preview_failed' | 'save_failed'
   row?: number
 }
-type ReviewedBatch = { entries: TradeContactEntry[]; result: TradeContactImport }
+type ReviewedBatch = { entries: TradeContactEntry[]; result: TradeContactImport; preserveSourceDetails?: true }
 
 function ContactRecord({ entry }: { entry: TradeContact }) {
   const { t } = useTranslation('admin', { keyPrefix: 'trade_contacts_page' })
@@ -169,7 +169,7 @@ export function AdminTradeContacts() {
     setBusy('save')
     setImportError(null)
     try {
-      const result = await importTradeContacts(review.entries, false)
+      const result = await importTradeContacts(review.entries, false, review.preserveSourceDetails)
       setReceipt(result)
       setReview(null)
       setEditor(null)
@@ -235,7 +235,7 @@ export function AdminTradeContacts() {
         {editor === 'manual' ? <div hidden={!!review}><ContactEntryForm disabled={!!busy || !!review} onPreview={entry => void preview([entry])} /></div> :
           <div hidden={!!review} className="space-y-4">
             <ContactFileImport disabled={!!busy || !!review} onBusy={value => setBusy(value ? 'read' : null)}
-              onJSONPreview={entries => void preview(entries)} onReviewed={(entries, result) => setReview({ entries, result })} />
+              onJSONPreview={entries => void preview(entries)} onReviewed={(entries, result, preserveSourceDetails) => setReview({ entries, result, preserveSourceDetails })} />
             <details className="rounded-xl border border-line bg-white p-3 text-sm">
               <summary className="cursor-pointer font-semibold text-ink">{t('json_example')}</summary>
               <pre className="max-w-full overflow-x-auto whitespace-pre-wrap [overflow-wrap:anywhere]">{JSON.stringify(example, null, 2)}</pre>
