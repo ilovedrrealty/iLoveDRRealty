@@ -124,7 +124,7 @@ export function readGroup(value: unknown): Group {
     visibility: choice(row.visibility, ['private', 'network']), join_policy: choice(row.join_policy, ['approval_required', 'open']),
     post_policy: choice(row.post_policy, ['members', 'moderated']), comments_enabled: bool(row.comments_enabled),
     status: choice(row.status, ['active', 'archived']), version: integer(row.version, 1), owner_alias: text(row.owner_alias, 100, 1),
-    my_role: row.my_role === null ? null : choice(row.my_role, ['owner', 'admin', 'moderator', 'member']),
+    my_role: row.my_role === null ? null : choice<GroupRole>(row.my_role, ['owner', 'admin', 'moderator', 'member']),
     membership: row.membership === null ? null : readGroupMembership(row.membership), member_count: integer(row.member_count, 1),
     image: row.image === null ? null : readGroupMedia(row.image),
     publication_summary: summary === null ? null : { network_posts: integer(summary.network_posts), private_posts: integer(summary.private_posts) },

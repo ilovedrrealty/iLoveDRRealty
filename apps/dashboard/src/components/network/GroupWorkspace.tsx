@@ -27,7 +27,7 @@ export function GroupWorkspace({ id, actorId, actorCode, inviteCode, onBack }: {
   return <div className="min-w-0 space-y-5">
     <button type="button" className={NETWORK_BUTTON} onClick={onBack}>{t('groups.back')}</button>
     <NetworkFreshness read={read} />
-    {read.error && <p role="alert" className="text-sm text-red-800">{t(networkError(read.error))}</p>}
+    {!!read.error && <p role="alert" className="text-sm text-red-800">{t(networkError(read.error))}</p>}
     {!group ? !read.error && <p role="status">{t('loading')}</p> : <>
       <header className="min-w-0 space-y-3 rounded-2xl bg-ink p-5 text-white">
         <p className="text-xs font-semibold">{t(`groups.visibilities.${group.visibility}`)} · {t(`groups.statuses.${group.status}`)}</p>

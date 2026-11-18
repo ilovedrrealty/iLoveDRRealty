@@ -33,7 +33,7 @@ function Feed({ actorId, group, fresh, onGroupChanged, context }: FeedProps & { 
   return <NetworkPanel title={t('groups.feed_title')}>
     <NetworkFreshness read={read} />
     <p className="text-xs leading-relaxed text-dim">{t('groups.feed_help')}</p>
-    {read.error && <p role="alert" className="mt-3 text-sm text-red-800">{t(networkError(read.error))}</p>}
+    {!!read.error && <p role="alert" className="mt-3 text-sm text-red-800">{t(networkError(read.error))}</p>}
     {!current && !read.error && group.can_read_feed && <p role="status" className="mt-3">{t('loading')}</p>}
     {group.can_post && current ? <PostComposer key={context} group={group} context={context} ready={ready} revalidate={refresh}
       onSaved={() => setPage(1)} /> : <p className="mt-3 text-sm text-dim">{t('groups.feed_readonly')}</p>}
@@ -151,7 +151,7 @@ function PostComments({ actorId, group, post, context, fresh, onChanged }: {
     }}>{t(open ? 'hide_comments' : 'comments')}</button>
     {open && <div className="mt-3 min-w-0 space-y-3">
       <NetworkFreshness read={read} />
-      {read.error && <p role="alert" className="text-sm text-red-800">{t(networkError(read.error))}</p>}
+      {!!read.error && <p role="alert" className="text-sm text-red-800">{t(networkError(read.error))}</p>}
       {!data && !read.error && <p role="status">{t('loading')}</p>}
       {data?.items.map(comment => <CommentCard key={comment.id} comment={comment} context={`${context}:${post.id}`}
         mediaIds={post.media_ids} fresh={ready} onChanged={refresh} />)}

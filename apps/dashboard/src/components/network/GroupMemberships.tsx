@@ -18,7 +18,7 @@ export function GroupMemberships({ actorId, onOpen }: { actorId: string; onOpen:
       </select>
     </label>
     <NetworkFreshness read={read} />
-    {read.error && <p role="alert" className="text-sm text-red-800">{t(networkError(read.error))}</p>}
+    {!!read.error && <p role="alert" className="text-sm text-red-800">{t(networkError(read.error))}</p>}
     {!read.data ? !read.error && <p role="status">{t('loading')}</p> : <>
       {read.data.items.map(row => <MembershipCard key={`${actorId}:${row.id}`} actorId={actorId} row={row}
         fresh={!read.stale && !read.checking} onSaved={read.refresh} onOpen={onOpen} />)}

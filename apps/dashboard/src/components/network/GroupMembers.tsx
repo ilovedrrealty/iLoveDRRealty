@@ -57,7 +57,7 @@ export function GroupMembers({ actorId, actorCode, group, fresh, inviteCode, onG
       }}>{(['active', 'pending', 'all'] as const).map(value => <option key={value} value={value}>{t(`groups.roster_views.${value}`)}</option>)}</select>
     </label>}
     <NetworkFreshness read={read} />
-    {read.error && <p role="alert" className="text-sm text-red-800">{t(networkError(read.error))}</p>}
+    {!!read.error && <p role="alert" className="text-sm text-red-800">{t(networkError(read.error))}</p>}
     {!read.data ? !read.error && <p role="status">{t('loading')}</p> : <>
       <p className="min-w-0 rounded-xl bg-paper p-4 text-sm [overflow-wrap:anywhere]">{read.data.owner.member_alias} · {t('groups.roles.owner')}
         {read.data.owner.user_code ? ` · ${t('groups.code_value', { code: read.data.owner.user_code })}` : ''}</p>
