@@ -50,6 +50,7 @@ function interactive(file, api, browser = {}, language = 'en') {
   const state = []
   let index = 0
   let effect
+  let cleanup
   const hooks = {
     useId: () => 'newsletter-test-' + index++,
     useState: initial => {
@@ -71,9 +72,32 @@ function interactive(file, api, browser = {}, language = 'en') {
   }, { window: browser }).default
   return {
     render() { index = 0; return Component() },
-    effect() { effect() },
+    effect() { cleanup = effect() },
+    cleanup() { cleanup?.(); cleanup = undefined },
   }
 }
+
+function actionBrowser(fragment) {
+  const listeners = new Set()
+  const browser = {
+    location: { hash: fragment, search: '?source=mail', pathname: '/newsletter/' },
+    history: { state: null, replaceState: (_state, _title, location) => {
+      assert.equal(location, '/newsletter/')
+      browser.location.hash = ''
+      browser.location.search = ''
+    } },
+    addEventListener(name, listener) { assert.equal(name, 'hashchange'); listeners.add(listener) },
+    removeEventListener(name, listener) { assert.equal(name, 'hashchange'); listeners.delete(listener) },
+    navigate(fragment) {
+      browser.location.hash = fragment
+      for (const listener of listeners) listener()
+    },
+    listenerCount() { return listeners.size },
+  }
+  return browser
+}
+
+const flush = () => new Promise(resolve => setImmediate(resolve))
 
 test('subscribe and explicit actions send only their exact private JSON contract', async () => {
   const calls = []
@@ -179,20 +203,15 @@ test('sign-up needs deliberate consent and one in-flight request', async () => {
 test('action GET scrubs the token without submitting; only the human control posts once', async () => {
   for (const action of ['confirm', 'unsubscribe']) {
     const calls = []
-    let replaced = false
     const api = load('api/newsletter.ts', {}, { fetch: () => { throw new Error('network forbidden') } })
     api.applyNewsletterAction = async (...args) => { calls.push(args) }
-    const view = interactive('views/NewsletterPreferences.tsx', api, {
-      location: { hash: '#' + action + '=' + token, search: '?source=mail', pathname: '/newsletter/' },
-      history: { state: null, replaceState: (_state, _title, location) => {
-        assert.equal(location, '/newsletter/')
-        replaced = true
-      } },
-    })
+    const browser = actionBrowser('#' + action + '=' + token)
+    const view = interactive('views/NewsletterPreferences.tsx', api, browser)
     view.render()
     view.effect()
     assert.equal(calls.length, 0)
-    assert.equal(replaced, true)
+    assert.equal(browser.location.hash, '')
+    assert.equal(browser.location.search, '')
     let nodes = treeNodes(view.render())
     const label = locales.en.newsletter.manage[action + '_button']
     const button = nodes.find(node => node.type === 'button' && node.props.children === label)
@@ -204,7 +223,102 @@ test('action GET scrubs the token without submitting; only the human control pos
     nodes = treeNodes(view.render())
     assert.ok(nodes.some(node => node.props.role === 'status'))
     assert.ok(!JSON.stringify(nodes).includes(token))
+    view.cleanup()
   }
+})
+
+test('a second same-document link replaces settled or invalid state and is scrubbed before a human action', async () => {
+  const nextToken = token.replace(/a/g, 'b')
+  const calls = []
+  const api = load('api/newsletter.ts', {}, { fetch: () => { throw new Error('network forbidden') } })
+  api.applyNewsletterAction = async (...args) => { calls.push(args) }
+  const browser = actionBrowser('#confirm=' + token)
+  const view = interactive('views/NewsletterPreferences.tsx', api, browser)
+  const actionButton = action => treeNodes(view.render()).find(node =>
+    node.type === 'button' && node.props.children === locales.en.newsletter.manage[action + '_button'])
+  view.render(); view.effect()
+  actionButton('confirm').props.onClick()
+  await flush()
+  assert.ok(treeNodes(view.render()).some(node => node.props.role === 'status'))
+  browser.navigate('#unsubscribe=' + nextToken)
+  assert.equal(browser.location.hash, '')
+  assert.equal(calls.length, 1)
+  assert.ok(!treeNodes(view.render()).some(node => node.props.role === 'status'))
+  assert.equal(actionButton('unsubscribe').props.disabled, false)
+  actionButton('unsubscribe').props.onClick()
+  await flush()
+  assert.deepEqual(calls, [['confirm', token], ['unsubscribe', nextToken]])
+  browser.navigate('#confirm=invalid')
+  assert.equal(browser.location.hash, '')
+  assert.equal(actionButton('confirm'), undefined)
+  browser.navigate('#confirm=' + token)
+  assert.equal(browser.location.hash, '')
+  assert.ok(actionButton('confirm'))
+  assert.equal(calls.length, 2)
+  assert.ok(!JSON.stringify(treeNodes(view.render())).includes(token))
+  view.cleanup()
+})
+
+test('an older in-flight success or error cannot clear a newly opened action link', async () => {
+  for (const outcome of ['success', 'invalid']) {
+    const nextToken = token.replace(/a/g, 'b')
+    const calls = []
+    let settle
+    class RequestError extends Error { constructor(code) { super(code); this.code = code } }
+    const api = load('api/newsletter.ts', {}, { fetch: () => { throw new Error('network forbidden') } })
+    api.NewsletterRequestError = RequestError
+    api.applyNewsletterAction = (...args) => {
+      calls.push(args)
+      if (calls.length > 1) return Promise.resolve()
+      return new Promise((resolve, reject) => {
+        settle = () => outcome === 'success' ? resolve() : reject(new RequestError('invalid'))
+      })
+    }
+    const browser = actionBrowser('#confirm=' + token)
+    const view = interactive('views/NewsletterPreferences.tsx', api, browser)
+    view.render(); view.effect()
+    treeNodes(view.render()).find(node => node.type === 'button'
+      && node.props.children === locales.en.newsletter.manage.confirm_button).props.onClick()
+    browser.navigate('#unsubscribe=' + nextToken)
+    assert.equal(browser.location.hash, '')
+    const waiting = treeNodes(view.render()).find(node => node.type === 'button'
+      && node.props.children === locales.en.newsletter.manage.working)
+    assert.equal(waiting.props.disabled, true)
+    waiting.props.onClick()
+    assert.equal(calls.length, 1)
+    settle()
+    await flush()
+    const next = treeNodes(view.render()).find(node => node.type === 'button'
+      && node.props.children === locales.en.newsletter.manage.unsubscribe_button)
+    assert.ok(next)
+    assert.equal(next.props.disabled, false)
+    assert.ok(!treeNodes(view.render()).some(node => node.props.role === 'status' || node.props.role === 'alert'))
+    next.props.onClick()
+    await flush()
+    assert.deepEqual(calls, [['confirm', token], ['unsubscribe', nextToken]])
+    assert.ok(treeNodes(view.render()).some(node => node.props.role === 'status'))
+    view.cleanup()
+  }
+})
+
+test('StrictMode effect cleanup and re-setup preserves the initial link and reinstalls exactly one listener', () => {
+  const api = load('api/newsletter.ts', {}, { fetch: () => { throw new Error('network forbidden') } })
+  const browser = actionBrowser('#confirm=' + token)
+  const view = interactive('views/NewsletterPreferences.tsx', api, browser)
+  view.render(); view.effect()
+  assert.equal(browser.listenerCount(), 1)
+  view.cleanup()
+  assert.equal(browser.listenerCount(), 0)
+  view.render(); view.effect()
+  assert.equal(browser.listenerCount(), 1)
+  assert.ok(treeNodes(view.render()).some(node => node.type === 'button'
+    && node.props.children === locales.en.newsletter.manage.confirm_button))
+  browser.navigate('#unsubscribe=' + token)
+  assert.equal(browser.location.hash, '')
+  assert.ok(treeNodes(view.render()).some(node => node.type === 'button'
+    && node.props.children === locales.en.newsletter.manage.unsubscribe_button))
+  view.cleanup()
+  assert.equal(browser.listenerCount(), 0)
 })
 
 test('action links stay outside third-party features and outside the sitemap', () => {

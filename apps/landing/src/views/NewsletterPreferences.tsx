@@ -8,46 +8,61 @@ export default function NewsletterPreferences() {
   const { t, i18n } = useTranslation('blog')
   const tokenRef = useRef<string | null>(null)
   const initialized = useRef(false)
+  const linkGeneration = useRef(0)
   const pending = useRef(false)
   const [action, setAction] = useState<NewsletterAction | null>()
   const [submitting, setSubmitting] = useState(false)
   const [status, setStatus] = useState<'subscribed' | 'unsubscribed' | 'invalid' | 'rate_limited' | 'unavailable' | null>(null)
 
   useEffect(() => {
-    if (initialized.current) return
-    initialized.current = true
-    const { hash, search, pathname } = window.location
-    const link = readNewsletterLink(hash)
-    if (hash || search) {
-      try {
-        window.history.replaceState(window.history.state, '', pathname)
-      } catch {
-        setAction(null)
-        return
+    function consumeLink() {
+      const { hash, search, pathname } = window.location
+      const link = readNewsletterLink(hash)
+      linkGeneration.current += 1
+      tokenRef.current = null
+      setStatus(null)
+      if (hash || search) {
+        try {
+          window.history.replaceState(window.history.state, '', pathname)
+        } catch {
+          setAction(null)
+          return
+        }
       }
+      tokenRef.current = link?.token ?? null
+      setAction(link?.action ?? null)
     }
-    tokenRef.current = link?.token ?? null
-    setAction(link?.action ?? null)
+    if (!initialized.current) {
+      initialized.current = true
+      consumeLink()
+    }
+    window.addEventListener('hashchange', consumeLink)
+    return () => window.removeEventListener('hashchange', consumeLink)
   }, [])
 
   async function submit() {
     const token = tokenRef.current
     if (!action || !token || pending.current) return
+    const submittedGeneration = linkGeneration.current
     pending.current = true
     setSubmitting(true)
     setStatus(null)
     try {
       await applyNewsletterAction(action, token)
-      tokenRef.current = null
-      setAction(null)
-      setStatus(action === 'confirm' ? 'subscribed' : 'unsubscribed')
-    } catch (error) {
-      const code = error instanceof NewsletterRequestError ? error.code : 'unavailable'
-      if (code === 'invalid') {
+      if (linkGeneration.current === submittedGeneration) {
         tokenRef.current = null
         setAction(null)
+        setStatus(action === 'confirm' ? 'subscribed' : 'unsubscribed')
       }
-      setStatus(code)
+    } catch (error) {
+      if (linkGeneration.current === submittedGeneration) {
+        const code = error instanceof NewsletterRequestError ? error.code : 'unavailable'
+        if (code === 'invalid') {
+          tokenRef.current = null
+          setAction(null)
+        }
+        setStatus(code)
+      }
     } finally {
       pending.current = false
       setSubmitting(false)
