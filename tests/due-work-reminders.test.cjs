@@ -178,6 +178,7 @@ test('project timeline mounts reminders only for actual owner and professional o
       '../../hooks/useNetworkRead': { useNetworkRead: key => ({ data: key.startsWith('project:') ? row : null, checking: false, stale: false, refresh: never }) },
       './NetworkShared': shared(), './DueWorkReminders': { DueWorkReminders: () => React.createElement('p', {}, 'Mounted due-work panel') },
       './HistoryShareCreate': {},
+      './HistorySharing': { HistoryWorkMetadata: () => null },
     })
     return renderToStaticMarkup(React.createElement(ProjectDetail, { id: projectId, onBack: never }))
   }

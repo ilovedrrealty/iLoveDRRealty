@@ -136,6 +136,7 @@ function workflowHarness() {
     './ServicePreferences': { ServicePreferences: leaf }, './ServiceFavorites': { ServiceFavorites: leaf },
     './ServiceRequestCreate': { ServiceRequestCreate: leaf }, './ServiceRequestDetail': { ServiceRequestDetail: Detail },
     './ServiceOperations': { ServiceOperations: Ops },
+    './ServiceReferrals': { ServiceReferrals: leaf },
   })
   const render = role => { offset = 0; return ServiceWorkflow({ role, actorId: 'synthetic' }) }
   return { render, Ops, Detail }
