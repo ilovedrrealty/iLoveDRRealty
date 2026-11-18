@@ -4,6 +4,7 @@ import type { DirectoryLocationFilters } from './directoryMaps'
 export const TRADE_CONTACT_BATCH_LIMIT = 250
 export const TRADE_CONTACT_FILE_LIMIT = 512 * 1024
 export const TRADE_CONTACT_PAGE_SIZE = 50
+export const tradeContactFilterLimits = { q: 160, category: 160, subtype: 160, province: 160, locality: 160, service_area: 320 } as const
 export const tradeVerificationStatuses = ['owner_source', 'public_source', 'official_registry'] as const
 export type TradeVerificationStatus = typeof tradeVerificationStatuses[number]
 

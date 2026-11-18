@@ -5,7 +5,7 @@ import { getTradeContactMap, type DirectoryMapSummary, type DirectoryLocationSta
 import {
   getTradeContactOptions, httpsTradeContactLink, importTradeContacts, listTradeContacts, optionalTradeContactFields,
   readTradeContact, requiredTradeContactFields, TRADE_CONTACT_BATCH_LIMIT,
-  TRADE_CONTACT_PAGE_SIZE, tradeVerificationStatuses, type TradeContact, type TradeContactEntry,
+  TRADE_CONTACT_PAGE_SIZE, tradeContactFilterLimits, tradeVerificationStatuses, type TradeContact, type TradeContactEntry,
   type TradeContactFilters, type TradeContactImport, type TradeContactOptions, type TradeContactPage,
 } from '../../api/tradeContacts'
 import { ContactFileImport } from '../../components/admin/ContactFileImport'
@@ -222,7 +222,7 @@ export function AdminTradeContacts() {
     <form className={`${panel} grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-3`} onSubmit={search}>
       {(['q', 'category', 'subtype', 'province', 'locality', 'service_area'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">
         <span className="mb-1.5 block">{t(`filters.${key}`)}</span>
-        <input className={professionalInput} type={key === 'q' ? 'search' : 'text'} value={inputs[key] ?? ''} maxLength={120} list={key === 'q' ? undefined : `trade-contact-${key}`}
+        <input className={professionalInput} type={key === 'q' ? 'search' : 'text'} value={inputs[key] ?? ''} maxLength={tradeContactFilterLimits[key]} list={key === 'q' ? undefined : `trade-contact-${key}`}
           onChange={event => setInputs(previous => ({ ...previous, [key]: event.target.value }))} />
       </label>)}
       {(['verification_status', 'contact_channel'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">

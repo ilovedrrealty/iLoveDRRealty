@@ -62,6 +62,7 @@ test('Admin list and aggregate map send identical applied filters without map pa
   const a = api(), calls = []
   const client = { get: async (...args) => { calls.push(args); return { data: { items: [], total: 3 } } } }
   const contacts = load('apps/dashboard/src/api/tradeContacts.ts', { './axios': { __esModule: true, default: client } })
+  assert.deepEqual(clone(contacts.tradeContactFilterLimits), { q: 160, category: 160, subtype: 160, province: 160, locality: 160, service_area: 320 })
   const signal = new AbortController().signal
   const filters = { q: 'pump & filter', category: 'Piscinas', subtype: 'Maintenance', province: 'Puerto Plata', locality: 'Sosúa',
     service_area: 'North coast', verification_status: 'owner_source', contact_channel: 'phone', map_area: 'DO:sosua', location_status: 'mapped' }
