@@ -157,7 +157,7 @@ export function LeadDelivery({ initialLeadId = '', onOpenLead }: {
 
       <Panel title={t('queue.title')}>
         <div className="flex flex-wrap items-end gap-3">
-          <div><label htmlFor="delivery-status" className="mb-1 block text-xs font-semibold text-ink2">{t('queue.status_filter')}</label><select id="delivery-status" value={status} onChange={event => { setStatus(event.target.value as DeliveryStatus | ''); setOffset(0); setSelectedLead(null) }} className="min-h-10 rounded-lg border border-line bg-paper px-3 text-sm text-ink"><option value="">{t('queue.all_statuses')}</option>{DELIVERY_STATUSES.map(value => <option key={value} value={value}>{t(`statuses.${value}`)}</option>)}</select></div>
+          <div className="w-full min-w-0 max-w-full sm:w-auto"><label htmlFor="delivery-status" className="mb-1 block text-xs font-semibold text-ink2">{t('queue.status_filter')}</label><select id="delivery-status" value={status} onChange={event => { setStatus(event.target.value as DeliveryStatus | ''); setOffset(0); setSelectedLead(null) }} className="min-h-10 w-full min-w-0 max-w-full rounded-lg border border-line bg-paper px-3 text-sm text-ink"><option value="">{t('queue.all_statuses')}</option>{DELIVERY_STATUSES.map(value => <option key={value} value={value}>{t(`statuses.${value}`)}</option>)}</select></div>
           <form onSubmit={event => {
             event.preventDefault()
             const next = leadInput.trim().toLowerCase()
