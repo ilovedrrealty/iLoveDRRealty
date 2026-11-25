@@ -11,6 +11,7 @@ import type { Role } from '../App'
 import { changePassword, deactivateAccount, linkGoogle, requestAccountDeletion, setPassword, unlinkGoogle, updateProfile, uploadAvatar } from '../api/auth'
 import { ConfirmModal } from '../components/shared/ConfirmModal'
 import { SaleCatalogLink } from '../components/shared/SaleCatalogLink'
+import { ManagementNavigation } from '../components/shared/ManagementNavigation'
 import { PAYPAL_ENABLED } from '../lib/features'
 import { deactivationRedirectUrl } from '../lib/siteUrls'
 import { SCHEDULING_COLOR, SCHEDULING_LABEL, SCHEDULING_PLACEHOLDER, SCHEDULING_PROVIDERS, schedulingProvider, validateSchedulingUrl, type SchedulingProvider } from '../lib/scheduling'
@@ -448,6 +449,7 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
           </div>
 
           <div className="mb-4"><SaleCatalogLink accountRole={user.role} /></div>
+          <ManagementNavigation accountRole={user.role} workspace={role} accountId={user.id} appearance="profile" />
           <form onSubmit={handleProfileSave} className="flex flex-col gap-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

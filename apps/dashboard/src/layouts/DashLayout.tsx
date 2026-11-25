@@ -302,7 +302,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
         {/* Nav — scrollable */}
         <nav className="flex-1 px-2 flex flex-col overflow-y-auto min-h-0 pb-2">
           {navContent}
-          <ManagementNavigation accountRole={user.role} workspace={role} onNavigate={closeNav} />
+          <ManagementNavigation accountRole={user.role} workspace={role} accountId={user.id} onNavigate={closeNav} />
         </nav>
 
         {/* Bottom — language + user + logout */}
