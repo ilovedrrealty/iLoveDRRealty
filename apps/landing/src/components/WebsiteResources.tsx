@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { localizedValue } from '../../../../packages/website-settings/src'
 import { publicWebsiteResources } from '../../../../packages/website-settings/src/drResources'
 import { useWebsiteSettings } from './WebsiteSettingsProvider'
+import { ResourceShare } from '../../../../packages/sharing/ResourceShare'
 
 const searchable = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase()
 
@@ -14,6 +15,10 @@ export default function WebsiteResources() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const resources = useMemo(() => publicWebsiteResources(settings), [settings])
+  useEffect(() => {
+    const anchor = window.location.hash.slice(1)
+    if (resources.some(resource => anchor === 'resource-' + resource.id)) document.getElementById(anchor)?.scrollIntoView()
+  }, [resources])
   const categories = useMemo(() => [...new Map(resources.map(resource => [resource.category.en || resource.category.es, resource.category] as const)).entries()]
     .sort((a, b) => localizedValue(a[1], i18n.language).localeCompare(localizedValue(b[1], i18n.language), i18n.language)), [resources, i18n.language])
   const activeCategory = categories.some(([key]) => key === category) ? category : ''
@@ -48,13 +53,15 @@ export default function WebsiteResources() {
       {!shown.length ? <p className="rounded-2xl border border-line p-6 text-sm text-ink2">{resources.length ? t('resource_library.no_matches') : t('resource_library.empty')}</p> : null}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {shown.map(resource => (
-          <a key={resource.id} href={resource.url} target="_blank" rel="noopener noreferrer"
-            className="block rounded-2xl border border-line p-5 hover:border-coral focus-visible:outline-coral">
+          <article key={resource.id} id={'resource-' + resource.id} className="min-w-0 rounded-2xl border border-line p-5 scroll-mt-24">
+            <a href={resource.url} target="_blank" rel="noopener noreferrer" className="block mb-4 hover:underline focus-visible:outline-coral">
             <p className="text-xs font-bold uppercase tracking-wide text-coral">{localizedValue(resource.category, i18n.language)}</p>
             <h3 className="font-bold text-lg text-ink mt-2">{localizedValue(resource.title, i18n.language)}</h3>
             <p className="text-sm text-ink2 mt-2">{localizedValue(resource.description, i18n.language)}</p>
             <span className="block text-sm font-semibold text-coral mt-4">{t('open_resource')} ↗</span>
-          </a>
+            </a>
+            <ResourceShare target={{ kind: 'resource', id: resource.id }} title={localizedValue(resource.title, i18n.language)} />
+          </article>
         ))}
       </div>
       <p className="text-xs text-ink2 mt-5 leading-relaxed">{t('resource_library.external_note')}</p>

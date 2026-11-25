@@ -9,6 +9,7 @@ import { ALL_REGIONS } from '../../data/regions'
 import { BUILT_IN_RESEARCH_TOOLS, convertArea, mergeResearchTools, type AreaUnit, type ResearchTool } from '../../data/researchTools'
 import { landingBaseUrl } from '../../lib/siteUrls'
 import { SavedResearchWorkspace } from './SavedResearchWorkspace'
+import { ResourceShare } from '../../../../../packages/sharing/ResourceShare'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 const FIELD = 'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-sea'
@@ -40,6 +41,7 @@ export function AreaConverter() {
         })}
       </dl>
       <p className="text-[11.5px] text-dim mt-3 mb-0">{t('area.formula')}</p>
+      <div className="mt-4 research-no-print"><ResourceShare target={{ kind: 'area' }} /></div>
     </section>
   )
 }
@@ -138,6 +140,7 @@ export function ResearchTools({ user }: { user: UserInfo }) {
                 <a href={tool.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-paper2 px-3 py-2 text-[12px] font-semibold text-ink no-underline">{t('directory.open')}<ExternalLink size={13} /></a>
                 {tool.sourceUrl && <a href={tool.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[11.5px] text-sea underline">{t('directory.source')}</a>}
               </div>
+              <div className="mt-3 research-no-print"><ResourceShare target={{ kind: 'research' }} /></div>
             </article>
           ))}
         </div>

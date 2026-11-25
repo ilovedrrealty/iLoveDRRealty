@@ -2,6 +2,7 @@
 import { useNav } from '../hooks/useNav'
 import { createContext, useContext, useId, useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ResourceShare } from '../../../../packages/sharing/ResourceShare'
 import { ROI_TAX_SOURCES, ROI_PAYBACK_SCALE_YEARS, ROI_PAYBACK_TICKS, calculateRoi, copyRoiLink, isRoiState, readRoiFragment, roiNetBar, roiSimplePaybackScale, roiWhatsAppUrl, type RoiLocale, type RoiState } from '../lib/roiCalculator'
 
 type Scenario = 'rent' | 'vacation' | 'flip'
@@ -276,6 +277,7 @@ export default function Calculator() {
       </div>
 
       {/* MAIN GRID */}
+      <div className="max-w-335 mx-auto pt-6 px-4 sm:px-7"><ResourceShare target={{ kind: 'calculator' }} /></div>
       <div className="max-w-335 mx-auto pt-8 px-4 sm:px-7 pb-15 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
         {/* ── LEFT: INPUTS ── */}

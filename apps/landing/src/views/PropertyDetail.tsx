@@ -10,7 +10,6 @@ import {
   Maximize2,
   MapPin,
   Star,
-  Share2,
   MessageCircle,
   ExternalLink,
   Building2,
@@ -20,7 +19,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Link2,
   Video,
   Box,
 } from "lucide-react";
@@ -30,6 +28,7 @@ import { listingGallery, TONE_MAP } from "../data/propertyDetailData";
 import { parseListingRoomTour } from "../data/listingRoomTour";
 import { ListingRoomTour } from "../components/ListingRoomTour";
 import { ListingBrochureDownload } from "../components/ListingBrochureDownload";
+import { ListingShare } from "../components/ListingShare";
 import { ListingFloorPlan } from "../components/ListingFloorPlan";
 import { DevelopmentInventory } from "../components/DevelopmentInventory";
 import { fetchListingById, recordListingView } from "../api/listings";
@@ -266,10 +265,6 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
   const go = useNav();
   const { t, i18n } = useTranslation('property_detail')
   const id = idProp ?? params.get("id") ?? "";
-  const canonicalUrl = id
-    ? `${typeof window !== "undefined" ? window.location.origin : "https://ilovedrrealty.com"}/listing/${id}/`
-    : "";
-
   const [listing, setListing] = useState<ApiListingDetail | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [requestedLightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -316,10 +311,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
   const [calMonth, setCalMonth] = useState<number>(() => new Date().getMonth());
   const [bookedRanges, setBookedRanges] = useState<BookedRange[]>([]);
   const [me, setMe] = useState<{ display_name: string; email: string; phone: string | null; avatar_url: string | null } | null>(null);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [galleryTab, setGalleryTab] = useState<'photos' | '3dtour'>('photos');
-  const shareRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getMe().then(data => setMe(data)).catch(() => {})
@@ -450,38 +442,6 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
     return () => window.removeEventListener("keydown", handler);
   }, [lightboxIdx, imgs.length]);
 
-  useEffect(() => {
-    if (!shareOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShareOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [shareOpen]);
-
-  async function copyShareLink() {
-    const url = canonicalUrl || window.location.href;
-    try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
-    setCopied(true);
-    setTimeout(() => { setCopied(false); setShareOpen(false); }, 1500);
-  }
-
-  async function handleShareClick() {
-    const url = canonicalUrl || (typeof window !== "undefined" ? window.location.href : "");
-    const priceStr = listing
-      ? (listing.transaction === "rent" ? `${fmt(listing.price)}/mo` : fmt(listing.price))
-      : "";
-    const shareData = {
-      title: listing?.title ?? "Property Listing",
-      text: listing ? `${listing.title} — ${priceStr} in ${listing.location}` : "",
-      url,
-    };
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try { await navigator.share(shareData); return; } catch { /* fell through to dropdown */ }
-    }
-    setShareOpen(s => !s);
-  }
-
   if (loadError)
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-muted font-sans">
@@ -529,119 +489,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
               </span>
             );
           })}
-          <div className="relative ml-auto" ref={shareRef}>
-            <button
-              onClick={handleShareClick}
-              className="flex items-center gap-2 bg-transparent border border-line text-ink text-[13px] font-semibold px-4 py-2 rounded-full cursor-pointer font-sans hover:bg-paper2 transition-colors"
-            >
-              <Share2 size={14} /> {t('share')}
-            </button>
-            {shareOpen && (() => {
-              const shareUrl = canonicalUrl || (typeof window !== "undefined" ? window.location.href : "");
-              const priceStr = listing.transaction === "rent" ? `${fmt(listing.price)}/mo` : fmt(listing.price);
-              const waFacts = [
-                `💰 ${priceStr}`,
-                listing.bedrooms ? `🛏 ${listing.bedrooms} bd` : null,
-                listing.bathrooms ? `🛁 ${listing.bathrooms} ba` : null,
-                listing.area_sqft ? `📐 ${listing.area_sqft.toLocaleString()} ft²` : null,
-              ].filter(Boolean).join(" · ");
-              const waText = encodeURIComponent(`🏝️ *${listing.title}*\n${waFacts}\n📍 ${listing.location}\n\n${shareUrl}`);
-              const region = listing.location.split(",")[0].trim();
-              const regionTag = region.normalize("NFD").replace(/\p{Mn}/gu, "").replace(/[^a-zA-Z0-9]/g, "");
-              const listedWord = listing.transaction === "rent" ? "for rent" : "on the market";
-              const xText = encodeURIComponent(
-                `New ${listedWord} 🌊 ${priceStr}${listing.bedrooms ? ` · ${listing.bedrooms} bed` : ""} in ${listing.location}\n#DominicanRepublic${regionTag ? ` #${regionTag}RealEstate` : ""}`
-              );
-              const smsText = `Thought you'd like this one 👀 — ${priceStr} in ${listing.location}\n${shareUrl}`;
-              const platforms = [
-                {
-                  label: "Facebook",
-                  bg: "#1877F2",
-                  href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
-                  icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                    </svg>
-                  ),
-                },
-                {
-                  label: "LinkedIn",
-                  bg: "#0A66C2",
-                  href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
-                  icon: (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-                      <rect x="2" y="9" width="4" height="12" />
-                      <circle cx="4" cy="4" r="2" />
-                    </svg>
-                  ),
-                },
-                {
-                  label: "WhatsApp",
-                  bg: "#25D366",
-                  href: `https://wa.me/?text=${waText}`,
-                  icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
-                    </svg>
-                  ),
-                },
-                {
-                  label: "X",
-                  bg: "#000000",
-                  href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${xText}`,
-                  icon: (
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                    </svg>
-                  ),
-                },
-                {
-                  label: "Message",
-                  bg: "#34C759",
-                  href: `sms:?body=${encodeURIComponent(smsText)}`,
-                  icon: (
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                  ),
-                },
-              ];
-              return (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-white border border-line rounded-2xl shadow-[0_12px_36px_-10px_rgba(0,16,46,.22)] z-20 p-4">
-                  <div className="text-[10.5px] font-bold uppercase tracking-widest text-ink2 mb-3.5">{t('share_heading')}</div>
-                  <div className="grid grid-cols-5 gap-1 mb-4">
-                    {platforms.map(p => (
-                      <a
-                        key={p.label}
-                        href={p.href}
-                        target={p.href.startsWith("sms:") ? undefined : "_blank"}
-                        rel="noopener noreferrer"
-                        onClick={() => setShareOpen(false)}
-                        className="flex flex-col items-center gap-1.5 group"
-                      >
-                        <div
-                          className="w-11 h-11 rounded-full flex items-center justify-center text-white transition-opacity group-hover:opacity-75"
-                          style={{ background: p.bg }}
-                        >
-                          {p.icon}
-                        </div>
-                        <span className="text-[10px] text-ink2 font-sans leading-none">{p.label}</span>
-                      </a>
-                    ))}
-                  </div>
-                  <button
-                    onClick={copyShareLink}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-line bg-paper2 hover:bg-paper transition-colors cursor-pointer font-sans text-left"
-                  >
-                    <Link2 size={13} className="text-ink2 shrink-0" />
-                    <span className="flex-1 truncate text-[11.5px] text-ink2 min-w-0">{shareUrl}</span>
-                    <span className="shrink-0 text-[12px] font-bold text-ink">{copied ? t('copied') : t('copy')}</span>
-                  </button>
-                </div>
-              );
-            })()}
-          </div>
+          <div className="ml-auto min-w-0 w-full"><ListingShare listingId={id} /></div>
         </div>
         <h1 className="font-sans text-[clamp(26px,4vw,40px)] font-bold text-ink leading-[1.07] tracking-tight">
           {listing.title.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}

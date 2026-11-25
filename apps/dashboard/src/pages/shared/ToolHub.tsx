@@ -4,6 +4,7 @@ import type { UserInfo } from '../../lib/auth'
 import { canOpenToolWorkspace, workspaceToolCards, type ToolWorkspace } from '../../data/toolHubs'
 import { AreaConverter, DueDiligenceChecklist } from './ResearchTools'
 import { landingBaseUrl } from '../../lib/siteUrls'
+import { ResourceShare } from '../../../../../packages/sharing/ResourceShare'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 const ICONS = { search: Search, heart: Heart, calculator: Calculator, users: Users, book: BookOpen, home: Home, calendar: CalendarDays, leads: ClipboardList, research: MapPin, message: MessageCircle }
@@ -26,7 +27,7 @@ export function ToolHub({ workspace, user, go, compact = false }: { workspace: T
             <h2 className="text-xl font-bold text-ink m-0">{t(`workspaces.${workspace}.title`)}</h2>
             <p className="text-sm text-ink2 leading-relaxed mt-2 mb-0 max-w-3xl">{t(`workspaces.${workspace}.description`)}</p>
           </div>
-          {compact ? <button type="button" onClick={() => go(`${workspace.toLowerCase()}-tools`, workspace)} className="inline-flex items-center gap-1 text-sm font-semibold text-sea underline">{t('all_tools')}<ArrowRight size={15} aria-hidden="true" /></button> : null}
+          {compact ? <button type="button" onClick={() => go(`${workspace.toLowerCase()}-tools`, workspace)} className="inline-flex items-center gap-1 text-sm font-semibold text-sea underline">{t('all_tools')}<ArrowRight size={15} aria-hidden="true" /></button> : <ResourceShare target={{ kind: 'hub', workspace }} />}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {cards.map(card => {

@@ -9,14 +9,24 @@ const root = path.resolve(__dirname, '..')
 const clone = value => JSON.parse(JSON.stringify(value))
 const locale = language => JSON.parse(fs.readFileSync(path.join(root, `apps/landing/src/locales/${language}/calculator.json`), 'utf8'))
 
-function loadTs(relative, overrides = {}) {
+function loadTs(relative, overrides = {}, cache = new Map()) {
+  if (cache.has(relative)) return cache.get(relative).exports
   const module = { exports: {} }
+  cache.set(relative, module)
   const code = ts.transpileModule(fs.readFileSync(path.join(root, relative), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
   // Execute trusted repository code in the host realm. pdf-lib validates its
   // inputs with constructor/instanceof checks; a VM Array/Uint8Array otherwise
   // differs from the host library's constructors unlike a real browser bundle.
   const evaluate = new Function('module', 'exports', 'require', 'btoa', 'atob', code)
-  evaluate(module, module.exports, name => Object.hasOwn(overrides, name) ? overrides[name] : require(name),
+  evaluate(module, module.exports, name => {
+    if (Object.hasOwn(overrides, name)) return overrides[name]
+    if (!name.startsWith('.')) return require(name)
+    const base = path.resolve(root, path.dirname(relative), name)
+    assert.ok(base.startsWith(root + path.sep), 'Relative source imports stay inside the repository')
+    const target = ['.ts', '.tsx'].map(suffix => base + suffix).find(file => fs.existsSync(file))
+    assert.ok(target, 'Missing source import ' + name)
+    return loadTs(path.relative(root, target), overrides, cache)
+  },
     value => Buffer.from(value, 'binary').toString('base64'), value => Buffer.from(value, 'base64').toString('binary'))
   return module.exports
 }

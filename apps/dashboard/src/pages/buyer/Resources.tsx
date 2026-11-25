@@ -5,6 +5,7 @@ import { Card } from '../../components/dashboard/shared'
 import { getPublicResources } from '../../api/publicResources'
 import { localizedValue, type WebsiteResource } from '../../../../../packages/website-settings/src'
 import { landingBaseUrl } from '../../lib/siteUrls'
+import { ResourceShare } from '../../../../../packages/sharing/ResourceShare'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 const QUICK_LINKS = [
@@ -95,13 +96,15 @@ export function Resources({ go }: { go: (view: string) => void }) {
           </div>
           {!shown.length ? <p className="text-sm text-ink2 rounded-xl border border-line p-4">{resources.length ? t('resources_page.no_matches') : t('resources_page.empty')}</p> : null}
           <div className="grid sm:grid-cols-2 gap-3">
-            {shown.map(resource => <a key={resource.id} href={resource.url} target="_blank" rel="noopener noreferrer"
-              className="block min-w-0 rounded-xl border border-line p-4 hover:border-coral focus-visible:outline-coral">
+            {shown.map(resource => <article key={resource.id} className="min-w-0 rounded-xl border border-line p-4">
+              <a href={resource.url} target="_blank" rel="noopener noreferrer" className="block mb-4 hover:underline focus-visible:outline-coral">
               <p className="text-xs font-bold uppercase tracking-wide text-coral">{localizedValue(resource.category, i18n.language)}</p>
               <h3 className="font-semibold text-ink mt-2">{localizedValue(resource.title, i18n.language)}</h3>
               <p className="text-sm text-ink2 mt-2">{localizedValue(resource.description, i18n.language)}</p>
               <span className="block text-sm font-semibold text-coral mt-3">{t('resources_page.open')} ↗</span>
-            </a>)}
+              </a>
+              <ResourceShare target={{ kind: 'resource', id: resource.id }} title={localizedValue(resource.title, i18n.language)} />
+            </article>)}
           </div>
         </> : null}
         <p className="text-xs text-ink2 mt-5 leading-relaxed">{t('resources_page.external_note')}</p>
