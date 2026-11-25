@@ -130,7 +130,7 @@ export function ResearchTools({ user }: { user: UserInfo }) {
         {status !== 'loading' && <p className="text-[12px] text-dim mt-4">{t('directory.count', { count: filtered.length })}</p>}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
           {filtered.map(tool => (
-            <article key={tool.id} className="research-tools-card rounded-xl border border-line p-4 min-w-0 flex flex-col">
+            <article key={tool.id} className="research-tools-card rounded-xl border border-line p-4 min-w-0 flex flex-col [overflow-wrap:anywhere]">
               <span className="text-[10.5px] font-semibold text-sea uppercase tracking-wide">{localizedValue(tool.category, i18n.language)}</span>
               <h3 className="text-[15px] text-ink font-bold mt-2 mb-2">{localizedValue(tool.title, i18n.language)}</h3>
               <p className="text-[12.5px] text-ink2 leading-relaxed mt-0 mb-2">{localizedValue(tool.description, i18n.language)}</p>
