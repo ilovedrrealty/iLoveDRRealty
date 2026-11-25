@@ -26,12 +26,14 @@ const project = changes => ({ id: ID, listing_id: LISTING, listing_title: 'Synth
  */
 function ui(relative, exported, props, responses = {}, language = 'en') {
   const frames = new Map(), moduleCache = new Map(), componentTypes = new WeakMap(), effects = [], calls = [], revoked = [], listeners = new Map()
-  const translations = JSON.parse(fs.readFileSync(path.join(root, sourceRoot, `locale/${language}/property_network.json`), 'utf8'))
+  const translations = Object.fromEntries(['property_network', 'contact_share'].map(namespace => [namespace,
+    JSON.parse(fs.readFileSync(path.join(root, sourceRoot, `locale/${language}/${namespace}.json`), 'utf8'))]))
   let current, seen, latestRoot, nextFunction = 0, nextUUID = 100, nextBlob = 0, html = '', dirty = false, allowLeave = true, confirmations = 0
   let clock = Date.parse('2026-01-02T12:00:00Z'), nextTimer = 0
   const timers = new Map(), fakeNavigator = { onLine: true }
-  const lookup = (key, values = {}) => {
-    const translated = name => name.split('.').reduce((value, part) => value?.[part], translations)
+  const lookup = (key, values = {}, namespace = 'property_network') => {
+    assert.ok(Object.hasOwn(translations, namespace), `Unapproved translation namespace: ${namespace}`)
+    const translated = name => name.split('.').reduce((value, part) => value?.[part], translations[namespace])
     const result = translated(key) ?? (Number.isInteger(values.count) ? translated(key + (values.count === 1 ? '_one' : '_other')) : undefined)
     assert.equal(typeof result, 'string', `Missing ${language} translation: ${key}`)
     return result.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? ''))
@@ -138,12 +140,22 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
     assert.ok(absolute.startsWith(root + path.sep), 'Only this worktree source may be loaded')
     if (moduleCache.has(absolute)) return moduleCache.get(absolute).exports
     const module = { exports: {} }; moduleCache.set(absolute, module)
-    const source = fs.readFileSync(absolute, 'utf8')
+    let source = fs.readFileSync(absolute, 'utf8')
+    if (absolute === path.join(root, sourceRoot, 'components/shared/ProfileShareActions.tsx')) {
+      // CJS has no Vite import.meta. Model only this known unset build setting;
+      // the actual component and canonical URL fallback still execute below.
+      const setting = 'import.meta.env.VITE_DASHBOARD_URL'
+      assert.equal(source.split(setting).length, 2, 'Expected one explicit Vite setting')
+      source = source.replace(setting, 'undefined')
+    }
     const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
     vm.runInNewContext(compiled, { module, exports: module.exports, AbortController, URLSearchParams, Date: class extends Date { static now() { return clock } }, Intl, Blob, Event,
       document: fakeDocument, navigator: fakeNavigator, location: fakeLocation,
       crypto: { randomUUID: () => fixtureId(++nextUUID) }, window: fakeWindow,
-      URL: { createObjectURL: () => `blob:synthetic-${++nextBlob}`, revokeObjectURL: value => revoked.push(value) },
+      URL: class extends URL {
+        static createObjectURL() { return `blob:synthetic-${++nextBlob}` }
+        static revokeObjectURL(value) { revoked.push(value) }
+      },
       require(name) {
         if (absolute.startsWith(path.join(root, sourceRoot, 'api') + path.sep) && name === './axios') {
           const refuse = () => assert.fail('UI adapter must use explicit API responses, never the authenticated client')
@@ -151,7 +163,9 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
         }
         if (name === 'react') return hooks
         if (name === 'react/jsx-runtime') return runtime
-        if (name === 'react-i18next') return { useTranslation: () => ({ t: lookup, i18n: { language } }) }
+        if (name === 'react-i18next') return { useTranslation: (namespace = 'property_network') => ({
+          t: (key, values) => lookup(key, values, namespace), i18n: { language },
+        }) }
         if (name === 'axios') return { isAxiosError: error => error?.isAxiosError === true }
         if (name === 'react-router-dom') return { useSearchParams: () => { const [value, setValue] = hooks.useState(''); return [new URLSearchParams(value), next => setValue(next.toString())] } }
         if (name.endsWith('/api/propertyNetwork')) return api
