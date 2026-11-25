@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios'
 import { createPostComment, createUpdateComment, getNetworkMediaBlob, getPostComments, getUpdateComments, hideNetworkComment, uploadNetworkMedia, type NetworkMedia } from '../../api/propertyNetwork'
 import { todayInDR } from '../../api/propertyManagement'
 import { useNetworkRead, type NetworkRead } from '../../hooks/useNetworkRead'
+import { ProfileAuthor } from './ProfileAuthor'
 
 export const NETWORK_FIELD = 'mt-1 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink disabled:opacity-60'
 export const NETWORK_BUTTON = 'min-h-11 rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-ink disabled:opacity-50'
@@ -46,21 +47,22 @@ export function NetworkPagination({ page, total, busy, onChange }: { page: numbe
   const { t } = useTranslation('property_network')
   return <nav aria-label={t('pagination')} className="mt-4 flex flex-wrap items-center justify-between gap-3"><button type="button" className={NETWORK_BUTTON} disabled={busy || page <= 1} onClick={() => { if (allowNetworkNavigation()) onChange(page-1) }}>{t('previous')}</button><span className="text-xs text-dim">{t('page', { page, pages: Math.max(1, Math.ceil(total/30)), count: total })}</span><button type="button" className={NETWORK_BUTTON} disabled={busy || page*30 >= total || page >= 1000} onClick={() => { if (allowNetworkNavigation()) onChange(page+1) }}>{t('next')}</button></nav>
 }
-function PrivatePhoto({ id }: { id: string }) {
+function PrivatePhoto({ id, onAccessLost }: { id: string; onAccessLost?: () => void }) {
   const { t } = useTranslation('property_network')
   const [url, setUrl] = useState(''), [error, setError] = useState(false)
+  const denied = useRef(onAccessLost); denied.current = onAccessLost
   useEffect(() => {
     const controller = new AbortController(); let objectUrl = ''
     setUrl(''); setError(false)
     getNetworkMediaBlob(id, controller.signal).then(blob => {
       if (!controller.signal.aborted) { objectUrl = URL.createObjectURL(blob); setUrl(objectUrl) }
-    }).catch(() => { if (!controller.signal.aborted) setError(true) })
+    }).catch(cause => { if (!controller.signal.aborted) { setError(true); if (networkError(cause) === 'error_access') denied.current?.() } })
     return () => { controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [id])
   return error ? <p role="status" className="rounded-xl border border-line p-4 text-xs text-dim">{t('photo_unavailable')}</p> : url ? <a href={url} target="_blank" rel="noopener noreferrer" aria-label={t('open_photo')} className="rounded-xl border border-line bg-white p-1"><img src={url} alt={t('photo_alt')} className="max-h-80 w-full rounded-lg object-contain" /></a> : <p role="status" className="p-4 text-xs text-dim">{t('photo_loading')}</p>
 }
-export function PrivatePhotos({ ids }: { ids: string[] }) {
-  return ids.length ? <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">{ids.map(id => <PrivatePhoto key={id} id={id} />)}</div> : null
+export function PrivatePhotos({ ids, onAccessLost }: { ids: string[]; onAccessLost?: () => void }) {
+  return ids.length ? <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">{ids.map(id => <PrivatePhoto key={id} id={id} onAccessLost={onAccessLost} />)}</div> : null
 }
 export type NetworkSubmission = { submission_id: string; body: string; media_ids: string[]; occurred_on: string }
 export function NetworkComposer({ projectId, photos = false, dated = false, maxLength = 4000, submit, onSaved }: { projectId?: string; photos?: boolean; dated?: boolean; maxLength?: number; submit: (input: NetworkSubmission) => Promise<unknown>; onSaved: () => void }) {
@@ -121,7 +123,7 @@ export function NetworkComments({ recordId, kind, canWrite, mediaIds }: { record
   }
   return <section className="mt-4 border-t border-line pt-3"><button type="button" aria-expanded={open} className={NETWORK_BUTTON} onClick={() => { if (!open || allowNetworkNavigation()) setOpen(value => !value) }}>{t(open ? 'hide_comments' : 'comments')}</button>{open ? <div className="mt-3 space-y-3">
     <NetworkFreshness read={read} />{busy ? <p role="status" className="text-sm text-dim">{t('loading')}</p> : null}{error ? <p role="alert" className="text-sm text-red-800">{t(error)}</p> : null}
-    {data?.items.map(comment => <article key={comment.id} className="rounded-lg bg-line-soft p-3"><div className="flex flex-wrap justify-between gap-2"><p className="text-xs font-bold text-ink">{comment.author.display_name}</p><p className="text-xs text-dim"><NetworkDate value={comment.created_at} /></p></div><p className="mt-2 text-xs font-semibold text-sea">{comment.media_id === null ? t('comment_whole_entry') : mediaIds.includes(comment.media_id) ? t('comment_photo', { number: mediaIds.indexOf(comment.media_id)+1 }) : t('comment_photo_unavailable')}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink2">{comment.body}</p>{comment.hidden ? <p className="mt-2 text-xs text-amber-950">{t('hidden')}</p> : null}{kind === 'post' && comment.can_hide && !comment.hidden ? <button type="button" className={NETWORK_BUTTON+' mt-2'} disabled={busy} onClick={() => void hide(comment.id)}>{t('hide_comment')}</button> : null}</article>)}
+    {data?.items.map(comment => <article key={comment.id} className="rounded-lg bg-line-soft p-3"><div className="flex flex-wrap justify-between gap-2"><p className="text-xs font-bold text-ink"><ProfileAuthor author={comment.author} /></p><p className="text-xs text-dim"><NetworkDate value={comment.created_at} /></p></div><p className="mt-2 text-xs font-semibold text-sea">{comment.media_id === null ? t('comment_whole_entry') : mediaIds.includes(comment.media_id) ? t('comment_photo', { number: mediaIds.indexOf(comment.media_id)+1 }) : t('comment_photo_unavailable')}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink2">{comment.body}</p>{comment.hidden ? <p className="mt-2 text-xs text-amber-950">{t('hidden')}</p> : null}{kind === 'post' && comment.can_hide && !comment.hidden ? <button type="button" className={NETWORK_BUTTON+' mt-2'} disabled={busy} onClick={() => void hide(comment.id)}>{t('hide_comment')}</button> : null}</article>)}
     {data && !data.items.length ? <p className="text-sm text-dim">{t('no_comments')}</p> : null}{data ? <NetworkPagination page={page} total={data.total} busy={busy} onChange={setPage} /> : null}
     {canWrite ? <><label className="mt-4 block text-sm font-semibold text-ink">{t('comment_context')}<select className={NETWORK_FIELD} value={selectedPhoto ?? ''} onChange={event => choosePhoto(event.target.value)}><option value="">{t('comment_whole_entry')}</option>{mediaIds.map((id, index) => <option key={id} value={id}>{t('comment_photo', { number: index+1 })}</option>)}</select></label>{selectedPhoto ? <PrivatePhotos ids={[selectedPhoto]} /> : null}<NetworkComposer key={`${kind}:${recordId}:${selectedPhoto ?? 'entry'}`} maxLength={2000} submit={input => {
       // Reject a stale context; never convert a photo-specific draft into a whole-entry comment.

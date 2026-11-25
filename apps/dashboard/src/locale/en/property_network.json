@@ -854,5 +854,33 @@
     "moderation_reason": "Moderation note (optional)",
     "confirm_hide_post": "Hide this post from the group feed?",
     "confirm_hide_comment": "Hide this comment?"
+  },
+  "customization": {
+    "unnamed": "Member profile",
+    "avatar_alt": "Chosen profile picture",
+    "cover_alt": "Chosen cover photo",
+    "work_title": "Projects and work history",
+    "work_note": "Only projects and updates you are authorized to view are shown. Each project keeps its own access rules.",
+    "work_views": "Profile work views",
+    "projects": "Projects",
+    "my_projects": "My projects",
+    "history": "Shared-project updates",
+    "my_history": "Updates from my projects",
+    "projects_empty": "No accessible projects are linked to this profile.",
+    "history_empty": "No accessible project updates are available for this profile.",
+    "photo_help": "Choose JPEG, PNG or WebP images up to 5 MB. They are uploaded privately for preview; save changes to use them on this profile. Your profile audience and block settings apply.",
+    "choose_avatar": "Choose a profile picture",
+    "choose_cover": "Choose a cover photo",
+    "no_photo": "No picture selected.",
+    "photo_ready": "Picture selected for this profile. Preview before saving.",
+    "remove_avatar": "Remove picture from profile",
+    "remove_cover": "Remove cover from profile",
+    "preview": "Preview profile",
+    "preview_title": "Profile preview",
+    "preview_note": "This is your draft preview. Save changes to update your profile.",
+    "back_edit": "Back to editing",
+    "discard": "Discard changes",
+    "update_by": "Update by {{name}}",
+    "saved": "Your profile changes were saved."
   }
 }

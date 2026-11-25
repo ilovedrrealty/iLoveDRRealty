@@ -98,7 +98,7 @@ test('project writes send only declared fields and preserve version conflicts as
 test('member reads and assignment mutations preserve the real array contract and hide contact fields', async () => {
   const members = [{ user_code: 123, display_name: 'Synthetic owner', role: 'owner', active: true, email: 'private@example.com' }]
   const h = harness(members)
-  assert.deepEqual(plain(await h.api.getProjectMembers(A)), [{ user_code: 123, display_name: 'Synthetic owner', role: 'owner', active: true }])
+  assert.deepEqual(plain(await h.api.getProjectMembers(A)), [{ user_code: 123, display_name: 'Synthetic owner', avatar_media_id: null, role: 'owner', active: true }])
   await h.api.addProjectMember(A, { expected_version: 1, user_code: 456, role: 'professional' })
   assert.deepEqual(plain(h.calls[1].args[0]), { expected_version: 1, user_code: 456, role: 'professional' })
   await h.api.revokeProjectMember(A, 456, 2)
@@ -140,7 +140,7 @@ test('progress submissions retain the supplied id after an uncertain attempt and
 test('comments and wall posts project only safe fields and preserve submission ids', async () => {
   const h = harness({ ...comment(), author: { user_code: null, display_name: 'Former member', email: 'private@example.com' } })
   const result = await h.api.createUpdateComment(C, { submission_id: A, body: 'Synthetic comment', author_id: B })
-  assert.deepEqual(plain(result.author), { user_code: null, display_name: 'Former member' })
+  assert.deepEqual(plain(result.author), { user_code: null, display_name: 'Former member', avatar_media_id: null })
   assert.deepEqual(plain(h.calls[0].args[0]), { submission_id: A, body: 'Synthetic comment' })
   h.reply(post())
   await h.api.createProfilePost(123, { submission_id: A, body: 'Synthetic wall post', media_ids: [] })
@@ -150,6 +150,18 @@ test('comments and wall posts project only safe fields and preserve submission i
   await h.api.createPostComment(C, { submission_id: B, body: 'Synthetic comment' })
   await h.api.hideNetworkComment(D)
   assert.deepEqual(plain(h.calls.at(-1).args[0]), {})
+})
+
+test('author pictures accept only explicit private-media UUID choices and preserve old author responses', async () => {
+  const h = harness(page([{ ...post(), author: { ...author(), avatar_media_id: D, avatar_url: 'https://private.example/account.jpg' } }]))
+  const result = await h.api.getProfilePosts(123)
+  assert.deepEqual(plain(result.items[0].author), { user_code: 123, display_name: 'Synthetic member', avatar_media_id: D })
+  for (const choice of ['https://private.example/account.jpg', '../private', 42, false]) {
+    h.reply(page([{ ...comment(), author: { ...author(), avatar_media_id: choice } }]))
+    await assert.rejects(h.api.getUpdateComments(C), /Invalid property network data/)
+  }
+  h.reply(page([comment()]))
+  assert.equal((await h.api.getUpdateComments(C)).items[0].author.avatar_media_id, null)
 })
 
 test('profile defaults and saving remain explicit about privacy, comments and optimistic version', async () => {
@@ -166,6 +178,68 @@ test('profile defaults and saving remain explicit about privacy, comments and op
   assert.deepEqual(plain(await h.api.setNetworkBlock(456, true)), { blocked: true })
   h.reply({ blocked: 'true' })
   await assert.rejects(h.api.setNetworkBlock(456, true), /Invalid property network data/)
+})
+
+test('profile customization accepts only selected media IDs and preserves compatible missing choices', async () => {
+  const h = harness(profile())
+  const legacy = await h.api.getMyNetworkProfile()
+  assert.equal(legacy.avatar_media_id, null); assert.equal(legacy.cover_media_id, null)
+  h.reply({ ...profile(), avatar_media_id: A, cover_media_id: B, avatar_url: 'https://private.example/photo', account_name: 'DO-NOT-COPY' })
+  const selected = await h.api.getMyNetworkProfile()
+  assert.equal(selected.avatar_media_id, A); assert.equal(selected.cover_media_id, B)
+  assert.equal(Object.hasOwn(selected, 'avatar_url'), false); assert.equal(Object.hasOwn(selected, 'account_name'), false)
+  for (const avatar_media_id of ['https://private.example/photo', 123, {}, 'invalid-id']) {
+    h.reply({ ...profile(), avatar_media_id, cover_media_id: null })
+    await assert.rejects(h.api.getMyNetworkProfile(), /Invalid property network data/)
+  }
+})
+
+test('profile customization saving distinguishes omitted choices from explicit removal without private fields', async () => {
+  const h = harness({ ...profile(), avatar_media_id: A, cover_media_id: B })
+  const input = { expected_version: 0, display_name: 'Chosen alias', bio: '', status_text: '', visibility: 'private', wall_policy: 'own_only', comments_enabled: true }
+  await h.api.saveNetworkProfile({ ...input, account_avatar_url: 'DO-NOT-SEND', user_id: D })
+  assert.equal(Object.hasOwn(h.calls[0].args[0], 'avatar_media_id'), false)
+  assert.equal(Object.hasOwn(h.calls[0].args[0], 'cover_media_id'), false)
+  await h.api.saveNetworkProfile({ ...input, avatar_media_id: null, cover_media_id: C })
+  assert.deepEqual(plain(h.calls[1].args[0]), { ...input, avatar_media_id: null, cover_media_id: C })
+  assert.equal(h.calls[1].args[1].withCredentials, true)
+  const before = h.calls.length
+  await assert.rejects(h.api.saveNetworkProfile({ ...input, avatar_media_id: 'https://example.invalid' }), /Invalid property network data/)
+  assert.equal(h.calls.length, before)
+})
+
+test('profile customization uploads only a deliberate purpose and file through authenticated private media', async () => {
+  const h = harness(media()), file = new Blob(['synthetic photo'], { type: 'image/png' }), signal = { owned: true }
+  const result = await h.api.uploadProfileMedia('cover', file, signal)
+  assert.equal(result.id, D); assert.equal(result.url, '/property-network/media/' + D)
+  assert.equal(Object.hasOwn(result, 'object_key'), false)
+  assert.equal(h.calls[0].url, '/property-network/me/profile/media')
+  assert.deepEqual(h.calls[0].args[0].entries, [['kind', 'cover'], ['file', file]])
+  assert.equal(h.calls[0].args[1].signal, signal); assert.equal(h.calls[0].args[1].withCredentials, true)
+  for (const [kind, image] of [['project', file], ['avatar', new Blob([], { type: 'image/png' })], ['avatar', new Blob(['svg'], { type: 'image/svg+xml' })], ['avatar', new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], { type: 'image/png' })]])
+    await assert.rejects(h.api.uploadProfileMedia(kind, image), /Invalid property network data/)
+  assert.equal(h.calls.length, 1)
+})
+
+test('profile customization work projections retain actual author and correction while using only target-scoped paged reads', async () => {
+  const h = harness({ ...page([project()]), page: 2, total: 31 }), signal = { owned: true }
+  const projects = await h.api.getProfileProjects(123, { page: 2, owner_id: D }, signal)
+  assert.equal(projects.page, 2); assert.equal(Object.hasOwn(projects.items[0], 'owner_email'), false)
+  assert.equal(h.calls[0].url, '/property-network/profiles/123/projects')
+  assert.deepEqual(plain(h.calls[0].args[0].params), { page: 2 }); assert.equal(h.calls[0].args[0].signal, signal)
+  assert.equal(h.calls[0].args[0].withCredentials, true)
+  const entry = { ...update(), correction_of: D, project_title: 'Shared repair', service_category_ids: ['pool_service'], project_status: 'completed', notes: 'DO-NOT-RENDER', account_avatar_url: 'DO-NOT-RENDER' }
+  h.reply(page([entry])); const history = await h.api.getProfileHistory(123)
+  assert.equal(h.calls[1].url, '/property-network/profiles/123/history')
+  assert.deepEqual(plain(history.items[0].author), { user_code: 123, display_name: 'Synthetic member', avatar_media_id: null })
+  assert.equal(history.items[0].correction_of, D); assert.equal(Object.hasOwn(history.items[0], 'notes'), false)
+  assert.equal(Object.hasOwn(history.items[0], 'account_avatar_url'), false)
+  for (const bad of [{ ...entry, author: null }, { ...entry, correction_of: undefined }, { ...entry, correction_of: 'https://private.example' }]) {
+    h.reply(page([bad])); await assert.rejects(h.api.getProfileHistory(123), /Invalid property network data/)
+  }
+  const before = h.calls.length, denied = { response: { status: 404 } }; h.fail(denied)
+  await assert.rejects(h.api.getProfileProjects(123), error => error === denied)
+  assert.equal(h.calls.length, before + 1, 'Denied reads never retry or fall back to a broader project list')
 })
 
 test('per-photo comments retain the supplied media context without changing whole-post payloads', async () => {

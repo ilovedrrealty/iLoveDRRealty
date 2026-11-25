@@ -17,7 +17,7 @@ export type ProjectRole = typeof MEMBER_ROLES[number] | 'admin'
 export type AssignedProjectRole = Exclude<typeof MEMBER_ROLES[number], 'owner'>
 export type PageParams = { page?: number }
 export type NetworkPage<T> = { items: T[]; total: number; page: number; page_size: number }
-export type NetworkAuthor = { user_code: number | null; display_name: string }
+export type NetworkAuthor = { user_code: number | null; display_name: string; avatar_media_id: string | null }
 export type NetworkProperty = { id: string; title: string; location: string; type: string }
 export type NetworkProject = {
   id: string; listing_id: string | null; listing_title: string; property_id: string | null; property_title: string | null; title: string; summary: string
@@ -35,6 +35,7 @@ export type NetworkComment = { id: string; body: string; media_id: string | null
 export type NetworkProfile = {
   user_code: number; display_name: string; bio: string; status_text: string; visibility: 'private' | 'members'
   wall_policy: 'own_only' | 'approval_required'; comments_enabled: boolean; version: number; can_edit: boolean
+  avatar_media_id: string | null; cover_media_id: string | null
 }
 export type NetworkPost = {
   id: string; profile_user_code: number; author: NetworkAuthor; body: string; media_ids: string[]
@@ -44,6 +45,7 @@ export type ServiceHistoryItem = {
   id: string; project_id: string; project_title: string; service_category_ids: string[]; project_status: ProjectStatus
   kind: typeof UPDATE_KINDS[number]; body: string; occurred_on: string; media_ids: string[]; created_at: string
 }
+export type ProfileWorkHistory = ServiceHistoryItem & { author: NetworkAuthor; correction_of: string | null }
 export type NetworkMedia = { id: string; url: string; content_type: 'image/webp'; bytes: number; sha256: string; width: number; height: number }
 export type CreateProjectInput = { listing_id?: string | null; property_id?: string | null; submission_id?: string; title: string; summary: string; property_class: string; service_category_ids: string[] }
 export type PrivatePropertyStatus = typeof PROPERTY_STATUSES[number]
@@ -61,6 +63,7 @@ export type CreateNetworkCommentInput = { submission_id: string; body: string; m
 export type SaveNetworkProfileInput = {
   expected_version: number; display_name: string; bio: string; status_text: string; visibility: 'private' | 'members'
   wall_policy: 'own_only' | 'approval_required'; comments_enabled: boolean
+  avatar_media_id?: string | null; cover_media_id?: string | null
 }
 export type CreateProfilePostInput = { submission_id: string; body: string; media_ids: string[] }
 
@@ -109,7 +112,8 @@ function currentDayDR(): string {
 }
 function author(value: unknown): NetworkAuthor {
   const row = object(value)
-  return { user_code: row.user_code === null ? null : integer(row.user_code, 1), display_name: text(row.display_name, 100) }
+  return { user_code: row.user_code === null ? null : integer(row.user_code, 1), display_name: text(row.display_name, 100),
+    avatar_media_id: row.avatar_media_id === undefined ? null : nullableUUID(row.avatar_media_id) }
 }
 function property(value: unknown): NetworkProperty {
   const row = object(value)
@@ -159,7 +163,8 @@ function comment(value: unknown): NetworkComment {
 }
 function profile(value: unknown): NetworkProfile {
   const row = object(value)
-  return { user_code: integer(row.user_code, 1), display_name: text(row.display_name, 100), bio: text(row.bio, 2000), status_text: text(row.status_text, 280), visibility: choice(row.visibility, ['private', 'members']), wall_policy: choice(row.wall_policy, ['own_only', 'approval_required']), comments_enabled: bool(row.comments_enabled), version: integer(row.version), can_edit: bool(row.can_edit) }
+  return { user_code: integer(row.user_code, 1), display_name: text(row.display_name, 100), bio: text(row.bio, 2000), status_text: text(row.status_text, 280), visibility: choice(row.visibility, ['private', 'members']), wall_policy: choice(row.wall_policy, ['own_only', 'approval_required']), comments_enabled: bool(row.comments_enabled), version: integer(row.version), can_edit: bool(row.can_edit),
+    avatar_media_id: row.avatar_media_id === undefined ? null : nullableUUID(row.avatar_media_id), cover_media_id: row.cover_media_id === undefined ? null : nullableUUID(row.cover_media_id) }
 }
 function post(value: unknown): NetworkPost {
   const row = object(value)
@@ -168,6 +173,10 @@ function post(value: unknown): NetworkPost {
 function history(value: unknown): ServiceHistoryItem {
   const row = object(value)
   return { id: uuid(row.id), project_id: uuid(row.project_id), project_title: text(row.project_title, 180, 1), service_category_ids: uniqueStrings(row.service_category_ids, 12, slug), project_status: choice(row.project_status, PROJECT_STATUSES), kind: choice(row.kind, UPDATE_KINDS), body: text(row.body, 4000, 1), occurred_on: day(row.occurred_on), media_ids: uniqueStrings(row.media_ids, 6, uuid), created_at: timestamp(row.created_at) }
+}
+function profileWorkHistory(value: unknown): ProfileWorkHistory {
+  const row = object(value)
+  return { ...update(row), project_title: text(row.project_title, 180, 1), service_category_ids: uniqueStrings(row.service_category_ids, 12, slug), project_status: choice(row.project_status, PROJECT_STATUSES) }
 }
 function media(value: unknown): NetworkMedia {
   const row = object(value), id = uuid(row.id)
@@ -261,13 +270,23 @@ export async function createUpdateComment(id: string, input: CreateNetworkCommen
 export function getPropertyServiceHistory(id: string, params: PageParams = {}, signal?: AbortSignal): Promise<NetworkPage<ServiceHistoryItem>> { uuid(id); return readPage(`${PREFIX}/properties/${id}/history`, params, history, row => row.id, signal) }
 export async function getMyNetworkProfile(signal?: AbortSignal): Promise<NetworkProfile> { return profile((await client.get(`${PREFIX}/me/profile`, { signal, withCredentials: true })).data) }
 export async function saveNetworkProfile(input: SaveNetworkProfileInput): Promise<NetworkProfile> {
-  const body = { expected_version: integer(input.expected_version), display_name: text(input.display_name, 100, 1), bio: text(input.bio, 2000), status_text: text(input.status_text, 280), visibility: choice(input.visibility, ['private', 'members']), wall_policy: choice(input.wall_policy, ['own_only', 'approval_required']), comments_enabled: bool(input.comments_enabled) }
+  const body = { expected_version: integer(input.expected_version), display_name: text(input.display_name, 100, 1), bio: text(input.bio, 2000), status_text: text(input.status_text, 280), visibility: choice(input.visibility, ['private', 'members']), wall_policy: choice(input.wall_policy, ['own_only', 'approval_required']), comments_enabled: bool(input.comments_enabled),
+    ...(input.avatar_media_id === undefined ? {} : { avatar_media_id: nullableUUID(input.avatar_media_id) }),
+    ...(input.cover_media_id === undefined ? {} : { cover_media_id: nullableUUID(input.cover_media_id) }) }
   return profile((await client.put(`${PREFIX}/me/profile`, body, { withCredentials: true })).data)
 }
 export function getNetworkProfiles(params: PageParams & { q?: string } = {}, signal?: AbortSignal): Promise<NetworkPage<NetworkProfile>> { return readPage(`${PREFIX}/profiles`, params, profile, row => row.user_code, signal, params.q === undefined ? {} : { q: text(params.q, 100) }) }
 export async function getNetworkProfile(userCode: number, signal?: AbortSignal): Promise<NetworkProfile> {
   integer(userCode, 1); const row = profile((await client.get(`${PREFIX}/profiles/${userCode}`, { signal, withCredentials: true })).data)
   return row.user_code === userCode ? row : invalid()
+}
+export function getProfileProjects(userCode: number, params: PageParams = {}, signal?: AbortSignal): Promise<NetworkPage<NetworkProject>> {
+  integer(userCode, 1)
+  return readPage(`${PREFIX}/profiles/${userCode}/projects`, params, project, row => row.id.toLowerCase(), signal)
+}
+export function getProfileHistory(userCode: number, params: PageParams = {}, signal?: AbortSignal): Promise<NetworkPage<ProfileWorkHistory>> {
+  integer(userCode, 1)
+  return readPage(`${PREFIX}/profiles/${userCode}/history`, params, profileWorkHistory, row => row.id.toLowerCase(), signal)
 }
 export function getProfilePosts(userCode: number, params: PageParams = {}, signal?: AbortSignal): Promise<NetworkPage<NetworkPost>> {
   integer(userCode, 1); return readPage(`${PREFIX}/profiles/${userCode}/posts`, params, raw => { const row = post(raw); return row.profile_user_code === userCode ? row : invalid() }, row => row.id, signal)
@@ -289,6 +308,12 @@ export async function uploadNetworkMedia(file: File, projectId?: string, signal?
   const body = new FormData(); body.append('file', file)
   if (projectId !== undefined) body.append('project_id', uuid(projectId))
   return media((await client.post(`${PREFIX}/media`, body, { signal, withCredentials: true })).data)
+}
+export async function uploadProfileMedia(kind: 'avatar' | 'cover', file: File, signal?: AbortSignal): Promise<NetworkMedia> {
+  const selectedKind = choice(kind, ['avatar', 'cover'])
+  if (!(file instanceof Blob) || file.size < 1 || file.size > MAX_PHOTO_BYTES || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) invalid()
+  const body = new FormData(); body.append('kind', selectedKind); body.append('file', file)
+  return media((await client.post(`${PREFIX}/me/profile/media`, body, { signal, withCredentials: true })).data)
 }
 export async function getNetworkMediaBlob(id: string, signal?: AbortSignal): Promise<Blob> {
   uuid(id)
