@@ -233,6 +233,206 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
   }
 }
 
+test('profile customization deliberately uploads both private pictures, previews locally and saves the exact versioned choices', async () => {
+  for (const language of ['en', 'es']) {
+    let saved = 0
+    const h = ui('components/network/ProfileCustomization.tsx', 'ProfileCustomization', {
+      profile: profile({ version: 2 }), fresh: true, onSaved() { saved++ }, onAccessLost() { assert.fail('No denial expected') },
+    }, {
+      uploadProfileMedia: async kind => ({ id: kind === 'avatar' ? PHOTO1 : PHOTO2 }),
+      getNetworkMediaBlob: async () => new Blob(['synthetic'], { type: 'image/webp' }),
+      saveNetworkProfile: async input => profile({ ...input, version: 3 }),
+    }, language)
+    try {
+      await h.settle(); assert.equal(h.calls.length, 0)
+      for (const kind of ['avatar', 'cover']) {
+        const file = new Blob(['explicit synthetic image'], { type: 'image/png' })
+        await h.fire(registryField(h, 'customization.choose_' + kind, 'input'), 'onChange', { target: { files: [file] }, currentTarget: { value: 'chosen' } })
+      }
+      assert.deepEqual(h.calls.map(call => call.name), ['uploadProfileMedia', 'uploadProfileMedia'])
+      assert.deepEqual(h.calls.map(call => call.args[0]), ['avatar', 'cover'])
+      await h.fire(h.find('button', n => h.text(n) === h.t('customization.preview')), 'onClick')
+      assert.equal(h.nodes().filter(n => n.type === 'img' && n.props.src.startsWith('blob:')).length, 2)
+      assert.ok(h.visibleText.includes(h.t('customization.preview_note')))
+      assert.equal(h.calls.some(call => call.name === 'saveNetworkProfile'), false)
+      await h.fire(h.find('button', n => h.text(n) === h.t('save_changes')), 'onClick')
+      const write = h.calls.find(call => call.name === 'saveNetworkProfile').args[0]
+      assert.equal(write.expected_version, 2); assert.equal(write.avatar_media_id, PHOTO1); assert.equal(write.cover_media_id, PHOTO2)
+      assert.equal(saved, 1); assert.equal(h.revoked.length, 2)
+      for (const field of ['email', 'phone', 'account_photo', 'google_photo_url']) assert.equal(Object.hasOwn(write, field), false)
+    } finally { h.dispose() }
+  }
+})
+
+test('profile picture removal is an explicit null choice and uncertain saves cannot automatically resend', async () => {
+  const h = ui('components/network/ProfileCustomization.tsx', 'ProfileCustomization', {
+    profile: profile({ version: 3, avatar_media_id: PHOTO1, cover_media_id: PHOTO2 }), fresh: true,
+    onSaved() { assert.fail('Uncertain save has no success') }, onAccessLost() {},
+  }, { saveNetworkProfile: async () => { throw new Error('Synthetic lost response') } })
+  try {
+    await h.settle()
+    await h.fire(h.find('button', n => h.text(n) === h.t('customization.remove_avatar')), 'onClick')
+    await h.fire(h.find('button', n => h.text(n) === h.t('customization.remove_cover')), 'onClick')
+    assert.equal(h.calls.length, 0, 'Removal is a local choice until Save')
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    const write = h.calls[0].args[0]
+    assert.equal(write.avatar_media_id, null); assert.equal(write.cover_media_id, null); assert.equal(write.expected_version, 3)
+    assert.ok(h.visibleText.includes(h.t('reload_to_continue')))
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} }); await h.advance(30000)
+    assert.equal(h.calls.length, 1, 'No deletion operation or resend after an ambiguous save')
+  } finally { h.dispose() }
+})
+
+test('profile picture upload serializes choices and aborts an unmounted selection without saving', async () => {
+  let finish, signal
+  const h = ui('components/network/ProfileCustomization.tsx', 'ProfileCustomization', {
+    profile: profile(), fresh: true, onSaved() { assert.fail('No save expected') }, onAccessLost() {},
+  }, { uploadProfileMedia: (_kind, _file, value) => { signal = value; return new Promise(resolve => { finish = resolve }) } })
+  await h.settle()
+  const file = new Blob(['synthetic'], { type: 'image/png' })
+  const event = { target: { files: [file] }, currentTarget: { value: 'chosen' } }
+  await h.fire(registryField(h, 'customization.choose_avatar', 'input'), 'onChange', event)
+  await h.fire(registryField(h, 'customization.choose_cover', 'input'), 'onChange', event)
+  assert.equal(h.calls.length, 1)
+  assert.equal(h.find('fieldset').props.disabled, true)
+  h.dispose(); assert.equal(signal.aborted, true)
+  finish({ id: PHOTO1 }); for (let tick = 0; tick < 8; tick++) await Promise.resolve()
+  assert.equal(h.calls.length, 1); assert.deepEqual(h.revoked, [])
+})
+
+test('current profile upload denial immediately removes cached identity, draft, work and private images', async () => {
+  for (const status of [401, 403, 404]) {
+    const h = ui('components/network/MemberCommunity.tsx', 'MemberProfile', { own: true, categories: serviceCategories }, {
+      getMyNetworkProfile: async () => profile({ avatar_media_id: PHOTO1 }),
+      getNetworkMediaBlob: async () => new Blob(['synthetic'], { type: 'image/webp' }),
+      getProfileProjects: async () => page([project({ title: 'Authorized private work' })]),
+      uploadProfileMedia: async () => { throw { isAxiosError: true, response: { status } } },
+    })
+    try {
+      await h.settle()
+      await h.fire(h.find('button', n => h.text(n) === h.t('customization.my_projects')), 'onClick')
+      await h.fire(registryField(h, 'bio', 'textarea'), 'onChange', { target: { value: 'Unsaved private biography' } })
+      assert.match(h.html, /Authorized private work|Unsaved private biography/)
+      h.allowLeave(false); let prevented = false
+      await h.fire(h.find('a', n => n.props.href === '/property-network?tab=projects&project=' + ID), 'onClick', { button: 0, preventDefault() { prevented = true } })
+      assert.equal(prevented, true, 'Workspace navigation honors the actual editor draft guard')
+      await h.fire(registryField(h, 'customization.choose_cover', 'input'), 'onChange', {
+        target: { files: [new Blob(['synthetic'], { type: 'image/png' })] }, currentTarget: { value: 'chosen' },
+      })
+      assert.ok(h.visibleText.includes(h.t('error_access')))
+      assert.doesNotMatch(h.html, /Synthetic member|Unsaved private biography|Authorized private work|blob:synthetic/)
+      assert.equal(h.nodes().some(n => n.type === 'form' || n.type === 'input'), false)
+      assert.equal(h.revoked.length, 1)
+    } finally { h.dispose() }
+  }
+})
+
+test('profile work is on demand and shared history preserves actual contributor, correction and authorized workspace links', async () => {
+  for (const language of ['en', 'es']) {
+    const h = ui('components/network/ProfileWork.tsx', 'ProfileWork', { code: 71, own: false, categories: serviceCategories }, {
+      getProfileProjects: async () => page([project({ progress: { total: 4, completed: 3, percent: 75 } })]),
+      getProfileHistory: async () => page([{ id: ENTRY, project_id: ID, project_title: 'A shared project', project_status: 'in_progress',
+        service_category_ids: ['air_conditioning'], kind: 'progress', body: 'Actual contributor update', occurred_on: '2026-01-01',
+        created_at: '2026-01-01T12:00:00Z', media_ids: [], correction_of: PHOTO1, author: { user_code: 72, display_name: 'Actual contributor' } }]),
+    }, language)
+    try {
+      await h.settle(); assert.equal(h.calls.length, 0)
+      await h.fire(h.find('button', n => h.text(n) === h.t('customization.projects')), 'onClick')
+      assert.equal(h.calls[0].args[0], 71); assert.equal(h.calls[0].args[1].page, 1)
+      assert.ok(h.visibleText.includes('75')); assert.ok(h.visibleText.includes(serviceCategories[0].label[language]))
+      const link = h.find('a'); assert.equal(link.props.href, '/property-network?tab=projects&project=' + ID)
+      h.allowLeave(false); let prevented = false
+      // Existing navigation guard is registered by actual editors; no draft is fabricated here.
+      await h.fire(link, 'onClick', { button: 0, preventDefault() { prevented = true } }); assert.equal(prevented, false)
+      await h.fire(h.find('button', n => h.text(n) === h.t('customization.history')), 'onClick')
+      assert.ok(h.visibleText.includes(h.t('customization.update_by', { name: 'Actual contributor' })))
+      assert.ok(h.visibleText.includes(h.t('correction_note')))
+      assert.ok(h.visibleText.includes(h.t('customization.history')))
+      assert.equal(h.calls.filter(call => call.name === 'getProfileHistory').length, 1)
+    } finally { h.dispose() }
+  }
+})
+
+test('profile visual callbacks do not refetch on editor rerender and canceled old pictures cannot deny a new target', async () => {
+  let rejectOld, denied = 0, oldSignal
+  const props = { profile: profile({ avatar_media_id: PHOTO1, cover_media_id: null }), onAccessLost() { denied++ } }
+  const h = ui('components/network/ProfileVisuals.tsx', 'ProfileVisuals', props, {
+    getNetworkMediaBlob: (id, signal) => id === PHOTO1
+      ? new Promise((_resolve, reject) => { rejectOld = reject; oldSignal = signal })
+      : Promise.resolve(new Blob(['synthetic'], { type: 'image/webp' })),
+  })
+  try {
+    await h.settle(); props.onAccessLost = () => { denied++ }; await h.settle()
+    assert.equal(h.calls.length, 1, 'Callback identity alone never restarts the private read')
+    props.profile = profile({ display_name: 'Next authorized alias', avatar_media_id: PHOTO2, cover_media_id: null })
+    await h.settle(); assert.equal(oldSignal.aborted, true)
+    rejectOld({ isAxiosError: true, response: { status: 403 } }); await h.settle()
+    assert.equal(denied, 0); assert.match(h.html, /Next authorized alias|blob:synthetic/)
+    assert.equal(h.calls.length, 2)
+  } finally { h.dispose() }
+  assert.equal(h.revoked.length, 1)
+  const workProps = { ids: [PHOTO1], onAccessLost() { denied++ } }
+  const work = ui('components/network/NetworkShared.tsx', 'PrivatePhotos', workProps, {
+    getNetworkMediaBlob: (id, signal) => id === PHOTO1
+      ? new Promise((_resolve, reject) => { rejectOld = reject; oldSignal = signal })
+      : Promise.resolve(new Blob(['synthetic'], { type: 'image/webp' })),
+  })
+  try {
+    await work.settle(); workProps.onAccessLost = () => { denied++ }; await work.settle()
+    assert.equal(work.calls.length, 1)
+    workProps.ids = [PHOTO2]; await work.settle(); assert.equal(oldSignal.aborted, true)
+    rejectOld({ isAxiosError: true, response: { status: 404 } }); await work.settle()
+    assert.equal(denied, 0); assert.equal(work.nodes().filter(n => n.type === 'img').length, 1)
+    assert.equal(work.calls.length, 2)
+  } finally { work.dispose() }
+  assert.equal(work.revoked.length, 1)
+})
+
+test('chosen wall and comment author pictures are secondary private reads whose withdrawal leaves authorized content visible', async () => {
+  let picturesAvailable = true
+  const post = { id: ENTRY, profile_user_code: 71, author: { ...author, avatar_media_id: PHOTO1 }, body: 'Authorized wall content',
+    media_ids: [], status: 'visible', can_moderate: false, can_comment: false, created_at: '2026-01-01T12:00:00Z' }
+  const comment = { id: PHOTO2, author: { ...author, avatar_media_id: PHOTO1 }, body: 'Authorized comment', media_id: null,
+    hidden: false, can_hide: false, created_at: '2026-01-01T12:00:00Z' }
+  const h = ui('components/network/MemberCommunity.tsx', 'MemberProfile', { code: 71 }, {
+    getNetworkProfile: async () => profile({ version: 1, can_edit: false, display_name: 'Visible wall alias' }),
+    getProfilePosts: async () => page([post]), getPostComments: async () => page([comment]),
+    getNetworkMediaBlob: async () => { if (!picturesAvailable) throw { isAxiosError: true, response: { status: 404 } }; return new Blob(['synthetic'], { type: 'image/webp' }) },
+  })
+  try {
+    await h.settle(); assert.equal(h.nodes().filter(n => n.type === 'img').length, 1)
+    await h.fire(h.find('button', n => h.text(n).startsWith(h.t('comments'))), 'onClick')
+    assert.equal(h.nodes().filter(n => n.type === 'img').length, 2)
+    picturesAvailable = false; post.author = { ...author, avatar_media_id: ID }; comment.author = { ...author, avatar_media_id: ID }
+    await h.presence(false, true); await h.presence(true, true)
+    assert.equal(h.nodes().filter(n => n.type === 'img').length, 0)
+    assert.match(h.html, /Visible wall alias|Authorized wall content|Authorized comment/)
+    assert.equal(h.visibleText.includes(h.t('error_access')), false, 'Secondary author denial does not revoke the authorized wall')
+    assert.equal(h.revoked.length, 2)
+    assert.equal(h.calls.some(call => !call.name.startsWith('get')), false)
+  } finally { h.dispose() }
+})
+
+test('profile work and selected-media denial clear the whole current profile while read-only views expose no editor', async () => {
+  for (const deniedOperation of ['work', 'media']) {
+    let rejectMedia
+    const h = ui('components/network/MemberCommunity.tsx', 'MemberProfile', { code: 71 }, {
+      getNetworkProfile: async () => profile({ version: 1, can_edit: false, avatar_media_id: deniedOperation === 'media' ? PHOTO1 : null }),
+      getProfilePosts: async () => page([]),
+      getNetworkMediaBlob: () => new Promise((_resolve, reject) => { rejectMedia = reject }),
+      getProfileProjects: async () => { throw { isAxiosError: true, response: { status: 404 } } },
+    })
+    try {
+      await h.settle(); assert.match(h.html, /Synthetic member/)
+      assert.equal(h.nodes().some(n => n.type === 'input' && n.props.type === 'file'), false)
+      if (deniedOperation === 'work') await h.fire(h.find('button', n => h.text(n) === h.t('customization.projects')), 'onClick')
+      else { rejectMedia({ isAxiosError: true, response: { status: 403 } }); await h.settle() }
+      assert.ok(h.visibleText.includes(h.t('error_access'))); assert.doesNotMatch(h.html, /Synthetic member|Synthetic biography/)
+      assert.equal(h.nodes().some(n => n.type === 'img' || n.type === 'input'), false)
+    } finally { h.dispose() }
+  }
+})
+
 const custodyFields = { title: 'Synthetic villa registry', location: 'Synthetic province', address: 'Private synthetic address',
   property_class: 'house_villa', relationship: 'owner' }
 const transferRow = { id: ENTRY, label: 'Synthetic transfer', view: 'received', status: 'pending', version: 1,

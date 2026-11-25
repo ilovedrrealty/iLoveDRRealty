@@ -854,5 +854,33 @@
     "moderation_reason": "Nota de moderación (opcional)",
     "confirm_hide_post": "¿Ocultar esta publicación del grupo?",
     "confirm_hide_comment": "¿Ocultar este comentario?"
+  },
+  "customization": {
+    "unnamed": "Perfil de miembro",
+    "avatar_alt": "Foto de perfil elegida",
+    "cover_alt": "Foto de portada elegida",
+    "work_title": "Proyectos e historial de trabajo",
+    "work_note": "Solo se muestran los proyectos y las actualizaciones que tienes permiso para ver. Cada proyecto conserva sus propias reglas de acceso.",
+    "work_views": "Vistas de trabajo del perfil",
+    "projects": "Proyectos",
+    "my_projects": "Mis proyectos",
+    "history": "Actualizaciones de proyectos compartidos",
+    "my_history": "Actualizaciones de mis proyectos",
+    "projects_empty": "No hay proyectos accesibles vinculados a este perfil.",
+    "history_empty": "No hay actualizaciones de proyectos accesibles para este perfil.",
+    "photo_help": "Elige imágenes JPEG, PNG o WebP de hasta 5 MB. Se suben de forma privada para revisarlas; guarda los cambios para usarlas en este perfil. Se aplican la audiencia y los bloqueos del perfil.",
+    "choose_avatar": "Elegir una foto de perfil",
+    "choose_cover": "Elegir una foto de portada",
+    "no_photo": "No hay ninguna imagen seleccionada.",
+    "photo_ready": "Imagen seleccionada para este perfil. Revísala antes de guardar.",
+    "remove_avatar": "Quitar la foto del perfil",
+    "remove_cover": "Quitar la portada del perfil",
+    "preview": "Revisar perfil",
+    "preview_title": "Vista previa del perfil",
+    "preview_note": "Esta es la vista previa de tu borrador. Guarda los cambios para actualizar el perfil.",
+    "back_edit": "Volver a editar",
+    "discard": "Descartar cambios",
+    "update_by": "Actualización de {{name}}",
+    "saved": "Los cambios del perfil se guardaron."
   }
 }

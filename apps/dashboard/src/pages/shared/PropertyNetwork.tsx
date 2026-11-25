@@ -62,9 +62,9 @@ export function PropertyNetwork({ user }: { user: UserInfo }) {
       onProperty={id => navigate('properties', 'property', id, false)} /> : null}
     {tab === 'properties' ? propertyId ? <PrivatePropertyDetail key={`${user.id}:${propertyId}`} id={propertyId} options={options} actorRole={user.role} actorCode={user.user_code} onBack={() => navigate('properties', undefined, undefined, false)} onCreateProject={id => navigate('projects', 'property', id, false)} onHistorySent={openSentHistory} onCustodySent={openSentCustody} /> : <PrivatePropertyList options={options} onOpen={id => navigate('properties', 'property', id, false)} /> : null}
     {tab === 'projects' ? projectId ? <ProjectDetail key={`${user.id}:${projectId}`} id={projectId} onBack={() => navigate('projects')} historyCategories={options.categories} onHistorySent={openSentHistory} /> : <ProjectList key={propertyId || 'all'} options={options} initialPropertyId={propertyId || undefined} canCreate={['admin', 'owner', 'realtor'].includes(user.role) && !catalogError} onOpen={id => navigate('projects', 'project', id)} /> : null}
-    {tab === 'people' ? memberCode ? <MemberProfile key={memberCode} code={memberCode} onBack={() => navigate('people')} /> : <MemberDirectory onOpen={code => navigate('people', 'member', String(code))} /> : null}
+    {tab === 'people' ? memberCode ? <MemberProfile key={memberCode} code={memberCode} categories={options.categories} onBack={() => navigate('people')} /> : <MemberDirectory onOpen={code => navigate('people', 'member', String(code))} /> : null}
     {tab === 'groups' ? <SocialGroups key={user.id} actorId={user.id} actorCode={user.user_code} groupId={groupId}
       inviteCode={inviteMemberCode} onOpen={(id, guard = true) => navigate('groups', id ? 'group' : undefined, id || undefined, guard)} /> : null}
-    {tab === 'my-profile' ? <MemberProfile key={`me:${user.id}`} own browseSales={canBrowseSales(user.role)} /> : null}
+    {tab === 'my-profile' ? <MemberProfile key={`me:${user.id}`} own categories={options.categories} browseSales={canBrowseSales(user.role)} /> : null}
   </div>
 }
