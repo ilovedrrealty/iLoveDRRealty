@@ -23,7 +23,7 @@ export function InboxThread({ source, reviewId = null, user, freshPolicy }: { so
   const read = useInboxRead(JSON.stringify(['inbox-thread', user.id, source, cursor, reviewId]), signal => getInboxThread(source, cursor, reviewId, signal))
   const [body, setBody] = useState(''), [kind, setKind] = useState<Entry['kind']>('message'), [occurred, setOccurred] = useState('')
   const [direction, setDirection] = useState<'incoming' | 'outgoing'>('outgoing'), [outcome, setOutcome] = useState<typeof CALL_OUTCOMES[number]>('unspecified'), [manualConfirmed, setManualConfirmed] = useState(false), [fieldsError, setFieldsError] = useState(false)
-  const denied = inboxAccessLost(read.error), expired = useReviewExpired(read.data?.review_expires_at ?? null) || inboxStatus(read.error) === 410
+  const readDenied = inboxAccessLost(read.error), expired = useReviewExpired(read.data?.review_expires_at ?? null) || inboxStatus(read.error) === 410
   const command = useInboxCommand<ThreadPage>({
     load: (receipt, attempt, signal) => getInboxThread(source, attempt.action === 'entry_created' ? null : cursor, reviewId, signal),
     authorize: (_, signal) => getInboxThread(source, cursor, reviewId, signal),
@@ -34,7 +34,8 @@ export function InboxThread({ source, reviewId = null, user, freshPolicy }: { so
     },
     applied: (_, receipt) => { if (receipt.action === 'entry_created') { setBody(''); setOccurred(''); setManualConfirmed(false); setCursors([null]) } read.refresh() },
     reviewed: () => read.refresh(),
-  }, denied)
+  }, readDenied)
+  const denied = readDenied || command.denied
   useEffect(() => { if (denied) { setBody(''); setOccurred(''); setManualConfirmed(false) } }, [denied])
   const hasDraft = !!body || !!occurred || manualConfirmed, pending = command.pending !== null, busy = command.busy
   useNetworkDraftGuard(hasDraft || pending, busy)
@@ -87,10 +88,11 @@ export function InboxAuditWorkspace({ source, user, freshPolicy }: { source: Sou
     canRetry: () => true,
     applied: (current, receipt) => { if (typeof current === 'boolean') throw new InboxContractError(); setReviewId(receipt.target_id); setExpires(current.review_expires_at) },
   }, user.role !== 'admin')
+  useEffect(() => { if (command.denied) { setReviewId(null); setExpires(null) } }, [command.denied])
   useNetworkDraftGuard(command.pending !== null, command.busy)
   if (user.role !== 'admin') return null
   return <div className="space-y-5"><InboxPanel title={t('audited_review')}><p className="text-sm">{t('audit_help')}</p><p className="text-sm font-semibold">{t('sources.' + source.kind)}</p>{expires ? <p className="text-xs">{t('review_deadline')} <InboxDate value={expires} /></p> : null}<label className="block text-sm font-semibold">{t('review_reason')}<select className={INBOX_FIELD} value={reason} disabled={command.busy || command.pending !== null} onChange={event => setReason(event.target.value as typeof reason)}><option value="oversight">{t('review_oversight')}</option><option value="support">{t('review_support')}</option></select></label><button type="button" className={INBOX_PRIMARY} disabled={!freshPolicy || command.busy || command.pending !== null} onClick={() => command.send({ action: 'review_opened', submission_id: crypto.randomUUID(), source, reason })}>{t(reviewId ? 'renew_review' : 'open_review')}</button><InboxCommandStatus command={command} /></InboxPanel>
-    {reviewId ? <InboxThread source={source} reviewId={reviewId} user={user} freshPolicy={freshPolicy} /> : null}
+    {reviewId && !command.denied ? <InboxThread source={source} reviewId={reviewId} user={user} freshPolicy={freshPolicy} /> : null}
   </div>
 }
 

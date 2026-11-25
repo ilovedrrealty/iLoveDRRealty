@@ -194,7 +194,7 @@ test('private conversation links accept one opaque UUID and both locale trees co
 // adapter and synthetic promises. This is not DOM, real HTTP or browser proof.
 function hookHarness(client) {
   const slots = [], effects = [], timers = new Map(), listeners = new Map()
-  let cursor = 0, dirty = true, disposed = false, rootHook, current, nextTimer = 0
+  let cursor = 0, dirty = true, disposed = false, rootHook, current, nextTimer = 0, nextCommand = 100
   const slot = kind => { const index = cursor++; if (!slots[index]) slots[index] = { kind }; assert.equal(slots[index].kind, kind); return slots[index] }
   const hooks = { ...React,
     useState(initial) { const state = slot('state'); if (!Object.hasOwn(state, 'value')) state.value = typeof initial === 'function' ? initial() : initial
@@ -208,8 +208,9 @@ function hookHarness(client) {
   const window = { addEventListener: add, removeEventListener: remove, dispatchEvent: event => { for (const fn of [...listeners.get(event.type) ?? []]) fn(event); return !event.defaultPrevented },
     setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, delay }); return id }, clearTimeout(id) { timers.delete(id) } }
   const document = { visibilityState: 'visible', addEventListener: add, removeEventListener: remove }
-  const load = loader(client, hooks, 'en', { window, document, navigator: { onLine: true } })
+  const load = loader(client, hooks, 'en', { window, document, navigator: { onLine: true }, crypto: { randomUUID: () => id(nextCommand++) } })
   const h = { load, window, get value() { return current }, get timers() { return timers.size }, get listeners() { return listeners.size },
+    get stateValues() { return slots.filter(state => state.kind === 'state').map(state => state.value) },
     setHook(fn) { rootHook = fn; dirty = true }, render() { dirty = true },
     async flush() { for (let n = 0; n < 25; n++) { if (dirty) { cursor = 0; dirty = false; current = rootHook(); for (const effect of effects.splice(0)) effect() }
       for (let tick = 0; tick < 24; tick++) await Promise.resolve(); if (!dirty && !effects.length) return } assert.fail('Unbounded hook render loop') },
@@ -300,4 +301,94 @@ test('actual Inbox input failure stays editable while a malformed transport ackn
     h.value.send({ ...base, submission_id: id(45), body: 'Must remain locked' }); await h.flush()
     assert.equal(calls.length, 1)
   } finally { h.dispose() }
+})
+
+test('actual private components immediately hide cached projections after write denial and retain a non-retryable frozen attempt', async () => {
+  const copy = JSON.parse(fs.readFileSync(path.join(root, prefix, 'locale/en/inbox.json')))
+  function nodes(element) {
+    if (!React.isValidElement(element)) return []
+    return [element, ...React.Children.toArray(element.props.children).flatMap(nodes)]
+  }
+  const find = (h, type, predicate = () => true) => {
+    const value = nodes(h.value).find(node => node.type === type && predicate(node.props))
+    assert.ok(value, 'Expected actual control ' + type); return value.props
+  }
+  const button = (h, label) => find(h, 'button', props => props.children === label)
+  const html = h => renderToStaticMarkup(h.value)
+  for (const status of [401, 403, 404]) {
+    for (const view of ['thread', 'recipients', 'preferences', 'blocks', 'audit']) {
+      const calls = []; let writes = 0, readsBeforeDenial = 0
+      const h = hookHarness({
+        get(endpoint) {
+          calls.push({ method: 'get', endpoint })
+          if (endpoint === '/messaging/preferences') return Promise.resolve(response({ visibility: 'private', version: 1, ...policy }))
+          if (endpoint === '/messaging/recipients') return Promise.resolve(response(page([{ ...member(2, 'realtor'), relationship: 'assigned_agent' }])))
+          if (endpoint === '/messaging/blocks') return Promise.resolve(response(page([member(2, 'realtor')])))
+          assert.equal(endpoint, view === 'audit' ? '/messaging/admin/reviews/' + id(55) + '/entries' : '/messaging/conversations/' + source.id + '/entries')
+          return Promise.resolve(response(thread({ items: [entry({ body: 'CACHED_PRIVATE_BODY' })],
+            ...(view === 'audit' ? { conversation: summary({ is_observer: true }), review_id: id(55), review_expires_at: new Date(Date.now() + 600000).toISOString() } : {}) })))
+        },
+        post(endpoint, body) {
+          calls.push({ method: 'post', endpoint, body }); writes++
+          if (view === 'audit' && writes === 1) return Promise.resolve(response({ submission_id: body.submission_id, action: 'review_opened', target_id: id(55) }))
+          return Promise.reject(failure(status))
+        },
+        put(endpoint, body) { calls.push({ method: 'put', endpoint, body }); return Promise.reject(failure(status)) },
+      })
+      const directory = h.load(prefix + 'components/inbox/InboxDirectory.tsx'), threads = h.load(prefix + 'components/inbox/InboxThread.tsx')
+      const props = { actor: id(1), freshPolicy: true }
+      h.setHook(() => view === 'thread' ? threads.InboxThread({ source, user: member(1, 'buyer'), freshPolicy: true })
+        : view === 'recipients' ? directory.InboxRecipients({ ...props, onOpen() { assert.fail('Denied write cannot open a conversation') } })
+        : view === 'preferences' ? directory.InboxPreferences(props)
+        : view === 'blocks' ? directory.InboxBlocks(props)
+        : threads.InboxAuditWorkspace({ source, user: member(3, 'admin'), freshPolicy: true }))
+      try {
+        await h.flush()
+        if (view === 'thread') {
+          assert.ok(html(h).includes('CACHED_PRIVATE_BODY'))
+          find(h, 'textarea').onChange({ target: { value: 'LOCAL_SECRET_DRAFT' } }); await h.flush()
+          assert.ok(html(h).includes('LOCAL_SECRET_DRAFT'))
+          readsBeforeDenial = calls.filter(call => call.method === 'get').length
+          find(h, 'form').onSubmit({ preventDefault() {} })
+        } else if (view === 'recipients') {
+          assert.ok(html(h).includes(member(2).display_name))
+          find(h, 'input').onChange({ target: { value: 'LOCAL_DIRECTORY_DRAFT' } }); await h.flush()
+          button(h, copy.select_member).onClick(); await h.flush()
+          readsBeforeDenial = calls.filter(call => call.method === 'get').length
+          button(h, copy.start_conversation).onClick()
+        } else if (view === 'preferences') {
+          find(h, 'input', props => props.type === 'checkbox').onChange({ target: { checked: true } }); await h.flush()
+          readsBeforeDenial = calls.filter(call => call.method === 'get').length
+          find(h, 'form').onSubmit({ preventDefault() {} })
+        } else if (view === 'blocks') {
+          assert.ok(html(h).includes(member(2).display_name))
+          readsBeforeDenial = calls.filter(call => call.method === 'get').length
+          button(h, copy.unblock).onClick()
+        } else {
+          button(h, copy.open_review).onClick(); await h.flush()
+          assert.ok(nodes(h.value).some(node => node.type === threads.InboxThread))
+          readsBeforeDenial = calls.filter(call => call.method === 'get').length
+          button(h, copy.renew_review).onClick()
+        }
+        await h.flush()
+        const frozen = h.stateValues.find(value => value?.body && value?.submission_id)
+        assert.ok(frozen && Object.isFrozen(frozen) && Object.isFrozen(frozen.body))
+        assert.equal(calls.filter(call => call.method === 'get').length, readsBeforeDenial, 'Private projection hidden before any polling or authorization read')
+        if (view === 'audit') assert.equal(nodes(h.value).some(node => node.type === threads.InboxThread), false)
+        else {
+          const output = html(h)
+          assert.ok(!output.includes('CACHED_PRIVATE_BODY') && !output.includes('LOCAL_SECRET_DRAFT') && !output.includes(member(2).display_name))
+          if (view !== 'recipients') assert.equal(nodes(h.value).some(node => node.type === 'form'), false)
+          else assert.ok(!nodes(h.value).some(node => node.type === 'button' && [copy.select_member, copy.start_conversation].includes(node.props.children)))
+        }
+        if (view === 'thread') assert.equal(h.stateValues.includes('LOCAL_SECRET_DRAFT'), false, 'Local composer cleared without editing frozen request')
+        if (view === 'recipients') assert.equal(h.stateValues.includes('LOCAL_DIRECTORY_DRAFT'), false)
+        const count = calls.filter(call => call.method !== 'get').length
+        await h.flush()
+        assert.equal(calls.filter(call => call.method !== 'get').length, count)
+        assert.ok(!calls.some(call => call.endpoint.startsWith('/messaging/commands/')), 'No automatic resolver or retry after denial')
+      } finally { h.dispose() }
+      assert.equal(h.timers, 0); assert.equal(h.listeners, 0)
+    }
+  }
 })
