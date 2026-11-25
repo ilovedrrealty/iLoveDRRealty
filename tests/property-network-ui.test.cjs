@@ -24,7 +24,7 @@ const project = changes => ({ id: ID, listing_id: LISTING, listing_title: 'Synth
  * event handlers are the actual component handlers. It is not DOM/browser proof.
  * No production client, fetch, provider, storage URL or customer fixture is loaded.
  */
-function ui(relative, exported, props, responses = {}, language = 'en') {
+function ui(relative, exported, props, responses = {}, language = 'en', observeTree = () => {}) {
   const frames = new Map(), moduleCache = new Map(), componentTypes = new WeakMap(), effects = [], calls = [], revoked = [], listeners = new Map()
   const translations = Object.fromEntries(['property_network', 'contact_share'].map(namespace => [namespace,
     JSON.parse(fs.readFileSync(path.join(root, sourceRoot, `locale/${language}/${namespace}.json`), 'utf8'))]))
@@ -80,6 +80,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
       current = frames.get(frameId); current.cursor = 0; seen.add(frameId)
       let tree
       try { tree = type(value.props) } finally { current = previous }
+      observeTree(type, tree)
       return resolveChildren(tree, nodePath)
     })
   }
@@ -614,6 +615,56 @@ test('actual member editor starts private, creates nothing on read, and saves on
     assert.equal(write.visibility, 'members'); assert.equal(write.expected_version, 0)
     for (const forbidden of ['email', 'phone', 'professional_profile_id', 'published_data', 'user_id']) assert.ok(!(forbidden in write))
     assert.ok(h.html.includes(h.t('profile_members')))
+  } finally { h.dispose() }
+})
+
+test('actual member profile sibling identities stay unique and stable across refresh and permission changes, and remount for a different target', async () => {
+  let currentProfile = profile({ version: 1 }), children = []
+  const props = { own: true }
+  const observe = (type, tree) => {
+    if (type.name !== 'MemberProfile') return
+    const fragment = React.Children.toArray(tree.props.children).find(node => React.isValidElement(node) && node.type === React.Fragment)
+    children = fragment ? React.Children.toArray(fragment.props.children).filter(React.isValidElement) : []
+    const keys = children.map(node => node.key)
+    assert.equal(new Set(keys).size, keys.length, 'Actual sibling keys must be unique across component types')
+  }
+  const h = ui('components/network/MemberCommunity.tsx', 'MemberProfile', props, {
+    getMyNetworkProfile: async () => currentProfile,
+    getNetworkProfile: async code => ({ ...currentProfile, user_code: code }),
+    getProfilePosts: async () => page([]),
+  }, 'en', observe)
+  const identity = name => {
+    const matches = children.filter(node => node.type.name === name)
+    assert.equal(matches.length, 1, `One actual ${name} child required`)
+    return { type: matches[0].type, key: matches[0].key }
+  }
+  const refresh = () => h.fire(h.find('button', node => h.text(node) === h.t('refresh')), 'onClick')
+  try {
+    await h.settle()
+    assert.equal(children.some(node => node.type.name === 'SaleCatalogLink'), false, 'The preceding sale shortcut stays null')
+    const editor = identity('ProfileCustomization'), wall = identity('ProfileWall')
+    currentProfile = { ...currentProfile, version: 2 }
+    await refresh()
+    assert.deepEqual(identity('ProfileCustomization'), editor)
+    assert.deepEqual(identity('ProfileWall'), wall)
+    currentProfile = { ...currentProfile, can_edit: false }
+    await refresh()
+    assert.equal(children.some(node => node.type.name === 'ProfileCustomization'), false)
+    assert.deepEqual(identity('ProfileWall'), wall)
+    currentProfile = { ...currentProfile, can_edit: true, version: 3 }
+    await refresh()
+    assert.deepEqual(identity('ProfileCustomization'), editor)
+    assert.deepEqual(identity('ProfileWall'), wall)
+    await h.fire(registryField(h, 'bio', 'textarea'), 'onChange', { target: { value: 'Synthetic first-target draft' } })
+    currentProfile = profile({ user_code: 72, version: 1, bio: 'Synthetic second-target biography' })
+    Object.assign(props, { own: false, code: 72 })
+    await h.settle()
+    assert.notEqual(identity('ProfileCustomization').key, editor.key)
+    assert.notEqual(identity('ProfileWall').key, wall.key)
+    assert.equal(identity('ProfileCustomization').type, editor.type)
+    assert.equal(identity('ProfileWall').type, wall.type)
+    assert.equal(registryField(h, 'bio', 'textarea').props.value, currentProfile.bio)
+    assert.ok(h.calls.every(call => ['getMyNetworkProfile', 'getNetworkProfile', 'getProfilePosts'].includes(call.name)))
   } finally { h.dispose() }
 })
 

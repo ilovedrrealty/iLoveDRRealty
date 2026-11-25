@@ -35,9 +35,9 @@ export function MemberProfile({ code, own = false, onBack, browseSales = false, 
         : `/property-network?tab=groups&invite_member=${profile.user_code}`}>{t(isOwn ? 'groups.title' : 'groups.invite_to_group')}</a>
       <ProfileShareActions kind="member" identifier={profile.user_code} />
       {own && browseSales ? <SaleCatalogLink accountRole="realtor" /> : null}
-      {profile.can_edit ? <ProfileCustomization key={profile.user_code} profile={profile} fresh={!read.stale && !read.checking && !read.error} onSaved={read.refresh} onAccessLost={() => setAccessLost(true)} /> : null}
+      {profile.can_edit ? <ProfileCustomization key={`editor:${profile.user_code}`} profile={profile} fresh={!read.stale && !read.checking && !read.error} onSaved={read.refresh} onAccessLost={() => setAccessLost(true)} /> : null}
       <ProfileWork key={'work:' + profile.user_code} code={profile.user_code} own={isOwn} categories={categories} onAccessLost={() => setAccessLost(true)} />
-      {isOwn && profile.version === 0 ? <p className="rounded-xl bg-paper p-5 text-sm text-ink2">{t('save_profile_first')}</p> : <ProfileWall key={profile.user_code} profile={profile} own={isOwn} />}
+      {isOwn && profile.version === 0 ? <p className="rounded-xl bg-paper p-5 text-sm text-ink2">{t('save_profile_first')}</p> : <ProfileWall key={`wall:${profile.user_code}`} profile={profile} own={isOwn} />}
       <PrivacyControls own={isOwn} code={profile.user_code} onBlocked={onBack} />
     </>}
   </div>
