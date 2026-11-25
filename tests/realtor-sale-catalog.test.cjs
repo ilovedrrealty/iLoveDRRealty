@@ -35,13 +35,79 @@ function apiHarness(reply) {
   return { calls, api: load(source + 'api/saleCatalog.ts', { './axios': { __esModule: true, default: client }, '../lib/saleCatalog': helpers }) }
 }
 
+function assertOwnProfileSaleRole(input) {
+  const fileName = 'profile-role-guard.tsx'
+  const file = ts.createSourceFile(fileName, input, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TSX)
+  assert.equal(file.parseDiagnostics.length, 0)
+  function imported(name, from) {
+    const matches = file.statements.filter(ts.isImportDeclaration).flatMap(node => {
+      const bindings = node.importClause?.namedBindings
+      return bindings && ts.isNamedImports(bindings) ? bindings.elements
+        .filter(binding => binding.name.text === name).map(binding => ({ node, binding })) : []
+    })
+    assert.equal(matches.length, 1, `Expected the actual ${name} import`)
+    assert.equal(matches[0].node.moduleSpecifier.text, from)
+    assert.ok(!matches[0].node.importClause.isTypeOnly && !matches[0].binding.propertyName && !matches[0].binding.isTypeOnly)
+  }
+  imported('MemberProfile', '../../components/network/MemberCommunity')
+  imported('canBrowseSales', '../../lib/saleCatalog')
+  const functions = file.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'PropertyNetwork')
+  assert.equal(functions.length, 1)
+  const component = functions[0]
+  assert.equal(component.parameters.length, 1)
+  assert.ok(ts.isObjectBindingPattern(component.parameters[0].name))
+  const users = component.parameters[0].name.elements.filter(node => node.name.getText(file) === 'user' && !node.propertyName && !node.dotDotDotToken)
+  assert.equal(users.length, 1)
+  const ownProfiles = []
+  function bindingNames(name) {
+    return ts.isIdentifier(name) ? [name.text] : ts.isObjectBindingPattern(name) || ts.isArrayBindingPattern(name)
+      ? name.elements.filter(ts.isBindingElement).flatMap(element => bindingNames(element.name)) : []
+  }
+  function visit(node) {
+    if ((ts.isVariableDeclaration(node) || ts.isParameter(node) || ts.isFunctionDeclaration(node)
+      || ts.isFunctionExpression(node) || ts.isClassDeclaration(node) || ts.isClassExpression(node)) && node.name)
+      assert.ok(!bindingNames(node.name).some(name => ['MemberProfile', 'canBrowseSales', 'user'].includes(name)), 'Account-role bindings must not be shadowed')
+    if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) && ts.isIdentifier(node.tagName)
+      && node.tagName.text === 'MemberProfile') {
+      const attributes = [...node.attributes.properties]
+      assert.ok(attributes.every(ts.isJsxAttribute), 'MemberProfile props must be explicit')
+      const names = attributes.map(attribute => attribute.name.getText(file))
+      assert.equal(new Set(names).size, names.length, 'MemberProfile props must not be duplicated')
+      if (names.includes('own')) ownProfiles.push(attributes)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(component.body)
+  assert.equal(ownProfiles.length, 1)
+  const attributes = ownProfiles[0]
+  assert.equal(attributes.find(attribute => attribute.name.text === 'own').initializer, undefined)
+  const value = attributes.find(attribute => attribute.name.text === 'browseSales')?.initializer
+  assert.ok(value && ts.isJsxExpression(value) && value.expression && ts.isCallExpression(value.expression))
+  const call = value.expression
+  assert.ok(!call.questionDotToken && ts.isIdentifier(call.expression) && call.expression.text === 'canBrowseSales')
+  assert.equal(call.arguments.length, 1)
+  const role = call.arguments[0]
+  assert.ok(ts.isPropertyAccessExpression(role) && !role.questionDotToken && role.name.text === 'role'
+    && ts.isIdentifier(role.expression) && role.expression.text === 'user')
+}
+
 test('sale browsing capability uses the real account role and fixed Realtor workspace', () => {
   for (const role of ['buyer', 'owner', 'realtor', 'admin', 'Realtor', '', 'unknown'])
     assert.equal(helpers.canBrowseSales(role), role === 'realtor' || role === 'admin')
   assert.equal(helpers.SALE_CATALOG_PATH, '/sale-properties?workspace=realtor')
   const dashboard = fs.readFileSync(path.join(root, source, 'pages/Dashboard.tsx'), 'utf8')
   assert.match(dashboard, /case 'sale-properties': return canBrowseSales\(user.role\) \? <RealtorSaleProperties \/>/)
-  assert.match(fs.readFileSync(path.join(root, source, 'pages/shared/PropertyNetwork.tsx'), 'utf8'), /own browseSales=\{canBrowseSales\(user.role\)\}/)
+  const network = fs.readFileSync(path.join(root, source, 'pages/shared/PropertyNetwork.tsx'), 'utf8')
+  assertOwnProfileSaleRole(network)
+  assertOwnProfileSaleRole(network.replace('own categories={options.categories}', 'categories={options.categories} own'))
+  for (const replacement of ['browseSales={true}', "browseSales={canBrowseSales('admin')}",
+    'browseSales={canBrowseSales(user.accountRole)}', 'browseSales={canBrowseSales?.(user.role)}',
+    'browseSales={canBrowseSales(user.role)} browseSales={true}']) {
+    assert.throws(() => assertOwnProfileSaleRole(network.replace('browseSales={canBrowseSales(user.role)}', replacement)))
+  }
+  for (const replacement of ['own={true}', 'own {...{ browseSales: true }}'])
+    assert.throws(() => assertOwnProfileSaleRole(network.replace('own categories=', `${replacement} categories=`)))
+  assert.throws(() => assertOwnProfileSaleRole(network.replace("  const { t } =", "  const canBrowseSales = () => true\n  const { t } =")))
 })
 
 test('typed filters round trip through pagination without rental or management scope', () => {

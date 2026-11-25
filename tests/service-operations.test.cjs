@@ -93,9 +93,14 @@ function translator(lang) {
 
 function renderOperations(lang, data, state = {}) {
   const useTranslation = translator(lang)
+  const { ProfileAuthor } = load('components/network/ProfileAuthor.tsx', {
+    react: React, 'react/jsx-runtime': jsxRuntime,
+    '../../api/propertyNetwork': { getNetworkMediaBlob() { assert.fail('Service operations must not request author media') } },
+  })
   const { NetworkDate, NetworkPanel } = load('components/network/NetworkShared.tsx', {
     react: React, 'react/jsx-runtime': jsxRuntime, 'react-i18next': { useTranslation }, axios: {},
     '../../api/propertyNetwork': {}, '../../api/propertyManagement': {}, '../../hooks/useNetworkRead': {},
+    './ProfileAuthor': { ProfileAuthor },
   })
   const { ServiceOperations } = load('components/network/ServiceOperations.tsx', {
     react: React, 'react/jsx-runtime': jsxRuntime, 'react-i18next': { useTranslation }, '../../api/serviceOperations': {},
