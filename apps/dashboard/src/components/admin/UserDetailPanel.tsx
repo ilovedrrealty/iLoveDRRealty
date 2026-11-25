@@ -82,7 +82,7 @@ export function UserDetailPanel({
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (user?.role === 'owner' || user?.role === 'admin') {
+    if (user?.role === 'buyer' || user?.role === 'owner' || user?.role === 'admin') {
       getAdminAgents().then(setRealtors).catch(() => {})
       setSelectedRealtor(user.assigned_realtor_id ?? '')
     }
@@ -292,8 +292,8 @@ export function UserDetailPanel({
               </div>
             )}
 
-            {/* Owners and admins can select an agent for their own owner workspace. */}
-            {(user.role === 'owner' || user.role === 'admin') && (
+            {/* Admins can assign an agent to a buyer, owner, or admin account. */}
+            {(user.role === 'buyer' || user.role === 'owner' || user.role === 'admin') && (
               <div>
                 <div className="text-[10.5px] font-bold uppercase tracking-widest text-dim mb-4 flex items-center gap-1.5">
                   <UserCheck size={11} /> {t('agent_choices.assigned_agent')}

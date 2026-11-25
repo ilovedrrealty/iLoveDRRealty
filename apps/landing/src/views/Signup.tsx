@@ -141,6 +141,7 @@ export default function Signup() {
               <label className={labelCls}>{t('signup.form.phone_label')}</label>
               <PhoneInput
                 defaultCountry="do"
+                allowMaskOverflow
                 value={phone}
                 onChange={v => { setPhone(v); clearField('phone') }}
                 placeholder="+1 (809) 000-0000"
