@@ -19,6 +19,8 @@ import { OwnerBookings } from './owner/Bookings'
 import { OwnerLeads } from './owner/Leads'
 import { Earnings } from './owner/Earnings'
 import { RealtorListings } from './realtor/Listings'
+import { RealtorSaleProperties } from './realtor/SaleProperties'
+import { canBrowseSales } from '../lib/saleCatalog'
 import { SubmitListing } from './realtor/SubmitListing'
 import { OwnerSubmitListing } from './owner/SubmitListing'
 import { RealtorCalendar } from './realtor/Calendar'
@@ -81,7 +83,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
   function getPageTitle(v: string): string {
     if (v === 'transactions' || v === 'transaction-lead') return tNav('transactions')
     if ((v === 'shortlists' || v === 'viewings') && canUseShortlists) return tNav(v)
-    if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'property-management', 'property-network'].includes(v)) return tNav(v)
+    if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'property-management', 'property-network', 'sale-properties'].includes(v)) return tNav(v)
     const key = `pages.${v}`
     if (role === 'Buyer')   return tBuyer(key,   { defaultValue: tBuyer('pages.home') })
     if (role === 'Owner')   return tOwner(key,   { defaultValue: tOwner('pages.home') })
@@ -144,6 +146,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
       // Owner
       case 'earnings':   return <Earnings tone={tone} go={go} />
       // Realtor
+      case 'sale-properties': return canBrowseSales(user.role) ? <RealtorSaleProperties /> : <p>{tNav('section_unavailable')}</p>
       case 'pipeline':   return <Pipeline user={user} />
       case 'research':   return <ResearchTools user={user} />
       case 'professional-profile': return <ProfessionalProfile />

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { createProfilePost, getMyNetworkProfile, getNetworkProfile, getNetworkProfiles, getProfilePosts, moderatePost, saveNetworkProfile, setNetworkBlock, type NetworkPage, type NetworkProfile } from '../../api/propertyNetwork'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { ProfileShareActions } from '../shared/ProfileShareActions'
+import { SaleCatalogLink } from '../shared/SaleCatalogLink'
 import { NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkComments, NetworkComposer, NetworkDate, NetworkFreshness, NetworkPagination, NetworkPanel, PrivatePhotos, networkError, useNetworkDraftGuard, allowNetworkNavigation } from './NetworkShared'
 
 export function MemberDirectory({ onOpen }: { onOpen: (code: number) => void }) {
@@ -15,7 +16,7 @@ export function MemberDirectory({ onOpen }: { onOpen: (code: number) => void }) 
   </div>
 }
 
-export function MemberProfile({ code, own = false, onBack }: { code?: number; own?: boolean; onBack?: () => void }) {
+export function MemberProfile({ code, own = false, onBack, browseSales = false }: { code?: number; own?: boolean; onBack?: () => void; browseSales?: boolean }) {
   const { t } = useTranslation('property_network')
   const [manualReload, setManualReload] = useState(0)
   const read = useNetworkRead(`profile:${own ? 'me' : code}:${manualReload}`, signal => own ? getMyNetworkProfile(signal) : getNetworkProfile(code!, signal))
@@ -27,6 +28,7 @@ export function MemberProfile({ code, own = false, onBack }: { code?: number; ow
       <a className={NETWORK_BUTTON + ' inline-block'} href={isOwn ? '/property-network?tab=groups'
         : `/property-network?tab=groups&invite_member=${profile.user_code}`}>{t(isOwn ? 'groups.title' : 'groups.invite_to_group')}</a>
       <ProfileShareActions kind="member" identifier={profile.user_code} />
+      {own && browseSales ? <SaleCatalogLink accountRole="realtor" /> : null}
       {isOwn ? <ProfileEdit key={profile.user_code} profile={profile} onSaved={read.refresh} /> : null}
       {isOwn && profile.version === 0 ? <p className="rounded-xl bg-paper p-5 text-sm text-ink2">{t('save_profile_first')}</p> : <ProfileWall key={profile.user_code} profile={profile} own={isOwn} />}
       <PrivacyControls own={isOwn} code={profile.user_code} onBlocked={onBack} />

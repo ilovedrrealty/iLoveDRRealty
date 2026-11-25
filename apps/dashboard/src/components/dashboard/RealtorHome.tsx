@@ -8,6 +8,7 @@ import { Card, StatusPill, RoleKpiCard, fmtPrice } from './shared'
 import { SetupBanners, useListingSetup } from './SetupBanners'
 import { getMyListings, type Listing } from '../../api/listings'
 import { getRealtorLeads, type Lead } from '../../api/leads'
+import { SaleCatalogLink } from '../shared/SaleCatalogLink'
 
 export const REALTOR_LISTINGS = [
   { name: 'Oceanfront Villa — Cap Cana',   status: 'Active', leads: 8, views: 1420, price: '$2.45M' },
@@ -109,6 +110,7 @@ export function RealtorHome({ go, tone, user }: { go: (v: string) => void; tone:
 
   return (
     <>
+      <div className="mb-5"><SaleCatalogLink accountRole={user.role} /></div>
       <SetupBanners kind="realtor" user={user} go={go} />
       <div className="grid grid-cols-2 gap-3 mb-5 lg:grid-cols-4 lg:gap-4 lg:mb-6">
         {kpis.map((k, i) => <RoleKpiCard key={i} {...k} />)}

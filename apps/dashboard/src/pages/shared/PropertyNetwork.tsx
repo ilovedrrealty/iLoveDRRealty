@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { getProfessionalOptions } from '../../api/professionals'
 import { emptyProfessionalOptions, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 import type { UserInfo } from '../../lib/auth'
+import { canBrowseSales } from '../../lib/saleCatalog'
 import { MemberDirectory, MemberProfile } from '../../components/network/MemberCommunity'
 import { ProjectDetail, ProjectList } from '../../components/network/ProjectWorkspace'
 import { PrivatePropertyDetail, PrivatePropertyList } from '../../components/network/PropertyRegistry'
@@ -64,6 +65,6 @@ export function PropertyNetwork({ user }: { user: UserInfo }) {
     {tab === 'people' ? memberCode ? <MemberProfile key={memberCode} code={memberCode} onBack={() => navigate('people')} /> : <MemberDirectory onOpen={code => navigate('people', 'member', String(code))} /> : null}
     {tab === 'groups' ? <SocialGroups key={user.id} actorId={user.id} actorCode={user.user_code} groupId={groupId}
       inviteCode={inviteMemberCode} onOpen={(id, guard = true) => navigate('groups', id ? 'group' : undefined, id || undefined, guard)} /> : null}
-    {tab === 'my-profile' ? <MemberProfile key={`me:${user.id}`} own /> : null}
+    {tab === 'my-profile' ? <MemberProfile key={`me:${user.id}`} own browseSales={canBrowseSales(user.role)} /> : null}
   </div>
 }

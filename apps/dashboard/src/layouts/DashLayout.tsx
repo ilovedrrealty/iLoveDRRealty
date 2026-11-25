@@ -58,6 +58,7 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
     { Icon: DollarSign,    view: 'earnings'        },
   ],
   Realtor: [
+    { Icon: Search,        view: 'sale-properties'   },
     { Icon: Building2,     view: 'listings'          },
     { Icon: Heart,         view: 'shortlists'        },
     { Icon: CalendarDays,  view: 'viewings'          },
