@@ -8,6 +8,7 @@ import {
 import { useGroupMutation } from '../../hooks/useGroupMutation'
 import { useNetworkRead } from '../../hooks/useNetworkRead'
 import { GroupActionStatus, GroupPhoto, GroupPhotos } from './GroupShared'
+import { ProfileAuthor } from './ProfileAuthor'
 import {
   NETWORK_BUTTON, NETWORK_FIELD, NETWORK_PRIMARY, NetworkDate, NetworkFreshness, NetworkPagination,
   NetworkPanel, allowNetworkNavigation, networkError, useNetworkDraftGuard,
@@ -116,7 +117,7 @@ function PostCard({ actorId, group, post, context, fresh, onChanged }: {
     action.run(submission_id => moderateGroupPost(post.id, { submission_id, ...input }), () => setReason(''))
   }
   return <article className="min-w-0 space-y-3 rounded-xl border border-line bg-white p-4">
-    <div className="flex flex-wrap justify-between gap-2"><p className="min-w-0 max-w-full text-sm font-bold text-ink [overflow-wrap:anywhere]">{post.author.display_name}</p>
+    <div className="flex flex-wrap justify-between gap-2"><p className="min-w-0 max-w-full text-sm font-bold text-ink [overflow-wrap:anywhere]"><ProfileAuthor author={post.author} /></p>
       <p className="text-xs text-dim"><NetworkDate value={post.created_at} showTime /></p></div>
     <p className="text-xs font-semibold text-sea">{t(`post_statuses.${post.status}`)} · {t(`groups.post_audiences.${post.created_audience}`)}</p>
     <p className="whitespace-pre-wrap break-words text-sm text-ink2">{post.body}</p>
@@ -213,7 +214,7 @@ function CommentCard({ comment, context, mediaIds, fresh, onChanged }: {
     action.run(submission_id => hideGroupComment(comment.id, { submission_id, ...input }), () => setReason(''))
   }
   return <article className="min-w-0 space-y-2 rounded-lg bg-line-soft p-3">
-    <div className="flex flex-wrap justify-between gap-2"><p className="min-w-0 max-w-full text-xs font-bold [overflow-wrap:anywhere]">{comment.author.display_name}</p>
+    <div className="flex flex-wrap justify-between gap-2"><p className="min-w-0 max-w-full text-xs font-bold [overflow-wrap:anywhere]"><ProfileAuthor author={comment.author} /></p>
       <p className="text-xs text-dim"><NetworkDate value={comment.created_at} showTime /></p></div>
     <p className="text-xs font-semibold text-sea">{comment.media_id === null ? t('comment_whole_entry') : mediaIds.includes(comment.media_id)
       ? t('comment_photo', { number: mediaIds.indexOf(comment.media_id) + 1 }) : t('comment_photo_unavailable')}</p>

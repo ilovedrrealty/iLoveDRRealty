@@ -115,6 +115,61 @@ test('group-only photos require private metadata and validated bounded multipart
   assert.equal(a.calls.length, before)
 })
 
+test('group author readers accept old and opted shapes while retaining only group aliases and selected IDs', () => {
+  const a = api(), oldAuthor = { user_code: 123, display_name: 'Group-specific alias' }
+  const post = { id: ids[1], group_id: ids[0], author: oldAuthor, body: 'Authorized group body', media_ids: [],
+    created_audience: 'private', status: 'visible', version: 1, created_at: time, can_hide: false, can_approve: false, can_comment: false }
+  const comment = { id: ids[2], post_id: ids[1], author: oldAuthor, body: 'Authorized comment', media_id: null,
+    hidden: false, version: 1, created_at: time, can_hide: false }
+  for (const [source, read] of [[post, a.readGroupPost], [comment, a.readGroupComment]]) {
+    assert.deepEqual(clone(read(source).author), { ...oldAuthor, avatar_media_id: null })
+    assert.deepEqual(clone(read({ ...source, author: { ...oldAuthor, avatar_media_id: ids[0] } }).author),
+      { ...oldAuthor, avatar_media_id: ids[0] })
+    for (const bad of [undefined, 'https://account.invalid/photo.jpg', 'not-an-id', 1, {}]) {
+      assert.throws(() => read({ ...source, author: { ...oldAuthor, avatar_media_id: bad } }), /Invalid group response/)
+    }
+    for (const key of ['avatar_url', 'email', 'account_name']) {
+      assert.throws(() => read({ ...source, author: { ...oldAuthor, avatar_media_id: null, [key]: 'private sentinel' } }), /Invalid group response/)
+    }
+  }
+  const current = { ...post, author: { ...oldAuthor, avatar_media_id: ids[0] } }
+  assert.equal(a.readGroupReceipt(receipt('post_create', current), ids[2]).current.author.avatar_media_id, ids[0])
+})
+
+test('all seven author operations opt in outside immutable action bodies and still accept an old server', async () => {
+  const author = { user_code: 123, display_name: 'Group alias from old server' }
+  const post = { id: ids[1], group_id: ids[0], author, body: 'Group post', media_ids: [], created_audience: 'private',
+    status: 'visible', version: 1, created_at: time, can_hide: true, can_approve: false, can_comment: true }
+  const comment = { id: ids[2], post_id: ids[1], author, body: 'Group comment', media_id: null,
+    hidden: false, version: 1, created_at: time, can_hide: true }
+  // Model the old server ignoring the new query: every reply has only two author keys.
+  const a = api(async (method, url) => {
+    if (method === 'get') return url.includes('/group-submissions/') ? receipt('comment_hide', comment)
+      : page([url.endsWith('/comments') ? comment : post])
+    return receipt(url.endsWith('/comments') ? 'comment_create'
+      : url.includes('/group-comments/') ? 'comment_hide'
+        : url.endsWith('/actions') ? 'post_hide' : 'post_create', url.includes('/group-comments/') || url.endsWith('/comments') ? comment : post)
+  })
+  assert.equal((await a.getGroupPosts(ids[0], 1)).items[0].author.avatar_media_id, null)
+  assert.equal((await a.getGroupComments(ids[1], 1)).items[0].author.avatar_media_id, null)
+  const create = { submission_id: ids[2], expected_group_version: 1, body: 'Draft', media_ids: [] }
+  await a.createGroupPost(ids[0], create)
+  await a.moderateGroupPost(ids[1], { submission_id: ids[2], expected_version: 1, action: 'hide', reason: '' })
+  await a.createGroupComment(ids[1], { submission_id: ids[2], body: 'Comment', media_id: null })
+  await a.hideGroupComment(ids[2], { submission_id: ids[2], expected_version: 1, action: 'hide', reason: '' })
+  assert.equal((await a.getGroupSubmission(ids[2])).current.author.avatar_media_id, null)
+  assert.equal(a.calls.length, 7)
+  for (const call of a.calls) {
+    const options = call[call[0] === 'get' ? 2 : 3]
+    assert.equal(options.params.author_visuals, true)
+    if (call[0] !== 'get') {
+      assert.equal(Object.hasOwn(call[2], 'author_visuals'), false)
+      assert.equal(call[2].submission_id, ids[2])
+    }
+  }
+  assert.deepEqual(a.calls[2][2], create)
+})
+
 function invitation(fragment, pathname = '/group-invite/', search = '') {
   const location = { pathname, search, hash: fragment }
   const historyCalls = [], handlers = new Map(), metadata = []
