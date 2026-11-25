@@ -399,8 +399,8 @@ export default function Calculator() {
                   const expH = (yr.exp  / calc.maxBar) * 140
                   const netBar = roiNetBar(yr.net, calc.maxBar)
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center h-full">
-                      <div className="flex items-end gap-0.75 flex-1">
+                    <div key={i} className="min-w-0 flex-1 flex flex-col items-center h-full">
+                      <div className="flex w-full max-w-[60px] items-end justify-center gap-0.75 flex-1">
                         <div title={fmt(yr.rent)} className="w-4.5 rounded-t"
                           style={{ height: incH, background: 'linear-gradient(180deg,#10b981,#059669)' }} />
                         <div title={fmt(yr.exp)} className="w-4.5 rounded-t"
