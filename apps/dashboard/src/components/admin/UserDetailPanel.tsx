@@ -7,6 +7,8 @@ import type { AdminUser, AdminUpgradeRequest, AdminAgent } from '../../api/admin
 import { changeUserRole, assignRealtorToOwner, getAdminAgents } from '../../api/admin'
 import { agentChoiceLabel } from '../../lib/agentChoices'
 import { ConfirmModal } from '../shared/ConfirmModal'
+import { ShareContactButton } from '../shared/ShareContactDialog'
+import { ProfileShareActions } from '../shared/ProfileShareActions'
 
 const UPGRADE_ROLE_ICON: Record<string, typeof Key>  = { owner: Key, realtor: Building2 }
 const UPGRADE_ROLE_COLOR: Record<string, string>     = { owner: '#f0a800', realtor: '#1f7a3d' }
@@ -261,6 +263,10 @@ export function UserDetailPanel({
                     <div className="text-[13px] text-ink">{fmt(user.created_at)}</div>
                   </div>
                 </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <ShareContactButton key={user.id} contact={{ name: user.display_name ?? '', email: user.email, phone: user.phone }} />
+                {user.user_code != null ? <ProfileShareActions kind="member" identifier={user.user_code} /> : null}
               </div>
             </div>
 

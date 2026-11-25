@@ -83,7 +83,7 @@ test('actual React preview escapes hostile text and retains readable exact plain
   assert.ok(html.includes('whitespace-pre-wrap'))
 })
 
-test('only Admin lead details and the current scoped Owner feed offer private sharing', () => {
+test('private lead sharing stays limited to Admin details and the scoped Owner feed', () => {
   const read = relative => fs.readFileSync(path.join(root, 'apps/dashboard/src', relative), 'utf8')
   const panel = read('components/admin/LeadDetailPanel.tsx')
   const owner = read('pages/owner/Leads.tsx')
@@ -97,7 +97,7 @@ test('only Admin lead details and the current scoped Owner feed offer private sh
   assert.equal([...owner.matchAll(contactProjection)].length, 1)
   assert.match(owner, /data\.items\.map\(lead =>[\s\S]+<ShareContactButton[\s\S]+<InquiryHistory scope="owner"/)
   for (const relative of ['pages/realtor/Leads.tsx', 'pages/realtor/Pipeline.tsx', 'pages/buyer/Inquiries.tsx',
-    'components/dashboard/InquiryHistory.tsx', 'components/shared/ProfessionalPreview.tsx', 'pages/shared/ProfessionalDirectory.tsx']) {
+    'components/dashboard/InquiryHistory.tsx', 'components/shared/ProfessionalPreview.tsx']) {
     assert.doesNotMatch(read(relative), /allowContactShare|ShareContactButton/)
   }
   const dialog = read('components/shared/ShareContactDialog.tsx')

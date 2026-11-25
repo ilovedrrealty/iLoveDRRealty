@@ -132,6 +132,11 @@ export async function getTradeContactOptions(signal?: AbortSignal) {
   return (await client.get<TradeContactOptions>('/admin/trade-contacts/options', { signal })).data
 }
 
+export async function getTradeContact(id: string, signal?: AbortSignal) {
+  if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id)) throw new Error('Invalid contact identifier')
+  return (await client.get<TradeContact>(`/admin/trade-contacts/${id.toLowerCase()}`, { signal })).data
+}
+
 export async function analyzeTradeContactFile(file: File, sheet?: string, delimiter = 'auto', signal?: AbortSignal) {
   const data = new FormData()
   data.append('file', file)

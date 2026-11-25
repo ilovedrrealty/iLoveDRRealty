@@ -7,7 +7,7 @@ export type ContactLabels = { name: string; email: string; phone: string }
 export const minimalContactSelection = (): ContactSelection => ({ name: true, email: false, phone: false })
 
 export function shareableContact(value: ShareContact): { name: string; email: string; phone: string } {
-  const name = typeof value.name === 'string' && !/[\r\n\u0000-\u001f\u007f]/.test(value.name) ? value.name.trim().slice(0, 160) : ''
+  const name = typeof value.name === 'string' && !/[\r\n\u0000-\u001f\u007f]/.test(value.name) ? value.name.trim().slice(0, 240) : ''
   const email = typeof value.email === 'string' && value.email.length <= 254
     && /^[^<>()\[\]\\,;:\s@?&#"\u0000-\u001f\u007f]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}$/i.test(value.email) ? value.email : ''
   let phone = ''

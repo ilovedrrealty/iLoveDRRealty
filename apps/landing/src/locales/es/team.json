@@ -5,7 +5,11 @@
     "heading_em": "I♥DR Realty",
     "sub": "Tres brokers principales — dominicanos, inversores y expertos en reubicación que realmente viven el mercado que venden."
   },
-  "stats": ["Principales", "Regiones", "Idiomas"],
+  "stats": [
+    "Principales",
+    "Regiones",
+    "Idiomas"
+  ],
   "principals": {
     "eyebrow": "★ Los principales",
     "heading": "Líderes de corretaje",
@@ -44,5 +48,19 @@
     "sub": "Conéctate con el agente adecuado para tus objetivos — ya sea que estés comprando, invirtiendo o reubicándote.",
     "talk": "Hablar con el equipo",
     "browse": "Ver propiedades"
+  },
+  "share": {
+    "open": "Compartir perfil",
+    "title": "Perfil en iLoveDRRealty",
+    "note": "Este enlace abre este perfil publicado del equipo en nuestro sitio web.",
+    "copy": "Copiar enlace",
+    "email": "Abrir borrador de correo",
+    "whatsapp": "Abrir borrador de WhatsApp",
+    "native": "Más opciones para compartir",
+    "copied": "Enlace copiado. No se ha enviado nada.",
+    "failed": "No se pudo compartir ni copiar. Puedes seleccionar y copiar el enlace de arriba manualmente.",
+    "nativeClosed": "Se cerraron las opciones para compartir. No se ha confirmado la entrega.",
+    "canceled": "Se canceló compartir.",
+    "noDelivery": "Revisa el destinatario y envía desde tu propia app. Abrir un borrador no envía un mensaje ni confirma su entrega."
   }
 }

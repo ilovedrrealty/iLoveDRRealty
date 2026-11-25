@@ -18,5 +18,21 @@
   "copy": "Copiar vista previa",
   "copied": "Vista previa copiada. No se ha enviado nada.",
   "copy_failed": "No se pudo copiar. Puedes seleccionar y copiar la vista previa manualmente.",
-  "no_delivery_claim": "Revisa al destinatario y envía desde tu propia aplicación. Abrir un borrador no envía un mensaje ni confirma su entrega."
+  "no_delivery_claim": "Revisa al destinatario y envía desde tu propia aplicación. Abrir un borrador no envía un mensaje ni confirma su entrega.",
+  "native_share": "Más opciones para compartir",
+  "native_failed": "No se pudieron abrir las opciones para compartir. Usa copiar, correo o WhatsApp.",
+  "link_contact_open": "Compartir enlace privado del contacto",
+  "link_profile_open": "Compartir perfil",
+  "link_contact_title": "Contacto privado en iLoveDRRealty",
+  "link_profile_title": "Perfil en iLoveDRRealty",
+  "link_admin_note": "Este enlace abre un contacto privado. El destinatario debe iniciar sesión como Admin autorizado. El enlace no contiene datos de contacto ni concede acceso.",
+  "link_profile_note": "Es posible que el destinatario deba iniciar sesión. Se mantienen la visibilidad del perfil y los bloqueos existentes; compartir el enlace no concede acceso.",
+  "link_copy": "Copiar enlace",
+  "link_native": "Más opciones para compartir",
+  "link_copied": "Enlace copiado. No se ha enviado nada.",
+  "link_failed": "No se pudo compartir ni copiar. Puedes seleccionar y copiar el enlace de arriba manualmente.",
+  "link_native_closed": "Se cerraron las opciones para compartir. No se ha confirmado la entrega.",
+  "link_canceled": "Se canceló compartir.",
+  "linked_contact": "Contacto privado compartido",
+  "linked_unavailable": "Este contacto no está disponible o no tienes acceso."
 }

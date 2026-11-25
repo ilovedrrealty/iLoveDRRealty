@@ -18,5 +18,21 @@
   "copy": "Copy preview",
   "copied": "Preview copied. Nothing has been sent.",
   "copy_failed": "Could not copy. You can select and copy the preview manually.",
-  "no_delivery_claim": "You review the recipient and send in your own app. Opening a draft does not send a message or confirm delivery."
+  "no_delivery_claim": "You review the recipient and send in your own app. Opening a draft does not send a message or confirm delivery.",
+  "native_share": "More sharing options",
+  "native_failed": "Could not open sharing options. Use copy, email or WhatsApp instead.",
+  "link_contact_open": "Share private contact link",
+  "link_profile_open": "Share profile",
+  "link_contact_title": "Private contact on iLoveDRRealty",
+  "link_profile_title": "Profile on iLoveDRRealty",
+  "link_admin_note": "This link opens a private contact record. The recipient must sign in as an authorized Admin. The link includes no contact details and does not grant access.",
+  "link_profile_note": "The recipient may need to sign in. Existing profile visibility and blocking rules still apply; sharing this link does not grant access.",
+  "link_copy": "Copy link",
+  "link_native": "More sharing options",
+  "link_copied": "Link copied. Nothing has been sent.",
+  "link_failed": "Could not open sharing or copy. You can select and copy the link above manually.",
+  "link_native_closed": "Sharing options closed. Delivery has not been confirmed.",
+  "link_canceled": "Sharing canceled.",
+  "linked_contact": "Shared private contact",
+  "linked_unavailable": "This contact is unavailable or you do not have access."
 }

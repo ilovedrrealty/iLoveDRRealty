@@ -5,7 +5,11 @@
     "heading_em": "I♥DR Realty",
     "sub": "Three principal brokers — Dominicans, investors, and relocation experts who actually live the market they sell."
   },
-  "stats": ["Principals", "Regions", "Languages"],
+  "stats": [
+    "Principals",
+    "Regions",
+    "Languages"
+  ],
   "principals": {
     "eyebrow": "★ The principals",
     "heading": "Brokerage leaders",
@@ -44,5 +48,19 @@
     "sub": "Connect with the right agent for your goals — whether you're buying, investing, or relocating.",
     "talk": "Talk to the team",
     "browse": "Browse listings"
+  },
+  "share": {
+    "open": "Share profile",
+    "title": "Profile on iLoveDRRealty",
+    "note": "This link opens this published team profile on our website.",
+    "copy": "Copy link",
+    "email": "Open email draft",
+    "whatsapp": "Open WhatsApp draft",
+    "native": "More sharing options",
+    "copied": "Link copied. Nothing has been sent.",
+    "failed": "Could not open sharing or copy. You can select and copy the link above manually.",
+    "nativeClosed": "Sharing options closed. Delivery has not been confirmed.",
+    "canceled": "Sharing canceled.",
+    "noDelivery": "Review the recipient and send in your own app. Opening a draft does not send a message or confirm delivery."
   }
 }

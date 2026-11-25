@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { isAxiosError } from 'axios'
+import { useSearchParams } from 'react-router-dom'
 import { getTradeContactMap, type DirectoryMapSummary, type DirectoryLocationStatus } from '../../api/directoryMaps'
 import {
-  getTradeContactOptions, httpsTradeContactLink, importTradeContacts, listTradeContacts, optionalTradeContactFields,
+  getTradeContact, getTradeContactOptions, httpsTradeContactLink, importTradeContacts, listTradeContacts, optionalTradeContactFields,
   readTradeContact, requiredTradeContactFields, TRADE_CONTACT_BATCH_LIMIT,
   TRADE_CONTACT_PAGE_SIZE, tradeContactFilterLimits, tradeVerificationStatuses, type TradeContact, type TradeContactEntry,
   type TradeContactFilters, type TradeContactImport, type TradeContactOptions, type TradeContactPage,
@@ -11,6 +12,8 @@ import {
 import { ContactFileImport } from '../../components/admin/ContactFileImport'
 import { DirectoryAreaMap } from '../../components/shared/DirectoryAreaMap'
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
+import { ProfileShareActions } from '../../components/shared/ProfileShareActions'
+import { ShareContactButton } from '../../components/shared/ShareContactDialog'
 import { professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
 
 const emptyFilters: TradeContactFilters = { q: '', category: '', subtype: '', province: '', locality: '', service_area: '', verification_status: '', contact_channel: '', map_area: '', location_status: 'all' }
@@ -71,6 +74,10 @@ function ContactRecord({ entry }: { entry: TradeContact }) {
         </dl>
       </div>}
     </details>
+    <div className="mt-4 space-y-3">
+      <ShareContactButton key={entry.id} contact={{ name: entry.name, email: entry.email, phone: entry.phone }} />
+      <ProfileShareActions kind="contact" identifier={entry.id} />
+    </div>
   </article>
 }
 
@@ -104,6 +111,12 @@ function ContactEntryForm({ disabled, onPreview }: { disabled: boolean; onPrevie
 
 export function AdminTradeContacts() {
   const { t } = useTranslation('admin', { keyPrefix: 'trade_contacts_page' })
+  const { t: shareT } = useTranslation('contact_share')
+  const [params, setParams] = useSearchParams()
+  const contactValues = params.getAll('contact')
+  const contactId = contactValues.length === 1 && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(contactValues[0]) ? contactValues[0].toLowerCase() : null
+  const [linkedContact, setLinkedContact] = useState<{ key: string; entry: TradeContact | null; error: boolean } | null>(null)
+  const accessEpoch = useRef(0)
   const [inputs, setInputs] = useState(emptyFilters)
   const [filters, setFilters] = useState(emptyFilters)
   const [offset, setOffset] = useState(0)
@@ -122,6 +135,7 @@ export function AdminTradeContacts() {
   const [busy, setBusy] = useState<'read' | 'preview' | 'save' | null>(null)
   const reviewHeading = useRef<HTMLHeadingElement>(null)
   const requestKey = JSON.stringify([filters, offset, revision])
+  const detailKey = JSON.stringify([contactId, revision])
 
   useEffect(() => {
     const revalidate = () => { if (document.visibilityState === 'visible') setRevision(value => value + 1) }
@@ -131,6 +145,7 @@ export function AdminTradeContacts() {
   }, [])
   useEffect(() => {
     const controller = new AbortController()
+    const epoch = accessEpoch.current
     setLoading(true)
     setListError(false)
     setMap(null)
@@ -138,12 +153,13 @@ export function AdminTradeContacts() {
     Promise.all([listTradeContacts(filters, offset, controller.signal), getTradeContactMap(filters, controller.signal), getTradeContactOptions(controller.signal)])
       .then(([next, nextMap, nextOptions]) => {
         if (next.total !== nextMap.total) throw new Error('Directory changed while loading')
-        if (!controller.signal.aborted) { setPage(next); setMap(nextMap); setOptions(nextOptions); setLoadedKey(requestKey); setAuthError(false) }
+        if (!controller.signal.aborted && epoch === accessEpoch.current) { setPage(next); setMap(nextMap); setOptions(nextOptions); setLoadedKey(requestKey); setAuthError(false) }
       })
       .catch(cause => {
-        if (controller.signal.aborted) return
+        if (controller.signal.aborted || epoch !== accessEpoch.current) return
         setListError(true); setPage(emptyPage); setMap(null); setLoadedKey(requestKey)
         if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) {
+          accessEpoch.current++; setLinkedContact(null)
           setAuthError(true); setEditor(null); setReview(null); setReceipt(null); setImportError(null)
           setOptions({ categories: [], provinces: [], localities: [], subtypes: [], service_areas: [] })
         }
@@ -151,6 +167,25 @@ export function AdminTradeContacts() {
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [filters, offset, revision])
+  useEffect(() => {
+    setLinkedContact(null)
+    if (!contactId || authError) return
+    const controller = new AbortController(), epoch = accessEpoch.current
+    getTradeContact(contactId, controller.signal)
+      .then(entry => {
+        if (entry.id.toLowerCase() !== contactId) throw new Error('Contact identifier mismatch')
+        if (!controller.signal.aborted && epoch === accessEpoch.current) setLinkedContact({ key: detailKey, entry, error: false })
+      })
+      .catch(cause => {
+        if (controller.signal.aborted || epoch !== accessEpoch.current) return
+        setLinkedContact({ key: detailKey, entry: null, error: true })
+        if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) {
+          accessEpoch.current++; setAuthError(true); setPage(emptyPage); setMap(null); setEditor(null); setReview(null); setReceipt(null); setImportError(null)
+          setOptions({ categories: [], provinces: [], localities: [], subtypes: [], service_areas: [] })
+        }
+      })
+    return () => controller.abort()
+  }, [contactId, authError, revision])
   useEffect(() => {
     if (review) reviewHeading.current?.focus()
   }, [review])
@@ -212,6 +247,9 @@ export function AdminTradeContacts() {
     <button type="button" className={professionalButton} onClick={() => setRevision(value => value + 1)}>{t('retry')}</button></div>
 
   return <div className="min-w-0 space-y-5">
+    {contactId && <ProfessionalDialog title={shareT('linked_contact')} closeLabel={t('close')} onClose={() => { const next = new URLSearchParams(params); next.delete('contact'); setParams(next, { replace: true }) }}>
+      {linkedContact?.key !== detailKey ? <p role="status">{t('loading')}</p> : linkedContact.error || !linkedContact.entry ? <p role="alert">{shareT('linked_unavailable')}</p> : <ContactRecord key={linkedContact.entry.id} entry={linkedContact.entry} />}
+    </ProfessionalDialog>}
     <div className="flex flex-wrap gap-2">
       <button type="button" className={professionalPrimary} onClick={() => resetEditor('manual')}>{t('add')}</button>
       <button type="button" className={professionalButton} onClick={() => resetEditor('file')}>{t('import')}</button>

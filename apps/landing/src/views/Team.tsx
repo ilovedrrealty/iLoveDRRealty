@@ -1,9 +1,12 @@
 'use client'
+import { useEffect } from 'react'
 import { useWebsiteSettings } from '../components/WebsiteSettingsProvider'
 import { localizedValue } from '../../../../packages/website-settings/src'
 import { useNav } from '../hooks/useNav'
 import { useTranslation } from 'react-i18next'
 import { PRINCIPALS, REALTORS, TEAM_STATS } from '../data/teamData'
+import { canonicalShareUrl, teamSharePath } from '../../../../packages/sharing'
+import { ShareLinkActions, type ShareLinkLabels } from '../../../../packages/sharing/ShareLinkActions'
 
 
 export default function Team() {
@@ -13,6 +16,8 @@ export default function Team() {
   const statsLabels = t('stats', { returnObjects: true }) as string[]
   const bios = t('principals.bios', { returnObjects: true }) as Array<{ role: string; bio: string }>
   const realtorBios = t('realtors.bios', { returnObjects: true }) as Array<{ role: string; bio: string; region: string }>
+  const shareLabels: ShareLinkLabels = { open: t('share.open'), title: t('share.title'), note: t('share.note'), copy: t('share.copy'), email: t('share.email'), whatsapp: t('share.whatsapp'), native: t('share.native'), copied: t('share.copied'), failed: t('share.failed'), nativeClosed: t('share.nativeClosed'), canceled: t('share.canceled'), noDelivery: t('share.noDelivery') }
+  const shareURL = (id: string) => canonicalShareUrl(process.env.NEXT_PUBLIC_LANDING_URL, teamSharePath(id), 'https://ilovedrrealty.com')
   const custom = teamMembers.length > 0
   const principalItems = custom
     ? teamMembers.filter(member => member.enabled && member.section === 'leadership').map(member => ({
@@ -29,6 +34,11 @@ export default function Team() {
       }))
     : REALTORS.map((member, index) => ({ ...member, role: realtorBios[index]?.role ?? member.role,
         bio: realtorBios[index]?.bio ?? member.bio, region: realtorBios[index]?.region ?? member.region }))
+
+  useEffect(() => {
+    const hash = window.location.hash.slice(1)
+    if (/^member-[a-z0-9][a-z0-9_-]{0,99}$/i.test(hash)) document.getElementById(hash)?.scrollIntoView({ block: 'start' })
+  }, [teamMembers])
 
 
   return (
@@ -70,8 +80,8 @@ export default function Team() {
         </div>
 
         <div className="grid grid-cols-[repeat(auto-fit,minmax(245px,1fr))] gap-5">
-          {principalItems.map((p, i) => (
-            <div key={i} className="bg-paper border border-line-soft rounded-2xl overflow-hidden shadow-[rgba(0,16,46,.25)_0px_8px_24px_-18px]">
+          {principalItems.map(p => (
+            <div key={p.id} id={teamSharePath(p.id)?.split('#')[1]} className="scroll-mt-28 bg-paper border border-line-soft rounded-2xl overflow-hidden shadow-[rgba(0,16,46,.25)_0px_8px_24px_-18px]">
               <div className="bg-[#F1F4F8]">
                 <div className="flex h-80 items-center justify-center p-3 sm:h-90">
                   <img src={p.img} alt={p.name} loading="lazy" decoding="async" className="h-full w-full object-contain object-center" />
@@ -83,7 +93,7 @@ export default function Team() {
               <div className="py-4.5 px-5 font-sans">
                 <h3 className="font-sans text-4.75 font-bold text-ink leading-[1.15]">{p.name}</h3>
                 <div className="text-2.75 font-bold tracking-[.08em] uppercase text-coral mt-1">{p.role}</div>
-                <p className="text-3.25 text-ink2 leading-[1.55] mt-3">{p.bio}</p>
+                <p className="text-3.25 text-ink2 leading-[1.55] mt-3">{p.bio}</p><div className="mt-3"><ShareLinkActions url={shareURL(p.id)} labels={shareLabels} /></div>
               </div>
             </div>
           ))}
@@ -101,8 +111,8 @@ export default function Team() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {realtorItems.map((r, i) => (
-            <div key={r.id} className="bg-paper border border-line-soft rounded-2xl overflow-hidden shadow-[rgba(0,16,46,.25)_0px_8px_24px_-18px]">
+          {realtorItems.map(r => (
+            <div key={r.id} id={teamSharePath(r.id)?.split('#')[1]} className="scroll-mt-28 bg-paper border border-line-soft rounded-2xl overflow-hidden shadow-[rgba(0,16,46,.25)_0px_8px_24px_-18px]">
               <div className="bg-[#F1F4F8]">
                 <div className="flex h-80 items-center justify-center p-3 sm:h-90">
                   <img src={r.img} alt={r.name} loading="lazy" decoding="async" className="h-full w-full object-contain object-center" />
@@ -114,7 +124,7 @@ export default function Team() {
               <div className="py-4.5 px-5 font-sans">
                 <h3 className="font-sans text-4.75 font-bold text-ink leading-[1.15]">{r.name}</h3>
                 <div className="text-2.75 font-bold tracking-[.08em] uppercase text-coral mt-1">{r.role}</div>
-                <p className="text-3.25 text-ink2 leading-[1.55] mt-3">{r.bio}</p>
+                <p className="text-3.25 text-ink2 leading-[1.55] mt-3">{r.bio}</p><div className="mt-3"><ShareLinkActions url={shareURL(r.id)} labels={shareLabels} /></div>
                 {(r.langs || r.region) && <div className="text-2.75 text-dim mt-3.5 pt-3 border-t border-line-soft">{[r.langs, r.region].filter(Boolean).join(' · ')}</div>}
               </div>
             </div>

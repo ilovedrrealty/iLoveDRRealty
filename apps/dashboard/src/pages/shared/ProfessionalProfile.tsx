@@ -6,6 +6,7 @@ import { getMyProfessionalProfile, getProfessionalOptions, saveProfessionalDraft
 import { professionalButton, professionalPrimary } from '../../components/shared/ProfessionalFields'
 import { ProfessionalDraftFields } from '../../components/shared/ProfessionalDraftFields'
 import { ProfessionalPreview } from '../../components/shared/ProfessionalPreview'
+import { ProfileShareActions } from '../../components/shared/ProfileShareActions'
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { ProfessionalConfirmation } from '../../components/shared/ProfessionalConfirmation'
 
@@ -136,7 +137,7 @@ export function ProfessionalProfile() {
     {(dirty || stale) && <button className={professionalButton} disabled={busy || uploading} onClick={() => setConfirmAction('discard')}>{t('discard')}</button>}
     {profile && (profile.listing_status === 'published' || profile.review_status === 'pending') && <button className={`${professionalButton} !text-red-700 ml-0 sm:ml-3`} disabled={blocked} onClick={() => setConfirmAction('withdraw')}>{t('withdraw')}</button>}
     {showPreview && <section className="space-y-3"><h2 className="font-bold text-ink">{t('draft_preview')}</h2><ProfessionalPreview profile={draft} options={options} /><p className="text-xs text-dim">{t('review_warning')}</p></section>}
-    {profile?.published_profile && profile.listing_status === 'published' && <section className="space-y-3"><h2 className="font-bold text-ink">{t('public_preview')}</h2><ProfessionalPreview profile={profile.published_profile} options={options} /></section>}
+    {profile?.published_profile && profile.listing_status === 'published' && <section className="space-y-3"><h2 className="font-bold text-ink">{t('public_preview')}</h2><ProfileShareActions kind="professional" identifier={profile.published_profile.id} /><ProfessionalPreview profile={profile.published_profile} options={options} /></section>}
     {confirmAction && <ProfessionalDialog title={t(confirmAction)} closeLabel={t('cancel')} onClose={() => { if (!busy) setConfirmAction(null) }}>
       <ProfessionalConfirmation message={t(`${confirmAction}_confirm`)} confirmLabel={t(busy ? 'saving' : 'confirm')} cancelLabel={t('cancel')} busy={busy}
         onCancel={() => setConfirmAction(null)} onConfirm={() => { if (confirmAction === 'withdraw') void withdraw(); else { setConfirmAction(null); void load() } }} />

@@ -8,8 +8,11 @@ import { getProfessionalMap, type DirectoryMapSummary, type DirectoryLocationSta
 import { DirectoryAreaMap } from '../../components/shared/DirectoryAreaMap'
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { ProfessionalPreview } from '../../components/shared/ProfessionalPreview'
+import { ProfileShareActions } from '../../components/shared/ProfileShareActions'
+import { ShareContactButton } from '../../components/shared/ShareContactDialog'
 import { professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
 import { landingBaseUrl } from '../../lib/siteUrls'
+import { dashboardLoginHint } from '../../../../../packages/dashboard-links'
 
 const LIMIT = 24
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
@@ -131,7 +134,7 @@ export default function ProfessionalDirectory() {
       <p className="text-xs text-dim">{t('directory_search.filter_help')}</p>
       <div className="flex flex-wrap gap-3"><button type="submit" className={professionalPrimary}>{t('directory_search.apply')}</button><button type="button" className={professionalButton} onClick={() => { setQuery(''); setCategories([]); setAreas([]); setLanguage(''); apply(true) }}>{t('directory_search.clear')}</button></div>
     </form>
-    {authError ? <div role="alert" className="rounded-xl border border-line bg-white p-5 space-y-3"><p>{t('directory_search.auth_error')}</p><a className={professionalPrimary} href={`${LANDING_URL.replace(/\/$/, '')}/login/?directory=professionals`}>{t('directory_search.login')}</a></div> : loading || loadedKey !== filterKey ? <p role="status" className="text-sm text-ink2">{t('directory_search.loading')}</p> : error ? <div role="alert" className="rounded-xl border border-line p-5 space-y-3"><p>{t('directory_search.error')}</p><button className={professionalButton} onClick={() => setRefresh(value => value + 1)}>{t('retry')}</button></div> : <>
+    {authError ? <div role="alert" className="rounded-xl border border-line bg-white p-5 space-y-3"><p>{t('directory_search.auth_error')}</p><a className={professionalPrimary} href={`${LANDING_URL.replace(/\/$/, '')}/login/${dashboardLoginHint('professional-directory', params) ?? '?directory=professionals'}`}>{t('directory_search.login')}</a></div> : loading || loadedKey !== filterKey ? <p role="status" className="text-sm text-ink2">{t('directory_search.loading')}</p> : error ? <div role="alert" className="rounded-xl border border-line p-5 space-y-3"><p>{t('directory_search.error')}</p><button className={professionalButton} onClick={() => setRefresh(value => value + 1)}>{t('retry')}</button></div> : <>
       {map && <DirectoryAreaMap summary={map} selectedArea={filters.map_area} locationStatus={filters.location_status}
         onArea={key => chooseLocation(key, 'all')} onLocationStatus={status => chooseLocation('', status)} onClear={() => apply(true)} />}
       <p role="status" className="text-sm text-dim">{t('directory_search.results', { count: page.total })}</p>
@@ -148,7 +151,9 @@ export default function ProfessionalDirectory() {
     </>}
     <p className="text-xs leading-relaxed text-dim">{t('directory_search.review_note')}</p>
     {selectedId && !authError && !loading && !error && loadedKey === filterKey && <ProfessionalDialog title={detail?.business_name || detail?.contact_name || t('directory_search.title')} closeLabel={t('directory_search.close')} onClose={() => select()}>
-      {detailError ? <p role="alert">{t('directory_search.unavailable')}</p> : detailLoading || !detail ? <p role="status">{t('directory_search.loading')}</p> : <ProfessionalPreview key={detail.id} profile={detail} options={options} />}
+      {detailError ? <p role="alert">{t('directory_search.unavailable')}</p> : detailLoading || !detail || detail.id !== selectedId ? <p role="status">{t('directory_search.loading')}</p> : <div key={detail.id} className="space-y-4"><ProfessionalPreview profile={detail} options={options} />
+        <ShareContactButton contact={{ name: detail.business_name || detail.contact_name, email: detail.public_email, phone: detail.public_phone }} />
+        <ProfileShareActions kind="professional" identifier={detail.id} /></div>}
     </ProfessionalDialog>}
   </div>
 }
