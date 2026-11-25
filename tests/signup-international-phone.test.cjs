@@ -34,6 +34,7 @@ test('Signup preserves the final Argentina mobile digit beyond the locked countr
   const number = '+5491123456789'
   assert.equal(isValidPhoneNumber(number), true)
   assert.equal(renderedDigits(number, 'ar', true), number.slice(1))
+  assert.equal(renderedDigits(number, 'do', true), number.slice(1), 'The Signup default country also permits an international paste')
   assert.equal(renderedDigits(number, 'ar', false), number.slice(1, -1), 'The unmodified mask reproduces the reported one-digit truncation')
 })
 
