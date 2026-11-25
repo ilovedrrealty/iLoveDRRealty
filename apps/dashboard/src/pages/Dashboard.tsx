@@ -36,6 +36,7 @@ import ProfessionalDirectory from './shared/ProfessionalDirectory'
 import { ToolHub } from './shared/ToolHub'
 import { PropertyManagement } from './shared/PropertyManagement'
 import { PropertyNetwork } from './shared/PropertyNetwork'
+import { NativeInbox } from './shared/Inbox'
 import { Shortlists } from './shared/Shortlists'
 import { Viewings } from './shared/Viewings'
 import { TransactionRooms } from './shared/TransactionRooms'
@@ -81,6 +82,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function getPageTitle(v: string): string {
+    if (v === 'inbox') return tNav('inbox')
     if (v === 'transactions' || v === 'transaction-lead') return tNav('transactions')
     if ((v === 'shortlists' || v === 'viewings') && canUseShortlists) return tNav(v)
     if (['resources', 'research', 'professional-profile', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'property-management', 'property-network', 'sale-properties'].includes(v)) return tNav(v)
@@ -126,6 +128,7 @@ export default function Dashboard({ go, view = 'home', role, user, onUserUpdate,
     }
 
     switch (view) {
+      case 'inbox': return <NativeInbox key={user.id} user={user} />
       // Buyer
       case 'saved':      return <SavedHomes openShortlists={canUseShortlists ? () => go('shortlists') : undefined} />
       case 'shortlists': return canUseShortlists ? <Shortlists user={user} /> : <p>{tNav('section_unavailable')}</p>

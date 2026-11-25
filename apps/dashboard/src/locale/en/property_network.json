@@ -332,10 +332,10 @@
   },
   "conversation": {
     "heading": "Private conversation",
-    "privacy": "Messages are visible to the property owner and the awarded provider.",
+    "privacy": "Messages are visible to the property owner and the awarded provider. Authorized Admins may also read them through an audited, read-only review.",
     "negotiation_heading": "Private conversation before award",
     "negotiation_with": "Private conversation with {{provider}}",
-    "negotiation_privacy": "Only the property owner and this provider can read these messages while the request is open.",
+    "negotiation_privacy": "The property owner and this provider can read these messages while the request is open. Authorized Admins may also read retained messages through an audited, read-only review.",
     "negotiation_provider": "Service provider",
     "open_negotiation": "Open private conversation",
     "close_negotiation": "Close private conversation",

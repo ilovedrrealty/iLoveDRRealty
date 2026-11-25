@@ -13,6 +13,7 @@ import logo from '../assets/iLoveDRRealty_White.png'
 import { TOOL_WORKSPACE_VIEW, type ToolWorkspace } from '../data/toolHubs'
 import { landingBaseUrl } from '../lib/siteUrls'
 import { ManagementNavigation } from '../components/shared/ManagementNavigation'
+import { InboxUnread } from '../components/inbox/InboxUnread'
 
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 
@@ -33,6 +34,7 @@ const ROLE_ICON: Record<Role, LucideIcon> = {
 
 const GENERAL_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: LayoutDashboard, view: 'home'     },
+  { Icon: MessageCircle,   view: 'inbox' },
   { Icon: Users,           view: 'professional-profile' },
   { Icon: BookOpen,        view: 'resources' },
   { Icon: Users,           view: 'professional-directory' },
@@ -73,6 +75,7 @@ const NAV: Record<Exclude<Role, 'Admin'>, { Icon: LucideIcon; view: string }[]> 
 
 const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
   { Icon: LayoutDashboard, view: 'home'      },
+  { Icon: MessageCircle,   view: 'inbox' },
   { Icon: Users,           view: 'users'     },
   { Icon: Users,           view: 'professionals' },
   { Icon: Contact,         view: 'trade-contacts' },
@@ -151,7 +154,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
           }}
         >
           <item.Icon size={14} className="shrink-0" />
-          <span className="flex-1">{t(item.view)}</span>
+          <span className="flex-1">{t(item.view)}</span>{item.view === 'inbox' ? <InboxUnread actor={user.id} /> : null}
           {active && <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: tone }} />}
         </button>
       )
@@ -180,7 +183,7 @@ export default function DashLayout({ role, view, go, onLogout, user, children, o
               }}
             >
               <item.Icon size={14} className="shrink-0" />
-              <span className="flex-1">{t(item.view)}</span>
+              <span className="flex-1">{t(item.view)}</span>{item.view === 'inbox' ? <InboxUnread actor={user.id} /> : null}
               {active && <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: tone }} />}
             </button>
           )

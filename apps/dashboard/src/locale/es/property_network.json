@@ -332,10 +332,10 @@
   },
   "conversation": {
     "heading": "Conversación privada",
-    "privacy": "Los mensajes son visibles para la persona propietaria y el profesional adjudicado.",
+    "privacy": "Los mensajes son visibles para la persona propietaria y el profesional adjudicado. Los administradores autorizados también pueden leerlos mediante una revisión auditada de solo lectura.",
     "negotiation_heading": "Conversación privada antes de la adjudicación",
     "negotiation_with": "Conversación privada con {{provider}}",
-    "negotiation_privacy": "Solo la persona propietaria y este profesional pueden leer estos mensajes mientras la solicitud está abierta.",
+    "negotiation_privacy": "La persona propietaria y este profesional pueden leer estos mensajes mientras la solicitud está abierta. Los administradores autorizados también pueden leer los mensajes conservados mediante una revisión auditada de solo lectura.",
     "negotiation_provider": "Profesional de servicios",
     "open_negotiation": "Abrir conversación privada",
     "close_negotiation": "Cerrar conversación privada",

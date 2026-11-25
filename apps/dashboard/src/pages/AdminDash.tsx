@@ -12,6 +12,7 @@ import { Communications } from './admin/Communications'
 import { AdminLocationReview } from './admin/LocationReview'
 import { PropertyManagement } from './shared/PropertyManagement'
 import { PropertyNetwork } from './shared/PropertyNetwork'
+import { NativeInbox } from './shared/Inbox'
 import { AdminSettings } from './admin/Settings'
 import { BulkImportListings } from './admin/BulkImportListings'
 import { ResearchTools } from './shared/ResearchTools'
@@ -37,11 +38,12 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
   const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'trade-contacts', 'professional-profile'].includes(view) ? view : 'home'
   const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network', 'viewings', 'editorial'].includes(view)
   const transactionView = view === 'transactions' || view === 'transaction-lead'
-  const title = transactionView ? tNav('transactions') : sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
-  const sub = transactionView || sharedTitle ? '' : t(`pages.${pageKey}.sub`)
+  const title = view === 'inbox' ? tNav('inbox') : transactionView ? tNav('transactions') : sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
+  const sub = view === 'inbox' || transactionView || sharedTitle ? '' : t(`pages.${pageKey}.sub`)
   const goToTool = (target: string, workspace?: ToolWorkspace) => go(target, undefined, workspace)
 
   function renderView() {
+    if (view === 'inbox') return <NativeInbox key={user.id} user={user} />
     switch (view) {
       case 'users':    return <AdminUsers />
       case 'listings': return <AdminListings />
