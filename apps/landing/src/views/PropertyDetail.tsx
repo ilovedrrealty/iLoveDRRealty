@@ -802,7 +802,7 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
                   ].map(([label, value], i) => (
                     <div key={i} className={`border rounded-xl p-4 ${i === 0 ? "bg-coral/10 border-coral/30" : "bg-paper2 border-line-soft"}`}>
                       <div className="text-[10.5px] font-bold text-ink2 uppercase tracking-wide mb-1">{label}</div>
-                      <div className={`text-[18px] font-bold ${i === 0 ? "text-coral" : "text-ink"}`}>{value}</div>
+                      <div className={`text-[18px] font-bold [overflow-wrap:anywhere] ${i === 0 ? "text-coral" : "text-ink"}`}>{value}</div>
                     </div>
                   ))}
                 </div>
