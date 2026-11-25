@@ -310,7 +310,7 @@ export function UserDetailPanel({
                   <select
                     value={selectedRealtor}
                     onChange={e => setSelectedRealtor(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-line bg-white text-[13px] text-ink outline-none focus:border-coral cursor-pointer"
+                    className="min-w-0 flex-1 px-3 py-2 rounded-lg border border-line bg-white text-[13px] text-ink outline-none focus:border-coral cursor-pointer"
                   >
                     <option value="">{t('agent_choices.none')}</option>
                     {selectedRealtor && !realtors.some(agent => agent.id === selectedRealtor) && <option value={selectedRealtor}>{user.assigned_realtor_name || t('agent_choices.unavailable_current')}</option>}
