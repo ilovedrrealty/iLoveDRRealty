@@ -491,11 +491,11 @@ function PropertyDetailInner({ id: idProp }: { id?: string }) {
           })}
           <div className="ml-auto min-w-0 w-full"><ListingShare listingId={id} /></div>
         </div>
-        <h1 className="font-sans text-[clamp(26px,4vw,40px)] font-bold text-ink leading-[1.07] tracking-tight">
+        <h1 className="font-sans text-[clamp(26px,4vw,40px)] font-bold text-ink leading-[1.07] tracking-tight [overflow-wrap:anywhere]">
           {listing.title.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
         </h1>
         <div className="flex flex-wrap items-center gap-3.5 text-ink2 text-[14px] mt-2">
-          <span className="flex items-center gap-1.5">
+          <span className="flex min-w-0 items-center gap-1.5 [overflow-wrap:anywhere]">
             <MapPin size={15} />
             {listing.location}
           </span>
