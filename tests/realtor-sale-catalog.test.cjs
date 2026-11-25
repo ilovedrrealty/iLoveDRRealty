@@ -80,7 +80,8 @@ function assertOwnProfileSaleRole(input) {
   visit(component.body)
   assert.equal(ownProfiles.length, 1)
   const attributes = ownProfiles[0]
-  assert.equal(attributes.find(attribute => attribute.name.text === 'own').initializer, undefined)
+  const own = attributes.find(attribute => attribute.name.text === 'own').initializer
+  assert.ok(!own || (ts.isJsxExpression(own) && own.expression?.kind === ts.SyntaxKind.TrueKeyword))
   const value = attributes.find(attribute => attribute.name.text === 'browseSales')?.initializer
   assert.ok(value && ts.isJsxExpression(value) && value.expression && ts.isCallExpression(value.expression))
   const call = value.expression
@@ -100,12 +101,13 @@ test('sale browsing capability uses the real account role and fixed Realtor work
   const network = fs.readFileSync(path.join(root, source, 'pages/shared/PropertyNetwork.tsx'), 'utf8')
   assertOwnProfileSaleRole(network)
   assertOwnProfileSaleRole(network.replace('own categories={options.categories}', 'categories={options.categories} own'))
+  assertOwnProfileSaleRole(network.replace('own categories=', 'own={true} categories='))
   for (const replacement of ['browseSales={true}', "browseSales={canBrowseSales('admin')}",
     'browseSales={canBrowseSales(user.accountRole)}', 'browseSales={canBrowseSales?.(user.role)}',
     'browseSales={canBrowseSales(user.role)} browseSales={true}']) {
     assert.throws(() => assertOwnProfileSaleRole(network.replace('browseSales={canBrowseSales(user.role)}', replacement)))
   }
-  for (const replacement of ['own={true}', 'own {...{ browseSales: true }}'])
+  for (const replacement of ['own={false}', 'own={"true"}', 'own {...{ browseSales: true }}'])
     assert.throws(() => assertOwnProfileSaleRole(network.replace('own categories=', `${replacement} categories=`)))
   assert.throws(() => assertOwnProfileSaleRole(network.replace("  const { t } =", "  const canBrowseSales = () => true\n  const { t } =")))
 })
