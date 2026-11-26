@@ -125,6 +125,15 @@ function ui(relative, exported, props, responses = {}, language = 'en', observeT
       return responses[name](...args)
     }
   } })
+  const groupApi = new Proxy({}, { get: (_, name) => {
+    const actual = load(sourceRoot + 'api/socialGroups.ts')
+    if (Object.hasOwn(actual, name) && typeof actual[name] !== 'function') return actual[name]
+    return (...args) => {
+      calls.push({ name, args })
+      assert.equal(typeof responses[name], 'function', 'Unexpected group API call: ' + String(name))
+      return responses[name](...args)
+    }
+  } })
   const fakeLocation = { pathname: '/property-network', search: '', hash: '', origin: 'https://example.invalid' }
   const fakeWindow = {
     location: fakeLocation,
@@ -173,6 +182,7 @@ function ui(relative, exported, props, responses = {}, language = 'en', observeT
         if (name.endsWith('/api/serviceWorkflow')) return serviceApi
         if (name.endsWith('/api/historyShares')) return historyApi
         if (name.endsWith('/api/registryCustody')) return custodyApi
+        if (name.endsWith('/api/socialGroups')) return groupApi
         if (name.endsWith('/api/professionals')) return { getProfessionalOptions: api.getProfessionalOptions }
         if (name.endsWith('/api/propertyManagement')) return { todayInDR: () => '2026-01-02' }
         assert.ok(name.startsWith('.'), `Unapproved module dependency: ${name}`)
@@ -665,6 +675,71 @@ test('actual member profile sibling identities stay unique and stable across ref
     assert.equal(identity('ProfileWall').type, wall.type)
     assert.equal(registryField(h, 'bio', 'textarea').props.value, currentProfile.bio)
     assert.ok(h.calls.every(call => ['getMyNetworkProfile', 'getNetworkProfile', 'getProfilePosts'].includes(call.name)))
+  } finally { h.dispose() }
+})
+
+test('actual group workspace sibling identities stay unique across tabs, refresh and permissions, and reset for a different actor or group', async () => {
+  const capabilities = { can_read_feed: true, can_read_members: true, can_manage: true, can_revoke_links: true, can_moderate: true }
+  let currentGroup = { id: LISTING, name: 'Synthetic first group', description: '', purpose: 'community', area_label: '',
+    visibility: 'private', status: 'active', join_policy: 'approval_required', post_policy: 'members', comments_enabled: true,
+    owner_alias: 'Synthetic group owner', my_role: 'admin', member_count: 3, version: 1, image: null,
+    membership: { state: 'active', version: 1 }, can_post: true, can_join: false, can_archive: false, ...capabilities }, children = []
+  const props = { id: LISTING, actorId: ID, actorCode: 71, onBack() {} }
+  const observe = (type, tree) => {
+    if (type.name !== 'GroupWorkspace') return
+    const fragment = React.Children.toArray(tree.props.children).find(node => React.isValidElement(node) && node.type === React.Fragment)
+    children = fragment ? React.Children.toArray(fragment.props.children).filter(React.isValidElement) : []
+    const keys = children.map(node => node.key)
+    assert.equal(new Set(keys).size, keys.length, 'Actual Group sibling keys must be unique across component types')
+  }
+  const h = ui('components/network/GroupWorkspace.tsx', 'GroupWorkspace', props, {
+    getGroup: async id => ({ ...currentGroup, id }), getGroupPosts: async () => page([]), getGroupLinks: async () => page([]),
+    getGroupMembers: async () => ({ ...page([]), owner: { user_code: 73, member_alias: 'Synthetic group owner', role: 'owner' } }),
+  }, 'en', observe)
+  const identity = name => {
+    const matches = children.filter(node => node.type.name === name)
+    assert.equal(matches.length, 1, `One actual ${name} child required`)
+    return { type: matches[0].type, key: matches[0].key }
+  }
+  const refresh = () => h.fire(h.find('button', node => h.text(node) === h.t('refresh')), 'onClick')
+  const select = tab => h.fire(h.find('button', node => h.text(node) === h.t('groups.tabs.' + tab)), 'onClick')
+  try {
+    await h.settle()
+    const membership = identity('OwnMembership'), identities = {}
+    for (const [tab, name] of [['feed', 'GroupFeed'], ['members', 'GroupMembers'], ['links', 'GroupLinks'], ['settings', 'GroupSettings']]) {
+      await select(tab)
+      identities[name] = identity(name)
+      currentGroup = { ...currentGroup, version: currentGroup.version + 1 }
+      await refresh()
+      assert.deepEqual(identity(name), identities[name])
+      assert.deepEqual(identity('OwnMembership'), membership)
+    }
+    currentGroup = { ...currentGroup, my_role: 'member', can_read_members: false, can_manage: false, can_revoke_links: false, can_moderate: false }
+    await refresh()
+    assert.deepEqual(identity('GroupFeed'), identities.GroupFeed)
+    assert.deepEqual(identity('OwnMembership'), membership)
+    for (const name of ['GroupMembers', 'GroupLinks', 'GroupSettings']) assert.equal(children.some(node => node.type.name === name), false)
+    currentGroup = { ...currentGroup, my_role: 'admin', ...capabilities }
+    await refresh()
+    assert.deepEqual(identity('GroupSettings'), identities.GroupSettings)
+    assert.deepEqual(identity('OwnMembership'), membership)
+    await h.fire(registryField(h, 'groups.name', 'input'), 'onChange', { target: { value: 'Synthetic first-group draft' } })
+    currentGroup = { ...currentGroup, id: ENTRY, name: 'Synthetic second group', version: 1 }
+    props.id = ENTRY
+    await h.settle()
+    const nextMembership = identity('OwnMembership'), nextSettings = identity('GroupSettings')
+    assert.notEqual(nextMembership.key, membership.key)
+    assert.notEqual(nextSettings.key, identities.GroupSettings.key)
+    assert.equal(registryField(h, 'groups.name', 'input').props.value, currentGroup.name)
+    await h.fire(registryField(h, 'groups.name', 'input'), 'onChange', { target: { value: 'Synthetic old-actor draft' } })
+    Object.assign(props, { actorId: PHOTO2, actorCode: 72 })
+    await h.settle()
+    assert.notEqual(identity('OwnMembership').key, nextMembership.key)
+    assert.notEqual(identity('GroupSettings').key, nextSettings.key)
+    assert.equal(identity('OwnMembership').type, membership.type)
+    assert.equal(identity('GroupSettings').type, identities.GroupSettings.type)
+    assert.equal(registryField(h, 'groups.name', 'input').props.value, currentGroup.name)
+    assert.ok(h.calls.every(call => ['getGroup', 'getGroupPosts', 'getGroupLinks', 'getGroupMembers'].includes(call.name)))
   } finally { h.dispose() }
 })
 

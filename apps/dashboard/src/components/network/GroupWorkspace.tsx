@@ -39,16 +39,16 @@ export function GroupWorkspace({ id, actorId, actorCode, inviteCode, onBack }: {
         {group.image && <GroupPhoto id={group.image.id} context={`${actorId}:${id}:${group.version}`} />}
       </header>
       <p className="text-xs text-dim">{t('groups.scope_help')}</p>
-      <OwnMembership key={`${actorId}:${id}`} group={group} actorId={actorId} fresh={fresh} onSaved={read.refresh} />
+      <OwnMembership key={`membership:${actorId}:${id}`} group={group} actorId={actorId} fresh={fresh} onSaved={read.refresh} />
       {!!tabs.length && <nav className="flex flex-wrap gap-2" aria-label={t('groups.workspace_tabs')}>
         {tabs.map(value => <button type="button" key={value} className={tab === value ? NETWORK_PRIMARY : NETWORK_BUTTON}
           aria-current={tab === value ? 'page' : undefined} onClick={() => { if (allowNetworkNavigation()) setSelected(value) }}>{t(`groups.tabs.${value}`)}</button>)}
       </nav>}
-      {tab === 'feed' && <GroupFeed key={`${actorId}:${id}`} actorId={actorId} group={group} fresh={fresh} onGroupChanged={read.refresh} />}
-      {tab === 'members' && <GroupMembers key={`${actorId}:${id}`} actorId={actorId} actorCode={actorCode} group={group}
+      {tab === 'feed' && <GroupFeed key={`feed:${actorId}:${id}`} actorId={actorId} group={group} fresh={fresh} onGroupChanged={read.refresh} />}
+      {tab === 'members' && <GroupMembers key={`members:${actorId}:${id}`} actorId={actorId} actorCode={actorCode} group={group}
         fresh={fresh} inviteCode={inviteCode} onGroupChanged={read.refresh} />}
-      {tab === 'links' && <GroupLinks key={`${actorId}:${id}`} actorId={actorId} group={group} fresh={fresh} />}
-      {tab === 'settings' && <GroupSettings key={`${actorId}:${id}`} actorId={actorId} group={group} fresh={fresh} onSaved={read.refresh} />}
+      {tab === 'links' && <GroupLinks key={`links:${actorId}:${id}`} actorId={actorId} group={group} fresh={fresh} />}
+      {tab === 'settings' && <GroupSettings key={`settings:${actorId}:${id}`} actorId={actorId} group={group} fresh={fresh} onSaved={read.refresh} />}
       {group.can_archive && group.status === 'active' && <section className="space-y-3 rounded-xl border border-line p-4">
         <h3 className="font-semibold">{t('groups.archive_title')}</h3><p className="text-sm text-ink2">{t('groups.archive_help')}</p>
         <label className="block text-sm font-semibold">{t('groups.reason')}<input className={NETWORK_FIELD} value={reason}
