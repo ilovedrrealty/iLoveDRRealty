@@ -424,6 +424,46 @@ test('chosen wall and comment author pictures are secondary private reads whose 
   } finally { h.dispose() }
 })
 
+test('actual group post and comment keep group aliases when secondary chosen pictures are withdrawn', async () => {
+  for (const language of ['en', 'es']) {
+    let picturesAvailable = true
+    const group = { id: LISTING, visibility: 'private', status: 'active', my_role: 'member',
+      can_post: false, can_read_feed: true, comments_enabled: true }
+    const post = { id: ENTRY, group_id: LISTING,
+      author: { user_code: 71, display_name: 'Chosen group post alias', avatar_media_id: PHOTO1 },
+      body: 'Authorized group post text', media_ids: [], created_audience: 'private', status: 'visible', version: 1,
+      created_at: '2026-01-01T12:00:00Z', can_hide: false, can_approve: false, can_comment: false }
+    const comment = { id: PHOTO2, post_id: ENTRY,
+      author: { user_code: 72, display_name: 'Chosen group comment alias', avatar_media_id: PHOTO1 },
+      body: 'Authorized group comment text', media_id: null, hidden: false, version: 1,
+      created_at: '2026-01-01T12:00:00Z', can_hide: false }
+    const h = ui('components/network/GroupFeed.tsx', 'GroupFeed', {
+      actorId: ID, group, fresh: true, onGroupChanged() {},
+    }, {
+      getGroupPosts: async () => page([post]), getGroupComments: async () => page([comment]),
+      getNetworkMediaBlob: async () => {
+        if (!picturesAvailable) throw { isAxiosError: true, response: { status: 404 } }
+        return new Blob(['synthetic private bytes'], { type: 'image/webp' })
+      },
+    }, language)
+    try {
+      await h.settle(); assert.equal(h.nodes().filter(n => n.type === 'img').length, 1)
+      await h.fire(h.find('button', n => h.text(n) === h.t('comments')), 'onClick')
+      assert.equal(h.nodes().filter(n => n.type === 'img').length, 2)
+      picturesAvailable = false
+      post.author = { ...post.author, avatar_media_id: ID }
+      comment.author = { ...comment.author, avatar_media_id: ID }
+      await h.presence(false, true); await h.presence(true, true)
+      assert.equal(h.nodes().filter(n => n.type === 'img').length, 0)
+      assert.match(h.html, /Chosen group post alias/); assert.match(h.html, /Chosen group comment alias/)
+      assert.match(h.html, /Authorized group post text/); assert.match(h.html, /Authorized group comment text/)
+      assert.equal(h.visibleText.includes(h.t('error_access')), false)
+      assert.equal(h.calls.some(call => call.name === 'getGroupPhoto' || !call.name.startsWith('get')), false)
+      assert.equal(h.revoked.length, 2)
+    } finally { h.dispose() }
+  }
+})
+
 test('profile work and selected-media denial clear the whole current profile while read-only views expose no editor', async () => {
   for (const deniedOperation of ['work', 'media']) {
     let rejectMedia

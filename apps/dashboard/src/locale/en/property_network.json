@@ -868,7 +868,7 @@
     "my_history": "Updates from my projects",
     "projects_empty": "No accessible projects are linked to this profile.",
     "history_empty": "No accessible project updates are available for this profile.",
-    "photo_help": "Choose JPEG, PNG or WebP images up to 5 MB. They are uploaded privately for preview; save changes to use them on this profile. Your profile audience and block settings apply.",
+    "photo_help": "Choose JPEG, PNG or WebP images up to 5 MB. They are uploaded privately for preview; save changes to use them. Your chosen profile picture may also appear beside your posts and comments, including in groups. Only people allowed by your profile audience and block settings can see it. Using the same picture can connect the names you use in different groups.",
     "choose_avatar": "Choose a profile picture",
     "choose_cover": "Choose a cover photo",
     "no_photo": "No picture selected.",

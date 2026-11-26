@@ -868,7 +868,7 @@
     "my_history": "Actualizaciones de mis proyectos",
     "projects_empty": "No hay proyectos accesibles vinculados a este perfil.",
     "history_empty": "No hay actualizaciones de proyectos accesibles para este perfil.",
-    "photo_help": "Elige imágenes JPEG, PNG o WebP de hasta 5 MB. Se suben de forma privada para revisarlas; guarda los cambios para usarlas en este perfil. Se aplican la audiencia y los bloqueos del perfil.",
+    "photo_help": "Elige imágenes JPEG, PNG o WebP de hasta 5 MB. Se suben de forma privada para revisarlas; guarda los cambios para usarlas. Tu foto de perfil elegida también puede aparecer junto a tus publicaciones y comentarios, incluso en grupos. Solo podrán verla las personas permitidas por la audiencia y los bloqueos de tu perfil. Usar la misma foto puede relacionar los nombres que uses en distintos grupos.",
     "choose_avatar": "Elegir una foto de perfil",
     "choose_cover": "Elegir una foto de portada",
     "no_photo": "No hay ninguna imagen seleccionada.",

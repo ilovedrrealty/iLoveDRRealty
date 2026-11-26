@@ -31,7 +31,7 @@ export type GroupLink = {
   id: string; group_id: string; expires_at: string; revoked_at: string | null; max_uses: number; use_count: number
   version: number; state: 'active' | 'expired' | 'revoked' | 'exhausted'; created_at: string
 }
-export type GroupAuthor = { user_code: number | null; display_name: string }
+export type GroupAuthor = { user_code: number | null; display_name: string; avatar_media_id: string | null }
 export type GroupPost = {
   id: string; group_id: string; author: GroupAuthor; body: string; media_ids: string[]
   created_audience: 'private' | 'network'; status: 'pending' | 'visible' | 'hidden'; version: number
@@ -86,8 +86,12 @@ function timestamp(value: unknown): string {
 }
 function nullableTime(value: unknown): string | null { return value === null ? null : timestamp(value) }
 function author(value: unknown): GroupAuthor {
-  const row = object(value); exact(row, ['user_code', 'display_name'])
-  return { user_code: memberCode(row.user_code), display_name: text(row.display_name, 100) }
+  const row = object(value)
+  // Old servers and already-open old clients keep the exact two-key shape.
+  const visual = Object.prototype.hasOwnProperty.call(row, 'avatar_media_id')
+  exact(row, visual ? ['user_code', 'display_name', 'avatar_media_id'] : ['user_code', 'display_name'])
+  return { user_code: memberCode(row.user_code), display_name: text(row.display_name, 100),
+    avatar_media_id: visual ? nullableId(row.avatar_media_id) : null }
 }
 export function readGroupMembership(value: unknown): GroupMembership {
   const row = object(value)
@@ -205,7 +209,9 @@ async function get<T>(path: string, decode: (value: unknown) => T, params?: obje
   const { data } = await client.get<unknown>(ROOT + path, { params, signal }); return decode(data)
 }
 async function write(method: 'post' | 'put', path: string, input: { submission_id: string } & object, operation: string) {
-  const { data } = await client[method]<unknown>(ROOT + path, input)
+  // Response presentation never changes the action body/submission identity.
+  const visual = operation.startsWith('post_') || operation.startsWith('comment_')
+  const { data } = await client[method]<unknown>(ROOT + path, input, visual ? { params: { author_visuals: true } } : undefined)
   const receipt = readGroupReceipt(data, uuid(input.submission_id))
   if (receipt.operation !== operation) invalid()
   const group = /^\/groups\/([a-f0-9-]{36})(?:\/|$)/i.exec(path)
@@ -237,14 +243,14 @@ export const getGroupMembers = (id: string, state: 'active' | 'pending' | 'all',
 export const getGroupLinks = (id: string, number: number, signal?: AbortSignal) =>
   get(`/groups/${uuid(id)}/invite-links`, value => scopedPage(value, readGroupLink, id), { page: number }, signal)
 export const getGroupPosts = (id: string, number: number, signal?: AbortSignal) =>
-  get(`/groups/${uuid(id)}/posts`, value => scopedPage(value, readGroupPost, id), { page: number }, signal)
+  get(`/groups/${uuid(id)}/posts`, value => scopedPage(value, readGroupPost, id), { page: number, author_visuals: true }, signal)
 export const getGroupComments = (id: string, number: number, signal?: AbortSignal) =>
   get(`/group-posts/${uuid(id)}/comments`, value => {
     const result = page(value, readGroupComment)
     if (result.items.some(row => row.post_id !== id)) invalid()
     return result
-  }, { page: number }, signal)
-export const getGroupSubmission = (id: string) => get(`/group-submissions/${uuid(id)}`, value => readGroupReceipt(value, id))
+  }, { page: number, author_visuals: true }, signal)
+export const getGroupSubmission = (id: string) => get(`/group-submissions/${uuid(id)}`, value => readGroupReceipt(value, id), { author_visuals: true })
 export const createGroup = (input: GroupFields & { submission_id: string; owner_alias: string }) => write('post', '/groups', input, 'group_create')
 export const editGroup = (id: string, input: GroupFields & { submission_id: string; expected_version: number; image_media_id: string | null; publication_acknowledged: boolean }) => write('put', `/groups/${uuid(id)}`, input, 'group_edit')
 export const archiveGroup = (id: string, input: { submission_id: string; expected_version: number; action: 'archive'; reason: string }) => write('post', `/groups/${uuid(id)}/actions`, input, 'archive')
