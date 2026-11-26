@@ -9,6 +9,7 @@ import { agentChoiceLabel } from '../../lib/agentChoices'
 import { ConfirmModal } from '../shared/ConfirmModal'
 import { ShareContactButton } from '../shared/ShareContactDialog'
 import { ProfileShareActions } from '../shared/ProfileShareActions'
+import { SignupCommunicationHistory } from './SignupCommunicationHistory'
 
 const UPGRADE_ROLE_ICON: Record<string, typeof Key>  = { owner: Key, realtor: Building2 }
 const UPGRADE_ROLE_COLOR: Record<string, string>     = { owner: '#f0a800', realtor: '#1f7a3d' }
@@ -204,6 +205,8 @@ export function UserDetailPanel({
 
           {/* ── White floating card ──────────────────────────────────── */}
           <div className="bg-paper rounded-t-3xl -mt-3 px-5 pt-6 pb-6 space-y-6 flex-1">
+
+            <SignupCommunicationHistory key={'signup-history:' + user.id} userId={user.id} />
 
             {/* Contact Information */}
             <div>

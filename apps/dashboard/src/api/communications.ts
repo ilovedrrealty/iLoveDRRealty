@@ -80,3 +80,33 @@ export async function authorizeCommunicationRetry(jobId: string): Promise<Commun
     throw new CommunicationRetryError('unconfirmed')
   }
 }
+
+export type SignupCommunicationJob = Omit<CommunicationJob, 'can_retry' | 'event_kind'> & { event_kind: 'signup' }
+export type SignupCommunications = {
+  total: number; limit: number; offset: number; tracked: boolean; items: SignupCommunicationJob[]
+}
+const signupJobKeys = ['id', 'event_kind', 'channel', 'provider', 'step', 'status', 'attempts', 'max_attempts',
+  'created_at', 'first_attempt_at', 'last_attempt_at', 'next_attempt_at', 'accepted_at', 'error_code', 'outcome_uncertain']
+function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  return Object.keys(value).length === keys.length && keys.every(key => Object.prototype.hasOwnProperty.call(value, key))
+}
+
+export async function getSignupCommunications(userId: string, filters: { limit?: number; offset?: number } = {}, signal?: AbortSignal): Promise<SignupCommunications> {
+  const params = { limit: filters.limit ?? 25, offset: filters.offset ?? 0 }
+  if (!id(userId) || !Number.isInteger(params.limit) || params.limit < 1 || params.limit > 100
+    || !Number.isInteger(params.offset) || params.offset < 0 || params.offset > 10000) throw new Error('Invalid signup history request')
+  const value: unknown = (await client.get(`/admin/users/${userId.toLowerCase()}/communications`, { params, signal })).data
+  if (!record(value) || !exactKeys(value, ['total', 'limit', 'offset', 'tracked', 'items'])
+    || !count(value.total) || value.limit !== params.limit || value.offset !== params.offset
+    || typeof value.tracked !== 'boolean' || value.tracked !== (value.total > 0)
+    || !Array.isArray(value.items) || value.items.length > params.limit || value.items.length > value.total) throw new Error('Signup history unavailable')
+  const items = value.items.map((item: unknown): SignupCommunicationJob => {
+    if (!record(item) || !exactKeys(item, signupJobKeys) || item.event_kind !== 'signup') throw new Error('Signup history unavailable')
+    // Reuse the existing operational validation, without a retry field/action
+    // in this separate read-only contract. No arbitrary extras are projected.
+    const { can_retry: _, ...job } = projectJob({ ...item, can_retry: false })
+    return { ...job, event_kind: 'signup' }
+  })
+  if (new Set(items.map(item => item.id)).size !== items.length) throw new Error('Signup history unavailable')
+  return { total: value.total, limit: params.limit, offset: params.offset, tracked: value.tracked, items }
+}

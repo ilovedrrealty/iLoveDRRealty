@@ -1,4 +1,14 @@
 {
+  "account": {
+    "title": "Signup notification history",
+    "open": "View signup email history",
+    "hide": "Hide signup email history",
+    "scope": "Read-only email records linked to this account's original verified signup. Recipient addresses and message content are not shown. Opening this history does not send or retry email.",
+    "untracked": "No durable signup email record was found. Earlier best-effort notifications may not be recorded. This does not establish whether an email reached an inbox; historical accounts are not replayed.",
+    "empty_page": "No recorded jobs were returned for this page. Use the previous page or refresh the status.",
+    "access_lost": "This account's email history is no longer available to this session. Any previously shown records have been hidden.",
+    "uncertain": "The provider outcome is uncertain. This read-only history cannot confirm delivery or authorize another attempt."
+  },
   "denied": "Email operations are available only in the Admin workspace of an Admin account.",
   "intro": "Review recorded email processing for new inquiries and newly verified accounts. This view contains operational metadata only, without recipient addresses or message content.",
   "accepted_note": "Accepted means the email provider acknowledged the request. It does not confirm inbox delivery, reading or a reply.",

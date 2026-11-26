@@ -1,4 +1,14 @@
 {
+  "account": {
+    "title": "Historial de notificaciones de registro",
+    "open": "Ver historial de correos de registro",
+    "hide": "Ocultar historial de correos de registro",
+    "scope": "Registros de correo de solo lectura vinculados al registro verificado original de esta cuenta. No se muestran destinatarios ni contenido de mensajes. Abrir el historial no envía ni reintenta correos.",
+    "untracked": "No se encontró un registro duradero de correos de registro. Las notificaciones anteriores pueden no haberse registrado. Esto no determina si un correo llegó a la bandeja de entrada; no se reenvían cuentas históricas.",
+    "empty_page": "No se devolvieron trabajos registrados para esta página. Usa la página anterior o actualiza el estado.",
+    "access_lost": "El historial de correo de esta cuenta ya no está disponible para esta sesión. Se han ocultado los registros mostrados anteriormente.",
+    "uncertain": "El resultado del proveedor es incierto. Este historial de solo lectura no confirma la entrega ni autoriza otro intento."
+  },
   "denied": "Las operaciones de correo solo están disponibles en el espacio de Administración de una cuenta administradora.",
   "intro": "Revisa el procesamiento de correo registrado para nuevas consultas y cuentas recién verificadas. Esta vista solo contiene metadatos operativos, sin direcciones de destinatarios ni contenido de mensajes.",
   "accepted_note": "Aceptado significa que el proveedor de correo reconoció la solicitud. No confirma la entrega en la bandeja de entrada, la lectura ni una respuesta.",
