@@ -11,8 +11,8 @@ export async function getProfessionals(params: DirectoryLocationFilters & Profes
 export async function getProfessional(id: string, signal?: AbortSignal): Promise<PublicProfessional> {
   return (await client.get<PublicProfessional>(`/professionals/${encodeURIComponent(id)}`, { signal })).data
 }
-export async function getMyProfessionalProfile(): Promise<ProfessionalProfile | null> {
-  return (await client.get<ProfessionalProfile | null>('/professional-profile')).data
+export async function getMyProfessionalProfile(signal?: AbortSignal): Promise<ProfessionalProfile | null> {
+  return (await client.get<ProfessionalProfile | null>('/professional-profile', { signal })).data
 }
 export async function saveProfessionalDraft(expected_version: number, draft: ProfessionalDraft): Promise<ProfessionalProfile> {
   return (await client.put<ProfessionalProfile>('/professional-profile', { expected_version, draft })).data
@@ -31,8 +31,8 @@ export async function uploadProfessionalPhoto(file: File): Promise<string> {
 export async function getAdminProfessionals(params: ProfessionalFacetFilters & { review_status?: string; listing_status?: string; q?: string; limit: number; offset: number }, signal?: AbortSignal): Promise<ProfessionalPage<AdminProfessionalSummary>> {
   return (await client.get<ProfessionalPage<AdminProfessionalSummary>>('/admin/professionals', { params, paramsSerializer: { indexes: null }, signal })).data
 }
-export async function getAdminProfessional(id: string): Promise<AdminProfessional> {
-  return (await client.get<AdminProfessional>(`/admin/professionals/${encodeURIComponent(id)}`)).data
+export async function getAdminProfessional(id: string, signal?: AbortSignal): Promise<AdminProfessional> {
+  return (await client.get<AdminProfessional>(`/admin/professionals/${encodeURIComponent(id)}`, { signal })).data
 }
 export async function createAdminProfessional(draft: ProfessionalDraft): Promise<AdminProfessional> {
   return (await client.post<AdminProfessional>('/admin/professionals', { draft })).data

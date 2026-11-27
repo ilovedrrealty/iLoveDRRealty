@@ -9,9 +9,9 @@ import { ProfessionalDraftFields } from '../shared/ProfessionalDraftFields'
 import { professionalButton, professionalPrimary } from '../shared/ProfessionalFields'
 import { ProfessionalPreview } from '../shared/ProfessionalPreview'
 
-export function ManagedProfessionalEditor({ initial, options, onSaved, onClose }: {
+export function ManagedProfessionalEditor({ initial, options, onSaved, onClose, onAccessLost }: {
   initial: AdminProfessional | null; options: ProfessionalOptions;
-  onSaved: (profile: AdminProfessional) => void; onClose: () => void;
+  onSaved: (profile: AdminProfessional) => void; onClose: () => void; onAccessLost?: () => void;
 }) {
   const { t } = useTranslation('professionals')
   const [profile, setProfile] = useState(initial)
@@ -24,11 +24,26 @@ export function ManagedProfessionalEditor({ initial, options, onSaved, onClose }
   const [showIssues, setShowIssues] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [confirmation, setConfirmation] = useState<'close' | 'reload' | null>(null)
+  const [accessDenied, setAccessDenied] = useState(false)
+  const mounted = useRef(true), denied = useRef(false), request = useRef(0)
+  const readController = useRef<AbortController | null>(null), accessLostCallback = useRef(onAccessLost)
+  accessLostCallback.current = onAccessLost
   const errorRef = useRef<HTMLDivElement>(null)
   const dirty = JSON.stringify(draft) !== JSON.stringify(profile?.draft ?? emptyProfessionalDraft())
   const issues = professionalSubmissionIssues(normalizeProfessionalDraft(draft))
   const blocked = busy || uploading || stale
 
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false; request.current++; readController.current?.abort() }
+  }, [])
+  const current = (identity: number) => mounted.current && !denied.current && identity === request.current
+  function revokeAccess() {
+    denied.current = true; request.current++; readController.current?.abort()
+    setProfile(null); setDraft(emptyProfessionalDraft()); setShowPreview(false); setShowIssues(false)
+    setError(''); setMessage(''); setConfirmation(null); setStale(false); setBusy(false); setUploading(false); setAccessDenied(true)
+    accessLostCallback.current?.()
+  }
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => { if (dirty || busy || uploading) { event.preventDefault(); event.returnValue = '' } }
     const beforeNavigation = (event: Event) => {
@@ -44,7 +59,8 @@ export function ManagedProfessionalEditor({ initial, options, onSaved, onClose }
     setDraft(previous => ({ ...previous, [key]: value })); setError(''); setMessage('')
   }
   function fail(cause: unknown) {
-    if (isAxiosError(cause) && cause.response?.status === 409) { setStale(true); setError(t('conflict')) }
+    if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) revokeAccess()
+    else if (isAxiosError(cause) && cause.response?.status === 409) { setStale(true); setError(t('conflict')) }
     else setError(t('action_error'))
   }
   function close() {
@@ -54,43 +70,53 @@ export function ManagedProfessionalEditor({ initial, options, onSaved, onClose }
     else onClose()
   }
   async function save(submit: boolean) {
-    if (blocked || (profile && !isAdminManagedProfessional(profile))) return
+    if (denied.current || blocked || (profile && !isAdminManagedProfessional(profile))) return
     const normalized = normalizeProfessionalDraft(draft)
     if (professionalCustomServicesInvalid(normalized)) { setError(t('issues.custom_services')); return }
     const googleIssue = professionalGoogleIssues(normalizeProfessionalDraft(draft))[0]
     if (googleIssue) { setError(t(`issues.${googleIssue}`)); return }
     setShowIssues(submit)
     if (submit && issues.length) return
+    const identity = ++request.current
     setBusy(true); setError(''); setMessage('')
     try {
       const saved = profile ? await saveAdminProfessional(profile.id, profile.version, normalized) : await createAdminProfessional(normalized)
+      if (!current(identity)) return
       setProfile(saved); setDraft(saved.draft); onSaved(saved)
       if (submit) {
         const submitted = await submitAdminProfessional(saved.id, saved.version)
+        if (!current(identity)) return
         setProfile(submitted); setDraft(submitted.draft); onSaved(submitted)
         onClose()
       } else setMessage(t('managed_saved'))
       setShowIssues(false)
-    } catch (cause) { fail(cause) }
-    finally { setBusy(false) }
+    } catch (cause) { if (current(identity)) fail(cause) }
+    finally { if (current(identity)) setBusy(false) }
   }
   async function reload() {
-    if (!profile || busy || uploading) return
+    if (denied.current || !profile || busy || uploading) return
+    const identity = ++request.current
+    readController.current?.abort()
+    const controller = new AbortController(); readController.current = controller
     setBusy(true); setError('')
     try {
-      const next = await getAdminProfessional(profile.id)
+      const next = await getAdminProfessional(profile.id, controller.signal)
+      if (!current(identity) || controller.signal.aborted) return
       setProfile(next); setDraft(next.draft); setStale(false); setShowIssues(false); setMessage(''); onSaved(next)
-    } catch (cause) { fail(cause) }
-    finally { setBusy(false); setConfirmation(null) }
+    } catch (cause) { if (current(identity) && !controller.signal.aborted) fail(cause) }
+    finally { if (current(identity)) { setBusy(false); setConfirmation(null) } }
   }
   async function upload(file?: File) {
-    if (!file || !profile || blocked || !isAdminManagedProfessional(profile)) return
+    if (denied.current || !file || !profile || blocked || !isAdminManagedProfessional(profile)) return
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) { setError(t('photo_error')); return }
+    const identity = ++request.current
     setUploading(true); setError('')
-    try { change('photo_url', await uploadAdminProfessionalPhoto(profile.id, file)) }
-    catch { setError(t('photo_failed')) }
-    finally { setUploading(false) }
+    try { const url = await uploadAdminProfessionalPhoto(profile.id, file); if (current(identity)) change('photo_url', url) }
+    catch (cause) { if (current(identity)) { if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) revokeAccess(); else setError(t('photo_failed')) } }
+    finally { if (current(identity)) setUploading(false) }
   }
+
+  if (accessDenied) return <p role="alert">{t('admin_access_lost')}</p>
 
   return <ProfessionalDialog title={t(profile ? 'managed_edit' : 'managed_add')} closeLabel={t('managed_close')} onClose={close}>
     {confirmation ? <ProfessionalConfirmation message={t(confirmation === 'close' ? 'managed_leave_confirm' : 'discard_confirm')} confirmLabel={t(busy ? 'saving' : 'confirm')} cancelLabel={t('cancel')} busy={busy || uploading} onCancel={() => setConfirmation(null)} onConfirm={() => { if (confirmation === 'close') onClose(); else void reload() }} /> : <div className="space-y-5 min-w-0">

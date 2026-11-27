@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { isAxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
 import { canApproveProfessional, emptyProfessionalOptions, isAdminManagedProfessional, professionalOptionLabels, professionalServiceLabels, type AdminProfessional, type AdminProfessionalSummary, type ProfessionalOptions, type ProfessionalPage, type ProfessionalFacetFilters } from '../../../../../packages/professionals/src'
@@ -11,11 +11,12 @@ import { ProfessionalConfirmation } from '../../components/shared/ProfessionalCo
 import { ManagedProfessionalEditor } from '../../components/admin/ManagedProfessionalEditor'
 
 const LIMIT = 20
+const emptyPage = (): ProfessionalPage<AdminProfessionalSummary> => ({ items: [], total: 0, limit: LIMIT, offset: 0 })
 
 export function AdminProfessionals() {
   const { t, i18n } = useTranslation('professionals')
   const [options, setOptions] = useState<ProfessionalOptions>(emptyProfessionalOptions)
-  const [page, setPage] = useState<ProfessionalPage<AdminProfessionalSummary>>({ items: [], total: 0, limit: LIMIT, offset: 0 })
+  const [page, setPage] = useState<ProfessionalPage<AdminProfessionalSummary>>(emptyPage)
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState('')
   const [review, setReview] = useState('')
@@ -35,32 +36,64 @@ export function AdminProfessionals() {
   const [message, setMessage] = useState('')
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | 'suspend' | 'reinstate' | null>(null)
   const [managedEditor, setManagedEditor] = useState<{ initial: AdminProfessional | null } | null>(null)
+  const [accessDenied, setAccessDenied] = useState(false)
+  const denied = useRef(false), epoch = useRef(0), mounted = useRef(true)
+  const listController = useRef<AbortController | null>(null), detailController = useRef<AbortController | null>(null)
   const detailRequest = useRef(0)
   const fieldId = useId()
 
+  const revokeAccess = useCallback(() => {
+    denied.current = true; epoch.current++; detailRequest.current++
+    listController.current?.abort(); detailController.current?.abort()
+    setPage(emptyPage()); setOptions(emptyProfessionalOptions()); setSelectedId(null); setDetail(null); setManagedEditor(null)
+    setNote(''); setMessage(''); setDetailError(''); setConfirmAction(null); setStale(false)
+    setQuery(''); setSearch(''); setReview(''); setVisibility(''); setFacets({}); setOffset(0)
+    setBusy(false); setDetailLoading(false); setLoading(false); setLoadError(false); setAccessDenied(true)
+  }, [])
   useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false; epoch.current++; listController.current?.abort(); detailController.current?.abort() }
+  }, [])
+  useEffect(() => {
+    if (denied.current) return
     const controller = new AbortController()
+    const requestedEpoch = epoch.current
+    listController.current = controller
     setLoading(true); setLoadError(false)
     Promise.all([
       getAdminProfessionals({ ...facets, q: search || undefined, review_status: review || undefined, listing_status: visibility || undefined, limit: LIMIT, offset }, controller.signal),
       getProfessionalOptions(controller.signal),
     ]).then(([next, nextOptions]) => {
-      if (!controller.signal.aborted) { setPage(next); setOptions(nextOptions) }
-    }).catch(() => { if (!controller.signal.aborted) setLoadError(true) })
+      if (!controller.signal.aborted && requestedEpoch === epoch.current) { setPage(next); setOptions(nextOptions) }
+    }).catch(cause => {
+      if (controller.signal.aborted || requestedEpoch !== epoch.current) return
+      if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) revokeAccess()
+      else setLoadError(true)
+    })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [search, review, visibility, facets, offset, revision])
+  }, [search, review, visibility, facets, offset, revision, revokeAccess])
 
   async function open(id: string) {
+    if (denied.current) return
     const request = ++detailRequest.current
+    detailController.current?.abort()
+    const controller = new AbortController(); detailController.current = controller
+    const requestedEpoch = epoch.current
     setSelectedId(id); setDetail(null); setDetailLoading(true); setDetailError(''); setStale(false); setNote(''); setMessage(''); setConfirmAction(null)
     try {
-      const next = await getAdminProfessional(id)
-      if (request === detailRequest.current) setDetail(next)
-    } catch { if (request === detailRequest.current) setDetailError(t('load_error')) }
+      const next = await getAdminProfessional(id, controller.signal)
+      if (!controller.signal.aborted && requestedEpoch === epoch.current && request === detailRequest.current) setDetail(next)
+    } catch (cause) {
+      if (controller.signal.aborted || requestedEpoch !== epoch.current || request !== detailRequest.current) return
+      if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) revokeAccess()
+      else setDetailError(t('load_error'))
+    }
     finally { if (request === detailRequest.current) setDetailLoading(false) }
   }
   function add() {
+    if (denied.current) return
+    detailController.current?.abort()
     detailRequest.current++
     setSelectedId(null); setDetail(null); setDetailLoading(false); setDetailError('')
     setNote(''); setConfirmAction(null); setStale(false); setMessage('')
@@ -72,27 +105,33 @@ export function AdminProfessionals() {
   function close() {
     if (busy) return
     if (confirmAction) { setConfirmAction(null); return }
-    detailRequest.current++; setSelectedId(null); setDetail(null)
+    detailRequest.current++; detailController.current?.abort(); setSelectedId(null); setDetail(null)
   }
   function requestAction(action: 'approve' | 'reject' | 'suspend' | 'reinstate') {
-    if (!detail || busy || stale) return
+    if (denied.current || !detail || busy || stale) return
     if ((action === 'reject' || action === 'suspend') && !note.trim()) { setDetailError(t('reason_required')); return }
     setConfirmAction(action)
   }
   async function act() {
     const action = confirmAction
-    if (!detail || !action || busy || stale) return
+    if (denied.current || !detail || !action || busy || stale) return
+    const requestedEpoch = epoch.current
     setBusy(true); setDetailError(''); setMessage('')
     try {
       const next = await moderateProfessional(detail.id, action, detail.version, note.trim())
+      if (!mounted.current || requestedEpoch !== epoch.current) return
       setDetail(next); setNote(''); setMessage(t('moderated')); setRevision(previous => previous + 1)
     } catch (cause) {
-      if (isAxiosError(cause) && cause.response?.status === 409) { setStale(true); setDetailError(t('admin_conflict')) }
+      if (!mounted.current || requestedEpoch !== epoch.current) return
+      if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) revokeAccess()
+      else if (isAxiosError(cause) && cause.response?.status === 409) { setStale(true); setDetailError(t('admin_conflict')) }
       else setDetailError(t('action_error'))
-    } finally { setBusy(false); setConfirmAction(null) }
+    } finally { if (mounted.current && requestedEpoch === epoch.current) { setBusy(false); setConfirmAction(null) } }
   }
   const totalPages = Math.max(1, Math.ceil(page.total / LIMIT))
   const date = (value: string) => new Date(value).toLocaleString(i18n.language.startsWith('es') ? 'es-DO' : 'en-US')
+
+  if (accessDenied) return <div role="alert" className="space-y-3"><p>{t('admin_access_lost')}</p><button type="button" className={professionalButton} onClick={() => { denied.current = false; epoch.current++; setAccessDenied(false); setRevision(value => value + 1) }}>{t('retry')}</button></div>
 
   return <div className="min-w-0 space-y-5">
     <div className="flex flex-wrap items-start justify-between gap-4"><p className="max-w-3xl text-sm leading-relaxed text-ink2">{t('admin_intro')}</p>
@@ -167,6 +206,6 @@ export function AdminProfessionals() {
         </>}
       </div>}
     </ProfessionalDialog>}
-    {managedEditor && <ManagedProfessionalEditor initial={managedEditor.initial} options={options} onClose={() => setManagedEditor(null)} onSaved={next => { setDetail(next); setSelectedId(next.id); setRevision(value => value + 1); setStale(false); setDetailError(''); setMessage('') }} />}
+    {managedEditor && <ManagedProfessionalEditor initial={managedEditor.initial} options={options} onAccessLost={revokeAccess} onClose={() => setManagedEditor(null)} onSaved={next => { if (mounted.current && !denied.current) { setDetail(next); setSelectedId(next.id); setRevision(value => value + 1); setStale(false); setDetailError(''); setMessage('') } }} />}
   </div>
 }

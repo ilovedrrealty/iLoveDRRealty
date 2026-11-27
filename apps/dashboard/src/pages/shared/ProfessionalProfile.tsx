@@ -26,21 +26,43 @@ export function ProfessionalProfile() {
   const [showPreview, setShowPreview] = useState(false)
   const [showIssues, setShowIssues] = useState(false)
   const [confirmAction, setConfirmAction] = useState<'withdraw' | 'discard' | null>(null)
+  const [accessDenied, setAccessDenied] = useState(false)
+  const mounted = useRef(true), denied = useRef(false), request = useRef(0)
+  const readController = useRef<AbortController | null>(null)
   const errorRef = useRef<HTMLDivElement>(null)
   const dirty = JSON.stringify(draft) !== JSON.stringify(profile?.draft ?? emptyProfessionalDraft())
   const issues = professionalSubmissionIssues(normalizeProfessionalDraft(draft))
   const blocked = busy || uploading || stale
 
+  const current = (identity: number) => mounted.current && !denied.current && identity === request.current
+  function revokeAccess() {
+    denied.current = true; request.current++; readController.current?.abort()
+    setProfile(null); setDraft(emptyProfessionalDraft()); setOptions(emptyProfessionalOptions()); setShowPreview(false); setShowIssues(false)
+    setError(''); setMessage(''); setConfirmAction(null); setStale(false); setBusy(false); setUploading(false)
+    setLoading(false); setLoadError(false); setAccessDenied(true)
+  }
   async function load() {
+    denied.current = false; setAccessDenied(false)
+    const identity = ++request.current
+    readController.current?.abort()
+    const controller = new AbortController(); readController.current = controller
     setLoading(true); setLoadError(false)
     try {
-      const [next, nextOptions] = await Promise.all([getMyProfessionalProfile(), getProfessionalOptions()])
+      const [next, nextOptions] = await Promise.all([getMyProfessionalProfile(controller.signal), getProfessionalOptions(controller.signal)])
+      if (!current(identity) || controller.signal.aborted) return
       setProfile(next); setDraft(next?.draft ?? emptyProfessionalDraft()); setOptions(nextOptions)
       setStale(false); setError(''); setMessage(''); setShowIssues(false)
-    } catch { setLoadError(true) }
-    finally { setLoading(false) }
+    } catch (cause) {
+      if (!current(identity) || controller.signal.aborted) return
+      if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) revokeAccess()
+      else setLoadError(true)
+    }
+    finally { if (current(identity)) setLoading(false) }
   }
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    mounted.current = true; void load()
+    return () => { mounted.current = false; request.current++; readController.current?.abort() }
+  }, [])
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (dirty || busy || uploading) { event.preventDefault(); event.returnValue = '' }
@@ -61,47 +83,55 @@ export function ProfessionalProfile() {
     setDraft(previous => ({ ...previous, [key]: value })); setMessage(''); setError('')
   }
   function handleFailure(cause: unknown) {
-    if (isAxiosError(cause) && cause.response?.status === 409) { setStale(true); setError(t('conflict')) }
+    if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) revokeAccess()
+    else if (isAxiosError(cause) && cause.response?.status === 409) { setStale(true); setError(t('conflict')) }
     else setError(t('action_error'))
   }
   async function save(submit: boolean) {
-    if (blocked) return
+    if (denied.current || blocked) return
     if (professionalCustomServicesInvalid(normalizeProfessionalDraft(draft))) { setError(t('issues.custom_services')); return }
     const googleIssue = professionalGoogleIssues(normalizeProfessionalDraft(draft))[0]
     if (googleIssue) { setError(t(`issues.${googleIssue}`)); return }
     setShowIssues(submit)
     if (submit && issues.length) return
+    const identity = ++request.current
     setBusy(true); setError(''); setMessage('')
     try {
       const saved = await saveProfessionalDraft(profile?.version ?? 0, normalizeProfessionalDraft(draft))
+      if (!current(identity)) return
       setProfile(saved); setDraft(saved.draft)
       if (submit) {
         const submitted = await submitProfessionalProfile(saved.version)
+        if (!current(identity)) return
         setProfile(submitted); setDraft(submitted.draft)
       }
       setShowIssues(false); setMessage(t(submit ? 'submitted' : 'saved'))
-    } catch (cause) { handleFailure(cause) }
-    finally { setBusy(false) }
+    } catch (cause) { if (current(identity)) handleFailure(cause) }
+    finally { if (current(identity)) setBusy(false) }
   }
   async function withdraw() {
-    if (!profile || blocked) return
+    if (denied.current || !profile || blocked) return
+    const identity = ++request.current
     setBusy(true); setError(''); setMessage('')
     try {
       const next = await withdrawProfessionalProfile(profile.version)
+      if (!current(identity)) return
       setProfile(next)
       if (!dirty) setDraft(next.draft)
       setMessage(t('withdrawn'))
-    } catch (cause) { handleFailure(cause) }
-    finally { setBusy(false); setConfirmAction(null) }
+    } catch (cause) { if (current(identity)) handleFailure(cause) }
+    finally { if (current(identity)) { setBusy(false); setConfirmAction(null) } }
   }
   async function upload(file?: File) {
-    if (!file || blocked) return
+    if (denied.current || !file || blocked) return
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) { setError(t('photo_error')); return }
+    const identity = ++request.current
     setUploading(true); setError('')
-    try { change('photo_url', await uploadProfessionalPhoto(file)) }
-    catch { setError(t('photo_failed')) }
-    finally { setUploading(false) }
+    try { const url = await uploadProfessionalPhoto(file); if (current(identity)) change('photo_url', url) }
+    catch (cause) { if (current(identity)) { if (isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)) revokeAccess(); else setError(t('photo_failed')) } }
+    finally { if (current(identity)) setUploading(false) }
   }
+  if (accessDenied) return <div role="alert" className="space-y-3"><p>{t('profile_access_lost')}</p><button type="button" className={professionalButton} onClick={() => void load()}>{t('retry')}</button></div>
   if (loading) return <p role="status" className="text-sm text-ink2">{t('loading')}</p>
   if (loadError) return <div role="alert" className="space-y-3"><p>{t('load_error')}</p><button className={professionalButton} onClick={() => void load()}>{t('retry')}</button></div>
 

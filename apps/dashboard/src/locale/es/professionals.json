@@ -247,6 +247,8 @@
     "map_title": "Mapa de Google de {{name}}",
     "unavailable": "No se pudo cargar el mapa. Puedes abrir el perfil en Google con el enlace de arriba."
   },
+  "admin_access_lost": "No se pudo confirmar el acceso de administrador. Se borraron los datos privados del directorio y los borradores. Actualiza para comprobar el acceso de nuevo.",
+  "profile_access_lost": "No se pudo confirmar tu acceso. Se borraron el perfil privado y el borrador sin guardar. Actualiza para comprobar el acceso de nuevo.",
   "facets": {
     "heading": "Datos del negocio",
     "provider_kinds": "Tipo de negocio",

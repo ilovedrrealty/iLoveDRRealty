@@ -247,6 +247,8 @@
     "map_title": "Google map for {{name}}",
     "unavailable": "The map could not load. You can open the profile on Google using the link above."
   },
+  "admin_access_lost": "Admin access could not be confirmed. Private directory details and drafts have been cleared. Refresh to check access again.",
+  "profile_access_lost": "Your access could not be confirmed. The private profile and unsaved draft have been cleared. Refresh to check access again.",
   "facets": {
     "heading": "Business details",
     "provider_kinds": "Business type",
