@@ -109,7 +109,7 @@ test('new intent replays exact frozen body while legacy clients still omit reque
   assert.deepEqual(clone(f.calls[0].args[1]), { realtor_id: FIRST, request_id: intent.requestId }); assert.deepEqual(clone(f.calls[0].args[1]), clone(f.calls[1].args[1])); assert.equal(f.calls[0].args[2].signal, signal)
   await f.legacyLead.assignLead(TARGET, FIRST); await f.legacyAdmin.assignRealtorToOwner(TARGET, null)
   assert.deepEqual(clone(f.calls[2].args[1]), { realtor_id: FIRST }); assert.deepEqual(clone(f.calls[3].args[1]), { realtor_id: null })
-  for (const [status, expected] of [[409, 'refused'], [401, 'denied'], [403, 'denied'], [404, 'denied'], [500, 'unconfirmed']]) { const x = api({ put: async () => { throw { response: { status } } } }); await assert.rejects(x.submitAssignment(intent), error => error.kind === expected); assert.equal(x.calls.length, 1) }
+  for (const [status, expected] of [[409, 'refused'], [401, 'denied'], [403, 'denied'], [404, 'refused'], [500, 'unconfirmed']]) { const x = api({ put: async () => { throw { response: { status } } } }); await assert.rejects(x.submitAssignment(intent), error => error.kind === expected); assert.equal(x.calls.length, 1) }
   await assert.rejects(api({ put: async () => ({ status: 200 }) }).submitAssignment(intent), error => error.kind === 'unconfirmed')
 })
 
@@ -173,8 +173,8 @@ test('known conflict refreshes current assignment without silently replacing int
   await h.settle(); h.button('assignment.save').props.onClick(); await h.settle(); assert.ok(h.text().includes(h.t('assignment.refused'))); assert.equal(h.f.calls.filter(c => c.method === 'put').length, 1); assert.equal(h.values[0].realtor_id, LATER); assert.equal(h.button('assignment.save').props.disabled, false)
 })
 
-test('current mutation401/403/404 clears current assignment, cached history and mutation controls', async () => {
-  for (const status of [401, 403, 404]) {
+test('current mutation401/403 clears current assignment, cached history and mutation controls', async () => {
+  for (const status of [401, 403]) {
     const h = ui('AssignmentPanel', { put: async () => { throw { response: { status } } } })
     await h.settle(); h.button('assignment.open_history').props.onClick(); await h.settle(); assert.ok(h.nodes().some(n => n.type === 'li'))
     h.button('assignment.save').props.onClick(); await h.settle(); assert.ok(h.text().includes(h.t('assignment.access_lost'))); assert.equal(h.nodes().filter(n => n.type === 'li' || n.type === 'select').length, 0); assert.ok(!h.text().includes('Original agent')); assert.equal(h.values.length, 0)
@@ -210,4 +210,19 @@ test('lead agent search keeps existing role-aware filtering and quick choice sta
   const quick = h.nodes().filter(n => n.type === 'button' && String(n.props.children).startsWith(h.t('lead_panel.quick_assign', {}, 'admin'))); assert.equal(quick.length, 1)
   quick[0].props.onClick(); await h.settle(); assert.equal(h.f.calls[0].args[1].realtor_id, LATER); assert.equal(h.nodes().find(n => n.type === 'select').props.value, LATER)
   assert.equal(h.nodes().find(n => n.type === 'input').props.disabled, true); h.button('assignment.resolve').props.onClick(); await h.settle(); assert.deepEqual(clone(h.f.calls[0].args[1]), clone(h.f.calls[1].args[1]))
+})
+
+test('selected agent404 refusal refreshes a valid target and retains its current assignment and history', async () => {
+  const h = ui('AssignmentPanel', { put: async () => { throw { response: { status: 404 } } } })
+  await h.settle(); h.button('assignment.open_history').props.onClick(); await h.settle()
+  h.button('assignment.save').props.onClick(); await h.settle()
+  assert.ok(h.text().includes(h.t('assignment.refused'))); assert.ok(!h.text().includes(h.t('assignment.access_lost')))
+  assert.equal(h.nodes().find(n => n.type === 'select').props.value, LATER); assert.equal(h.values[0].realtor_id, LATER)
+  assert.ok(h.nodes().some(n => n.type === 'li')); assert.equal(h.f.calls.filter(c => c.method === 'put').length, 1)
+  assert.equal(h.f.calls.filter(c => c.args[0] === '/admin/leads').length, 1)
+  const deleted = ui('AssignmentPanel', { put: async () => { throw { response: { status: 404 } } }, get: async () => [] })
+  await deleted.settle(); deleted.button('assignment.save').props.onClick(); await deleted.settle()
+  assert.ok(deleted.text().includes(deleted.t('assignment.current_unavailable'))); assert.ok(deleted.text().includes(deleted.t('assignment.refused_read_error')))
+  assert.ok(!deleted.text().includes('Original agent')); assert.ok(!deleted.text().includes(deleted.t('assignment.access_lost')))
+  assert.equal(deleted.button('assignment.save').props.disabled, true); assert.equal(deleted.f.calls.filter(c => c.method === 'put').length, 1)
 })

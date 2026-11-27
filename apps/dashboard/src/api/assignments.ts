@@ -46,8 +46,10 @@ export async function submitAssignment(intent: AssignmentIntent, signal?: AbortS
   } catch (error) {
     if (error instanceof AssignmentChangeError) throw error
     const status = record(error) && record(error.response) ? error.response.status : undefined
-    if (status === 401 || status === 403 || status === 404) throw new AssignmentChangeError('denied')
-    if (status === 400 || status === 409 || status === 422) throw new AssignmentChangeError('refused')
+    if (status === 401 || status === 403) throw new AssignmentChangeError('denied')
+    // A missing/ineligible selected agent is also404; the current target read
+    // distinguishes that refusal from a deleted or inaccessible target.
+    if (status === 400 || status === 404 || status === 409 || status === 422) throw new AssignmentChangeError('refused')
     throw new AssignmentChangeError('unconfirmed')
   }
 }
