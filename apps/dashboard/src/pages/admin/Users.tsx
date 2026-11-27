@@ -255,14 +255,14 @@ export function AdminUsers() {
           </div>
           {/* Row 2: search + add user (left) | filter pills (right) */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-white w-55">
+            <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <div className="flex w-full min-w-0 items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-white sm:w-55">
                 <Search size={13} className="text-dim" />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder={t('users_page.search_ph')}
-                  className="text-xs border-0 outline-none bg-transparent text-ink placeholder:text-dim flex-1"
+                  className="text-xs border-0 outline-none bg-transparent text-ink placeholder:text-dim flex-1 min-w-0"
                 />
               </div>
               <button
