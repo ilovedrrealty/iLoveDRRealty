@@ -123,6 +123,12 @@ test('fresh existing staff GETs authorize Admin/current-assignee and deliberatel
   for (const role of ['buyer','owner']) { const f = api(async () => ({ id: ACTOR, role })); await assert.rejects(f.getFollowUpLead(TARGET, new AbortController().signal)); assert.equal(f.calls.length, 1) }
   const reassigned = api(async url => url.endsWith('/auth/me') ? { id: ACTOR, role: 'realtor' } : [raw({ assigned_realtor_id: OTHER })]); await assert.rejects(reassigned.getFollowUpLead(TARGET, new AbortController().signal))
   const duplicate = api(async url => url.endsWith('/auth/me') ? { id: ACTOR, role: 'admin' } : [raw(),raw()]); await assert.rejects(duplicate.getFollowUpLead(TARGET,new AbortController().signal))
+  for (const phone of ['+18095550101 ext 2','+18095550101 click here','8095550101']) {
+    const f=api(async url=>url.endsWith('/auth/me')?{id:ACTOR,role:'admin'}:[raw({phone})])
+    const projected=await f.getFollowUpLead(TARGET,new AbortController().signal),draft={...model.welcomeDraft('en','welcome','A'),publicUrl:null}
+    assert.equal(projected.phone,'');assert.equal(model.followUpDestination('call',projected,draft),null);assert.equal(model.followUpDestination('whatsapp',projected,draft),null)
+    assert.ok(model.followUpDestination('email',projected,draft),'An invalid phone does not remove a separate valid email action')
+  }
 })
 test('public listing links require anonymous no-store active exact-id reads without photos or grants', async () => {
   const response = row => ({ ok: true, status: 200, headers: new Map([['cache-control','no-store']]), json: async () => row })

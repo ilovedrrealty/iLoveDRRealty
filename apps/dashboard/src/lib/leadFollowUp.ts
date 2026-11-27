@@ -35,7 +35,7 @@ export function projectFollowUpLead(value: unknown, actor: { id: string; role: '
     || !(row.email === null || typeof row.email === 'string') || !(row.phone === null || typeof row.phone === 'string')
     || typeof row.name !== 'string' || actor.role === 'realtor' && row.assigned_realtor_id !== actor.id) return null
   const safe = shareableContact({ name: row.name, email: row.email as string | null, phone: row.phone as string | null })
-  return { id: row.id.toLowerCase(), type: String(row.type), name: recipientName(safe.name), email: safe.email, phone: safe.phone,
+  return { id: row.id.toLowerCase(), type: String(row.type), name: recipientName(safe.name), email: safe.email, phone: internationalDestination(row.phone) ?? '',
     propertyId: typeof row.property_id === 'string' ? row.property_id.toLowerCase() : null,
     actorId: actor.id, actorRole: actor.role, assigneeId: row.assigned_realtor_id as string | null }
 }
