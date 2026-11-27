@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { professionalContactHref, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalDraft, type ProfessionalOptions } from '../../../../../packages/professionals/src'
 import { ProfessionalGoogleLinks } from './ProfessionalGoogleLinks'
+import { ProfessionalFacetSummary } from './ProfessionalFacets'
 
 export function ProfessionalPreview({ profile, options }: { profile: Omit<ProfessionalDraft, 'public_contact_consent'> & { id?: string; approved_at?: string | null }; options: ProfessionalOptions }) {
   const { t, i18n } = useTranslation('professionals')
@@ -15,6 +16,7 @@ export function ProfessionalPreview({ profile, options }: { profile: Omit<Profes
       </div>
     </div>
     <p className="text-sm text-ink2">{professionalOptionLabels(profile.service_area_ids, options.areas, i18n.language).join(' · ')}</p>
+    <ProfessionalFacetSummary profile={profile} options={options} />
     <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink2">{professionalLabel(profile.descriptions, i18n.language)}</p>
     {profile.languages.length > 0 && <p className="text-xs text-dim">{t('languages')}: {professionalOptionLabels(profile.languages, options.languages, i18n.language).join(', ')}</p>}
     <div className="flex flex-wrap gap-2">

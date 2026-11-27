@@ -246,5 +246,16 @@
     "hide_map": "Hide Google map",
     "map_title": "Google map for {{name}}",
     "unavailable": "The map could not load. You can open the profile on Google using the link above."
+  },
+  "facets": {
+    "heading": "Business details",
+    "provider_kinds": "Business type",
+    "property_classes": "Property experience",
+    "work_scopes": "Work offered",
+    "not_specified": "Not specified",
+    "declared_help": "Choose the business types, property experience and work you want shown on your business profile. Save the draft and submit it for review when ready.",
+    "declared_note": "Declared business details. Qualifications and past work are not independently verified.",
+    "filter_help": "Filters use declared business details. Choose fewer filters to include listings with less information.",
+    "admin_filter_help": "These filters use the latest private draft, including information awaiting review."
   }
 }

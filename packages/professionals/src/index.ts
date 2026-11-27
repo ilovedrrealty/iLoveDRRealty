@@ -5,11 +5,17 @@ export type ProfessionalOptions = {
   areas: ProfessionalOption[]
   languages: ProfessionalOption[]
   property_classes?: ProfessionalOption[]
+  provider_kinds?: ProfessionalOption[]
+  work_scopes?: ProfessionalOption[]
 }
+export type ProfessionalFacetFilters = { provider_kind?: string[]; property_class?: string[]; work_scope?: string[] }
 export type ProfessionalDraft = {
   business_name: string
   contact_name: string
   category_ids: string[]
+  provider_kind_ids?: string[]
+  property_class_ids?: string[]
+  work_scope_ids?: string[]
   custom_services: string[]
   service_area_ids: string[]
   descriptions: ProfessionalLabel
@@ -57,6 +63,9 @@ export type AdminProfessionalSummary = Pick<ProfessionalProfile,
   business_name: string
   contact_name: string
   category_ids: string[]
+  provider_kind_ids?: string[]
+  property_class_ids?: string[]
+  work_scope_ids?: string[]
   custom_services: string[]
   service_area_ids: string[]
   management_type: ProfessionalManagement
@@ -70,10 +79,11 @@ export type AdminProfessional = ProfessionalProfile & {
 export type ProfessionalPage<T> = { items: T[]; total: number; limit: number; offset: number }
 export const emptyProfessionalDraft = (): ProfessionalDraft => ({
   business_name: '', contact_name: '', category_ids: [], custom_services: [], service_area_ids: [],
+  provider_kind_ids: [], property_class_ids: [], work_scope_ids: [],
   descriptions: { en: '', es: '' }, languages: [], public_phone: '', public_email: '',
   public_whatsapp: '', website_url: '', photo_url: '', google_profile_url: '', google_maps_embed_url: '', public_contact_consent: false,
 })
-export const emptyProfessionalOptions = (): ProfessionalOptions => ({ categories: [], areas: [], languages: [] })
+export const emptyProfessionalOptions = (): ProfessionalOptions => ({ categories: [], areas: [], languages: [], property_classes: [], provider_kinds: [], work_scopes: [] })
 export const professionalLabel = (label: ProfessionalLabel, language: string): string =>
   language.startsWith('es') ? label.es || label.en : label.en || label.es
 export const professionalOptionLabels = (ids: string[], options: ProfessionalOption[], language: string): string[] =>

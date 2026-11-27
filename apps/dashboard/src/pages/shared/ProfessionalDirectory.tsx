@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
-import { emptyProfessionalOptions, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalOption, type ProfessionalOptions, type ProfessionalPage, type PublicProfessional } from '../../../../../packages/professionals/src'
+import { emptyProfessionalOptions, professionalLabel, professionalOptionLabels, professionalServiceLabels, type ProfessionalOptions, type ProfessionalPage, type PublicProfessional } from '../../../../../packages/professionals/src'
 import { getProfessional, getProfessionalOptions, getProfessionals } from '../../api/professionals'
 import { getProfessionalMap, type DirectoryMapSummary, type DirectoryLocationStatus } from '../../api/directoryMaps'
 import { DirectoryAreaMap } from '../../components/shared/DirectoryAreaMap'
@@ -10,23 +10,14 @@ import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { ProfessionalPreview } from '../../components/shared/ProfessionalPreview'
 import { ProfileShareActions } from '../../components/shared/ProfileShareActions'
 import { ShareContactButton } from '../../components/shared/ShareContactDialog'
-import { professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
+import { ProfessionalFilterChoices, professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
+import { ProfessionalFacetSummary } from '../../components/shared/ProfessionalFacets'
 import { landingBaseUrl } from '../../lib/siteUrls'
 import { dashboardLoginHint } from '../../../../../packages/dashboard-links'
 
 const LIMIT = 24
 const LANDING_URL = landingBaseUrl(import.meta.env.VITE_LANDING_URL)
 const emptyPage: ProfessionalPage<PublicProfessional> = { items: [], total: 0, limit: LIMIT, offset: 0 }
-
-function FilterChoices({ title, options, values, change, max }: { title: string; options: ProfessionalOption[]; values: string[]; change: (values: string[]) => void; max: number }) {
-  const { t, i18n } = useTranslation('professionals')
-  return <details className="min-w-0 rounded-xl border border-line bg-white p-3">
-    <summary className="cursor-pointer text-sm font-semibold text-ink">{title}<span className="ml-2 text-xs font-normal text-dim">{t('directory_search.selected', { count: values.length })}</span></summary>
-    <fieldset className="mt-3 grid gap-2 max-h-64 overflow-y-auto"><legend className="sr-only">{title}</legend>
-      {options.map(option => <label key={option.id} className="flex items-start gap-2 text-sm text-ink2"><input type="checkbox" className="mt-1 shrink-0 accent-coral" checked={values.includes(option.id)} disabled={!values.includes(option.id) && values.length >= max} onChange={event => change(event.target.checked ? [...values, option.id] : values.filter(value => value !== option.id))} /><span>{professionalLabel(option.label, i18n.language)}</span></label>)}
-    </fieldset>
-  </details>
-}
 
 export default function ProfessionalDirectory() {
   const { t, i18n } = useTranslation('professionals')
@@ -38,6 +29,7 @@ export default function ProfessionalDirectory() {
     const rawOffset = Number(parsed.get('offset') ?? 0)
     const location = parsed.get('location_status')
     return { q: (parsed.get('q') ?? '').slice(0, 100), language: (parsed.get('language') ?? '').slice(0, 40), category: [...new Set(parsed.getAll('category'))], area: [...new Set(parsed.getAll('area'))],
+      provider_kind: [...new Set(parsed.getAll('provider_kind'))], property_class: [...new Set(parsed.getAll('property_class'))], work_scope: [...new Set(parsed.getAll('work_scope'))],
       map_area: (parsed.get('map_area') ?? '').slice(0, 100), location_status: (location === 'mapped' || location === 'unmapped' ? location : 'all') as DirectoryLocationStatus,
       offset: Number.isFinite(rawOffset) && rawOffset >= 0 ? Math.min(9984, Math.floor(rawOffset / LIMIT) * LIMIT) : 0 }
   }, [paramsString])
@@ -47,6 +39,9 @@ export default function ProfessionalDirectory() {
   const [categories, setCategories] = useState(filters.category)
   const [areas, setAreas] = useState(filters.area)
   const [language, setLanguage] = useState(filters.language)
+  const [providerKinds, setProviderKinds] = useState(filters.provider_kind)
+  const [propertyClasses, setPropertyClasses] = useState(filters.property_class)
+  const [workScopes, setWorkScopes] = useState(filters.work_scope)
   const [options, setOptions] = useState<ProfessionalOptions>(emptyProfessionalOptions)
   const [page, setPage] = useState(emptyPage)
   const [map, setMap] = useState<DirectoryMapSummary | null>(null)
@@ -69,6 +64,7 @@ export default function ProfessionalDirectory() {
   useEffect(() => {
     const requested = JSON.parse(filterKey) as typeof filters
     setQuery(requested.q); setCategories(requested.category); setAreas(requested.area); setLanguage(requested.language)
+    setProviderKinds(requested.provider_kind); setPropertyClasses(requested.property_class); setWorkScopes(requested.work_scope)
   }, [filterKey])
   useEffect(() => {
     const controller = new AbortController()
@@ -108,9 +104,10 @@ export default function ProfessionalDirectory() {
   }, [selectedId, authError, filterKey, refresh])
   function apply(clear = false) {
     const next = new URLSearchParams(paramsString)
-    for (const key of ['q', 'category', 'area', 'language', 'offset', 'profile']) next.delete(key)
+    for (const key of ['q', 'category', 'area', 'language', 'provider_kind', 'property_class', 'work_scope', 'offset', 'profile']) next.delete(key)
     if (clear) { next.delete('map_area'); next.delete('location_status') }
     if (!clear) { if (query.trim()) next.set('q', query.trim()); if (language) next.set('language', language); categories.forEach(id => next.append('category', id)); areas.forEach(id => next.append('area', id)) }
+    if (!clear) { providerKinds.forEach(id => next.append('provider_kind', id)); propertyClasses.forEach(id => next.append('property_class', id)); workScopes.forEach(id => next.append('work_scope', id)) }
     setParams(next, { replace: true })
   }
   function select(id?: string) { const next = new URLSearchParams(paramsString); id ? next.set('profile', id) : next.delete('profile'); setParams(next, { replace: true }) }
@@ -129,10 +126,16 @@ export default function ProfessionalDirectory() {
     </header>
     <form onSubmit={event => { event.preventDefault(); apply() }} className="rounded-2xl border border-line bg-white p-4 sm:p-6 space-y-4">
       <label className="block text-sm font-bold text-ink"><span className="block mb-2">{t('directory_search.search')}</span><input maxLength={100} value={query} onChange={event => setQuery(event.target.value)} placeholder={t('directory_search.search_placeholder')} className={professionalInput} /></label>
-      <div className="grid sm:grid-cols-2 gap-3 items-start"><FilterChoices title={t('categories')} options={options.categories} values={categories} change={setCategories} max={8} /><FilterChoices title={t('areas')} options={options.areas} values={areas} change={setAreas} max={20} /></div>
+      <div className="grid sm:grid-cols-2 gap-3 items-start"><ProfessionalFilterChoices title={t('categories')} options={options.categories} values={categories} change={setCategories} max={8} /><ProfessionalFilterChoices title={t('areas')} options={options.areas} values={areas} change={setAreas} max={20} /></div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
+        <ProfessionalFilterChoices title={t('facets.provider_kinds')} options={options.provider_kinds ?? []} values={providerKinds} change={setProviderKinds} max={10} />
+        <ProfessionalFilterChoices title={t('facets.property_classes')} options={options.property_classes ?? []} values={propertyClasses} change={setPropertyClasses} max={10} />
+        <ProfessionalFilterChoices title={t('facets.work_scopes')} options={options.work_scopes ?? []} values={workScopes} change={setWorkScopes} max={12} />
+      </div>
+      <p className="text-xs text-dim">{t('facets.filter_help')}</p>
       <label className="block text-sm font-semibold text-ink"><span className="mb-2 block">{t('languages')}</span><select className={professionalInput} value={language} onChange={event => setLanguage(event.target.value)}><option value="">{t('directory_language_any')}</option>{options.languages.map(option => <option key={option.id} value={option.id}>{professionalLabel(option.label, i18n.language)}</option>)}</select></label>
       <p className="text-xs text-dim">{t('directory_search.filter_help')}</p>
-      <div className="flex flex-wrap gap-3"><button type="submit" className={professionalPrimary}>{t('directory_search.apply')}</button><button type="button" className={professionalButton} onClick={() => { setQuery(''); setCategories([]); setAreas([]); setLanguage(''); apply(true) }}>{t('directory_search.clear')}</button></div>
+      <div className="flex flex-wrap gap-3"><button type="submit" className={professionalPrimary}>{t('directory_search.apply')}</button><button type="button" className={professionalButton} onClick={() => { setQuery(''); setCategories([]); setAreas([]); setLanguage(''); setProviderKinds([]); setPropertyClasses([]); setWorkScopes([]); apply(true) }}>{t('directory_search.clear')}</button></div>
     </form>
     {authError ? <div role="alert" className="rounded-xl border border-line bg-white p-5 space-y-3"><p>{t('directory_search.auth_error')}</p><a className={professionalPrimary} href={`${LANDING_URL.replace(/\/$/, '')}/login/${dashboardLoginHint('professional-directory', params) ?? '?directory=professionals'}`}>{t('directory_search.login')}</a></div> : loading || loadedKey !== filterKey ? <p role="status" className="text-sm text-ink2">{t('directory_search.loading')}</p> : error ? <div role="alert" className="rounded-xl border border-line p-5 space-y-3"><p>{t('directory_search.error')}</p><button className={professionalButton} onClick={() => setRefresh(value => value + 1)}>{t('retry')}</button></div> : <>
       {map && <DirectoryAreaMap summary={map} selectedArea={filters.map_area} locationStatus={filters.location_status}
@@ -144,6 +147,7 @@ export default function ProfessionalDirectory() {
         {profile.contact_name && profile.contact_name !== profile.business_name && <p className="text-sm text-ink2">{profile.contact_name}</p>}
         <p className="break-words text-xs font-semibold text-coral">{professionalServiceLabels(profile, options.categories, i18n.language).join(' · ')}</p>
         <p className="text-xs text-dim">{professionalOptionLabels(profile.service_area_ids, options.areas, i18n.language).join(' · ')}</p>
+        <ProfessionalFacetSummary profile={profile} options={options} />
         <p className="line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-ink2 break-words">{professionalLabel(profile.descriptions, i18n.language)}</p>
         <button type="button" className={`${professionalButton} mt-auto self-start`} onClick={() => select(profile.id)} aria-label={`${t('directory_search.view')}: ${profile.business_name || profile.contact_name}`}>{t('directory_search.view')}</button>
       </article>)}</div>

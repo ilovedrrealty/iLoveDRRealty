@@ -30,3 +30,13 @@ export function ProfessionalChoices({ title, values, options, max, onChange }: {
     </div>
   </fieldset>
 }
+
+export function ProfessionalFilterChoices({ title, options, values, change, max }: { title: string; options: ProfessionalOption[]; values: string[]; change: (values: string[]) => void; max: number }) {
+  const { t, i18n } = useTranslation('professionals')
+  return <details className="min-w-0 rounded-xl border border-line bg-white p-3">
+    <summary className="cursor-pointer text-sm font-semibold text-ink">{title}<span className="ml-2 text-xs font-normal text-dim">{t('directory_search.selected', { count: values.length })}</span></summary>
+    <fieldset className="mt-3 grid gap-2 max-h-64 overflow-y-auto"><legend className="sr-only">{title}</legend>
+      {options.map(option => <label key={option.id} className="flex items-start gap-2 text-sm text-ink2"><input type="checkbox" className="mt-1 shrink-0 accent-coral" checked={values.includes(option.id)} disabled={!values.includes(option.id) && values.length >= max} onChange={event => change(event.target.checked ? [...values, option.id] : values.filter(value => value !== option.id))} /><span>{professionalLabel(option.label, i18n.language)}</span></label>)}
+    </fieldset>
+  </details>
+}

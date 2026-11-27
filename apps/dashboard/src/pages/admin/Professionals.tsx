@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { isAxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
-import { canApproveProfessional, emptyProfessionalOptions, isAdminManagedProfessional, professionalOptionLabels, professionalServiceLabels, type AdminProfessional, type AdminProfessionalSummary, type ProfessionalOptions, type ProfessionalPage } from '../../../../../packages/professionals/src'
+import { canApproveProfessional, emptyProfessionalOptions, isAdminManagedProfessional, professionalOptionLabels, professionalServiceLabels, type AdminProfessional, type AdminProfessionalSummary, type ProfessionalOptions, type ProfessionalPage, type ProfessionalFacetFilters } from '../../../../../packages/professionals/src'
 import { getAdminProfessional, getAdminProfessionals, getProfessionalOptions, moderateProfessional } from '../../api/professionals'
-import { professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
+import { ProfessionalFilterChoices, professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
+import { ProfessionalFacetSummary } from '../../components/shared/ProfessionalFacets'
 import { ProfessionalPreview } from '../../components/shared/ProfessionalPreview'
 import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
 import { ProfessionalConfirmation } from '../../components/shared/ProfessionalConfirmation'
@@ -19,6 +20,7 @@ export function AdminProfessionals() {
   const [search, setSearch] = useState('')
   const [review, setReview] = useState('')
   const [visibility, setVisibility] = useState('')
+  const [facets, setFacets] = useState<ProfessionalFacetFilters>({})
   const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -40,14 +42,14 @@ export function AdminProfessionals() {
     const controller = new AbortController()
     setLoading(true); setLoadError(false)
     Promise.all([
-      getAdminProfessionals({ q: search || undefined, review_status: review || undefined, listing_status: visibility || undefined, limit: LIMIT, offset }, controller.signal),
-      getProfessionalOptions(),
+      getAdminProfessionals({ ...facets, q: search || undefined, review_status: review || undefined, listing_status: visibility || undefined, limit: LIMIT, offset }, controller.signal),
+      getProfessionalOptions(controller.signal),
     ]).then(([next, nextOptions]) => {
       if (!controller.signal.aborted) { setPage(next); setOptions(nextOptions) }
     }).catch(() => { if (!controller.signal.aborted) setLoadError(true) })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [search, review, visibility, offset, revision])
+  }, [search, review, visibility, facets, offset, revision])
 
   async function open(id: string) {
     const request = ++detailRequest.current
@@ -115,6 +117,13 @@ export function AdminProfessionals() {
         <option value="">{t('all')}</option>{['hidden', 'published', 'suspended'].map(value => <option key={value} value={value}>{t(`listing.${value}`)}</option>)}
       </select></div>
       <button className={professionalButton}>{t('search_apply')}</button>
+      <div className="grid gap-3 sm:col-span-2 xl:col-span-4 lg:grid-cols-3">
+        <ProfessionalFilterChoices title={t('facets.provider_kinds')} options={options.provider_kinds ?? []} values={facets.provider_kind ?? []} max={10} change={values => { setFacets(previous => ({ ...previous, provider_kind: values })); setOffset(0) }} />
+        <ProfessionalFilterChoices title={t('facets.property_classes')} options={options.property_classes ?? []} values={facets.property_class ?? []} max={10} change={values => { setFacets(previous => ({ ...previous, property_class: values })); setOffset(0) }} />
+        <ProfessionalFilterChoices title={t('facets.work_scopes')} options={options.work_scopes ?? []} values={facets.work_scope ?? []} max={12} change={values => { setFacets(previous => ({ ...previous, work_scope: values })); setOffset(0) }} />
+      </div>
+      <p className="text-xs text-dim sm:col-span-2 xl:col-span-4">{t('facets.admin_filter_help')}</p>
+      <button type="button" className={`${professionalButton} justify-self-start`} onClick={() => { setFacets({}); setQuery(''); setSearch(''); setReview(''); setVisibility(''); setOffset(0) }}>{t('directory_search.clear')}</button>
     </form>
     {loading ? <p role="status" className="text-sm text-ink2">{t('loading')}</p> : loadError ? <div role="alert"><p className="mb-3">{t('load_error')}</p><button className={professionalButton} onClick={() => setRevision(value => value + 1)}>{t('retry')}</button></div> : <>
       <p role="status" className="text-sm text-dim">{t('results', { count: page.total })}</p>
@@ -124,6 +133,7 @@ export function AdminProfessionals() {
         <div className="flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-paper2 px-2 py-1">{t(`review.${item.review_status}`)}</span><span className="rounded-full bg-paper2 px-2 py-1">{t(`listing.${item.listing_status}`)}</span></div>
         <p className="text-sm text-ink2 break-words">{professionalServiceLabels(item, options.categories, i18n.language).join(' · ')}</p>
         <p className="text-xs text-dim">{professionalOptionLabels(item.service_area_ids, options.areas, i18n.language).join(' · ')}</p>
+        <ProfessionalFacetSummary profile={item} options={options} />
         <p className="text-xs text-dim break-all">{item.owner ? `${item.owner.display_name} · ${item.owner.email}` : t('managed_badge')}</p>
         <button className={professionalButton} onClick={() => void open(item.id)}>{t('review_profile')}</button>
       </article>)}</div>

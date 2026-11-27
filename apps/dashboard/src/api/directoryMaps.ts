@@ -1,6 +1,7 @@
+import type { ProfessionalFacetFilters } from '../../../../packages/professionals/src'
 export type DirectoryLocationStatus = 'all' | 'mapped' | 'unmapped'
 export type DirectoryLocationFilters = { map_area?: string; location_status?: DirectoryLocationStatus }
-export type ProfessionalDirectoryFilters = DirectoryLocationFilters & {
+export type ProfessionalDirectoryFilters = DirectoryLocationFilters & ProfessionalFacetFilters & {
   category: string[]; area: string[]; language?: string; q: string
 }
 export type DirectoryMapArea = {
@@ -72,6 +73,7 @@ export async function getTradeContactMap(filters: TradeContactFilters, signal?: 
 export async function getProfessionalMap(filters: ProfessionalDirectoryFilters, signal?: AbortSignal) {
   const { data } = await client.get<unknown>('/professionals/map', {
     params: { q: filters.q || undefined, category: filters.category, area: filters.area,
+      provider_kind: filters.provider_kind, property_class: filters.property_class, work_scope: filters.work_scope,
       language: filters.language || undefined, ...directoryLocationParams(filters) }, paramsSerializer: { indexes: null }, signal,
   })
   return readDirectoryMap(data)

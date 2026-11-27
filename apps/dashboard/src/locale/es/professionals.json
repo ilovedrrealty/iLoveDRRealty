@@ -246,5 +246,16 @@
     "hide_map": "Ocultar mapa de Google",
     "map_title": "Mapa de Google de {{name}}",
     "unavailable": "No se pudo cargar el mapa. Puedes abrir el perfil en Google con el enlace de arriba."
+  },
+  "facets": {
+    "heading": "Datos del negocio",
+    "provider_kinds": "Tipo de negocio",
+    "property_classes": "Experiencia por tipo de inmueble",
+    "work_scopes": "Trabajos ofrecidos",
+    "not_specified": "Sin especificar",
+    "declared_help": "Elige los tipos de negocio, la experiencia y los trabajos que deseas mostrar en tu perfil profesional. Guarda el borrador y envíalo a revisión cuando esté listo.",
+    "declared_note": "Datos declarados del negocio. Las cualificaciones y los trabajos anteriores no se verifican de forma independiente.",
+    "filter_help": "Los filtros usan datos declarados del negocio. Elige menos filtros para incluir perfiles con menos información.",
+    "admin_filter_help": "Estos filtros usan el último borrador privado, incluidos los datos pendientes de revisión."
   }
 }
