@@ -12,6 +12,7 @@ import { ShareContactButton } from '../shared/ShareContactDialog'
 import { isTransactionRoomLead } from '../../api/transactions'
 import { AssignmentPanel } from './AssignmentPanel'
 import type { CurrentAssignment } from '../../api/assignments'
+import { LeadFollowUp } from './LeadFollowUp'
 
 const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
 
@@ -57,9 +58,10 @@ interface Props {
   onOpenTransaction?: (leadId: string) => void
   adminAssignments?: boolean
   onAssignmentCurrent?: (leadId: string, current: CurrentAssignment) => void
+  allowManualFollowUp?: boolean
 }
 
-export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false, onOpenDelivery, onOpenValuation, onOpenTransaction, adminAssignments = false, onAssignmentCurrent }: Props) {
+export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false, onOpenDelivery, onOpenValuation, onOpenTransaction, adminAssignments = false, onAssignmentCurrent, allowManualFollowUp = false }: Props) {
   const { t } = useTranslation('admin')
 
   const TYPE_LABEL: Record<string, string> = {
@@ -316,6 +318,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
               </div>
             </div>
 
+            {allowManualFollowUp ? <LeadFollowUp key={`manual-follow-up:${lead.id}:${lead.assigned_realtor_id ?? 'none'}`} targetId={lead.id} /> : null}
             <LeadTrackingDetails lead={lead} />
             {onOpenDelivery ? <button type="button" onClick={() => onOpenDelivery(lead.id)} className="min-h-10 rounded-lg border border-line px-4 py-2 text-sm font-semibold text-sea">{t('leads_page.open_delivery')}</button> : null}
             {/* Timeline */}

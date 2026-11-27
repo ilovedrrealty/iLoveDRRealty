@@ -196,6 +196,7 @@ export function Pipeline({ user }: { user?: UserInfo }) {
 
       <LeadDetailPanel
         lead={selectedLead}
+        allowManualFollowUp={!!user && selectedLead?.assigned_realtor_id === user.id}
         realtors={[]}
         onClose={() => setSelectedLead(null)}
         onAssigned={() => {}}

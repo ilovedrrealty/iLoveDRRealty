@@ -509,6 +509,7 @@ export function AdminLeads({ onOpenDelivery, onOpenTransaction }: { onOpenDelive
 
       <LeadDetailPanel
         allowContactShare
+        allowManualFollowUp
         adminAssignments
         onAssignmentCurrent={handleAssignmentCurrent}
         lead={selectedLead}

@@ -412,6 +412,7 @@ export function RealtorLeads({ go, user, onOpenTransaction }: { go?: (v: string)
 
       <LeadDetailPanel
         lead={selectedLead}
+        allowManualFollowUp={!!user && selectedLead?.assigned_realtor_id === user.id}
         realtors={[]}
         onClose={() => setSelectedLead(null)}
         onAssigned={() => {}}
