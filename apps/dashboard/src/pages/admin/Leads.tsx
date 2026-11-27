@@ -9,6 +9,7 @@ import { LeadDetailPanel } from '../../components/admin/LeadDetailPanel'
 import { LeadTrackingOverview } from '../../components/admin/LeadTrackingOverview'
 import { SellerValuationLead } from '../shared/SellerValuationLead'
 import { parsePhone } from '../../utils/phone'
+import type { CurrentAssignment } from '../../api/assignments'
 
 const TYPE_LABEL: Record<string, string> = {
   property_inquiry: 'Inquiry',
@@ -224,6 +225,15 @@ export function AdminLeads({ onOpenDelivery, onOpenTransaction }: { onOpenDelive
         ? { ...prev, assigned_realtor_id: realtorId, assigned_realtor_name: realtorName, status: 'assigned' as const, assigned_at: prev.assigned_at ?? now }
         : prev
     )
+  }
+
+  function handleAssignmentCurrent(leadId: string, current: CurrentAssignment) {
+    const apply = (lead: Lead): Lead => lead.id === leadId ? { ...lead,
+      assigned_realtor_id: current.realtor_id, assigned_realtor_name: current.realtor_name,
+      ...(current.status ? { status: current.status } : {}),
+      ...(current.assigned_at !== undefined ? { assigned_at: current.assigned_at } : {}) } : lead
+    setLeads(previous => previous.map(apply))
+    setSelectedLead(previous => previous ? apply(previous) : null)
   }
 
   function handleStatusUpdate(leadId: string, status: string) {
@@ -499,6 +509,8 @@ export function AdminLeads({ onOpenDelivery, onOpenTransaction }: { onOpenDelive
 
       <LeadDetailPanel
         allowContactShare
+        adminAssignments
+        onAssignmentCurrent={handleAssignmentCurrent}
         lead={selectedLead}
         realtors={realtors}
         onClose={() => setSelectedLead(null)}

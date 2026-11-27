@@ -63,8 +63,8 @@ export async function getAdminLeads(params?: {
   type?: string
   status?: string
   assigned_realtor_id?: string
-}): Promise<Lead[]> {
-  const res = await client.get<Lead[]>('/admin/leads', { params })
+}, signal?: AbortSignal): Promise<Lead[]> {
+  const res = await client.get<Lead[]>('/admin/leads', { params, signal })
   return res.data
 }
 

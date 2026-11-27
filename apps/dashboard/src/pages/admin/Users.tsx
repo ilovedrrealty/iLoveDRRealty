@@ -564,6 +564,11 @@ export function AdminUsers() {
         onApproveUpgrade={handleApproveUpgrade}
         onRejectUpgrade={handleRejectUpgrade}
         onRoleChange={handleRoleChange}
+        onAssignmentCurrent={(userId, current) => {
+          const apply = (user: AdminUser) => user.id === userId ? { ...user, assigned_realtor_id: current.realtor_id, assigned_realtor_name: current.realtor_name } : user
+          setUsers(previous => previous.map(apply))
+          setSelectedUser(previous => previous ? apply(previous) : null)
+        }}
       />
     </div>
   )

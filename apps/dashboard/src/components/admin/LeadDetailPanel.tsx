@@ -10,6 +10,8 @@ import { RealtorCombobox } from './RealtorCombobox'
 import { LeadTrackingDetails } from './LeadTrackingOverview'
 import { ShareContactButton } from '../shared/ShareContactDialog'
 import { isTransactionRoomLead } from '../../api/transactions'
+import { AssignmentPanel } from './AssignmentPanel'
+import type { CurrentAssignment } from '../../api/assignments'
 
 const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'https://ilovedrrealty.com'
 
@@ -53,9 +55,11 @@ interface Props {
   onOpenDelivery?: (leadId: string) => void
   onOpenValuation?: (leadId: string) => void
   onOpenTransaction?: (leadId: string) => void
+  adminAssignments?: boolean
+  onAssignmentCurrent?: (leadId: string, current: CurrentAssignment) => void
 }
 
-export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false, onOpenDelivery, onOpenValuation, onOpenTransaction }: Props) {
+export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusUpdated, allowedStatuses, updateStatusFn, calendlyUrl, allowContactShare = false, onOpenDelivery, onOpenValuation, onOpenTransaction, adminAssignments = false, onAssignmentCurrent }: Props) {
   const { t } = useTranslation('admin')
 
   const TYPE_LABEL: Record<string, string> = {
@@ -415,7 +419,7 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
                   </div>
                 </div>
               </div>
-            ) : realtors.length > 0 && (
+            ) : !adminAssignments && realtors.length > 0 && (
               <div>
                 <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-widest text-dim mb-3">
                   <UserCheck size={11} />
@@ -454,6 +458,12 @@ export function LeadDetailPanel({ lead, realtors, onClose, onAssigned, onStatusU
                 />
               </div>
             )}
+
+            {adminAssignments ? <AssignmentPanel key={`assignment:lead:${lead.id}`} scope="lead" targetId={lead.id}
+              initial={{ realtor_id: lead.assigned_realtor_id, realtor_name: lead.assigned_realtor_name, status: lead.status, assigned_at: lead.assigned_at }}
+              agents={realtors} readOnly={!!lead.listing_owner_id} ownerAccess={isOwnerAccess}
+              propertyAgent={(lead.type === 'property_inquiry' || lead.type === 'booking') && lead.listing_realtor_id ? { id: lead.listing_realtor_id, name: lead.listing_realtor_name } : undefined}
+              onCurrent={current => onAssignmentCurrent?.(lead.id, current)} /> : null}
 
             {/* Status */}
             <div>

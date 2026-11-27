@@ -226,9 +226,9 @@ export interface AdminUser {
   assigned_realtor_name: string | null
 }
 
-export async function getAdminUsers(role?: string, status?: string): Promise<AdminUser[]> {
+export async function getAdminUsers(role?: string, status?: string, signal?: AbortSignal): Promise<AdminUser[]> {
   const res = await client.get<AdminUser[]>('/admin/users', {
-    params: { ...(role ? { role } : {}), ...(status ? { status } : {}) },
+    params: { ...(role ? { role } : {}), ...(status ? { status } : {}) }, signal,
   })
   return res.data
 }
