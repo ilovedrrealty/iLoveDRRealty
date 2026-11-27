@@ -33,6 +33,18 @@ function elements(node) {
   return [node, ...elements(node.props?.children)]
 }
 const jsx = (type, props, key) => ({ type, props, key })
+const facetFields = load('apps/dashboard/src/components/shared/ProfessionalFields.tsx', {
+  react: { useId: () => 'synthetic-facet-field' },
+  'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'fragment' },
+  'react-i18next': { useTranslation: () => ({ t, i18n: { language: 'en' } }) },
+  '../../../../../packages/professionals/src': model,
+})
+const facets = load('apps/dashboard/src/components/shared/ProfessionalFacets.tsx', {
+  'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'fragment' },
+  'react-i18next': { useTranslation: () => ({ t, i18n: { language: 'en' } }) },
+  '../../../../../packages/professionals/src': model,
+  './ProfessionalFields': facetFields,
+})
 
 test('Google links accept genuine place search CID and official share forms without rewriting the destination', () => {
   for (const value of [PROFILE, "https://www.google.com/maps/place/John's+Repairs",
@@ -147,6 +159,7 @@ test('Preview remounts Google state for another profile approval or source and n
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'fragment' },
     'react-i18next': { useTranslation: () => ({ t, i18n: { language: 'en' } }) },
     '../../../../../packages/professionals/src': model, './ProfessionalGoogleLinks': { ProfessionalGoogleLinks: Google },
+    './ProfessionalFacets': facets,
   })
   const draft = { ...model.emptyProfessionalDraft(), business_name: 'Synthetic business', id: 'one', approved_at: '2026-11-18T00:00:00Z', google_profile_url: PROFILE, google_maps_embed_url: EMBED }
   const widget = profile => elements(component.ProfessionalPreview({ profile, options: model.emptyProfessionalOptions() })).find(node => node.type === Google)
@@ -165,6 +178,7 @@ test('Admin and owner share bounded optional fields and matching EN ES guidance'
     '../../../../../packages/professionals/src': model,
     './ProfessionalFields': { ProfessionalField: Field, ProfessionalChoices: Choices, professionalButton: '', professionalInput: '' },
     './ProfessionalServices': { ProfessionalServices: Services },
+    './ProfessionalFacets': facets,
   })
   for (const adminManaged of [false, true]) {
     const tree = elements(component.ProfessionalDraftFields({ draft: model.emptyProfessionalDraft(), options: model.emptyProfessionalOptions(),
